@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>The Elephant’s Child: P3 Story Quest</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EAF3EC; --surface:#FFFFFF; --ink:#243B2F; --ink2:#4E6A5B; --leaf:#1F4D3A;
+  --orange:#E8833A; --sun:#F2C230; --blue:#2F6FA8; --green:#5E8C3A; --mark:#FCE3CF; --line:#CFE0D4;
+  color-scheme: light;
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#13241B; --surface:#1C3327; --ink:#EAF3EC; --ink2:#B5CBBE; --leaf:#BFE3C9; --mark:#5A3A22; --line:#2E4A3A; color-scheme: dark; } }
+:root[data-theme="dark"]{ --bg:#13241B; --surface:#1C3327; --ink:#EAF3EC; --ink2:#B5CBBE; --leaf:#BFE3C9; --mark:#5A3A22; --line:#2E4A3A; color-scheme: dark; }
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+body{background:var(--bg); color:var(--ink); font-family:Andika, "Trebuchet MS", system-ui, sans-serif; font-size:1.15rem; line-height:1.55; min-height:100%;}
+header{max-width:1120px; margin:0 auto; padding:14px 20px 6px; display:flex; align-items:center; gap:14px}
+header h1{font-family:Fredoka, Arial, sans-serif; font-weight:600; font-size:1.15rem; margin:0; color:var(--leaf); flex:1}
+.eta{font-size:.95rem; color:var(--ink2); white-space:nowrap}
+#stars{font-family:Fredoka, Arial, sans-serif; font-weight:700; font-size:1.25rem; background:var(--surface); border:2px solid var(--line); border-radius:999px; padding:4px 14px; color:var(--ink)}
+#stars .s{color:var(--sun); -webkit-text-stroke:1px #C79A12}
+#stars.pop{animation:pop .5s}
+@keyframes pop{40%{transform:scale(1.35)}}
+.icon{background:var(--surface); border:2px solid var(--line); border-radius:50%; width:44px; height:44px; font-size:1.1rem; cursor:pointer; color:var(--ink)}
+.icon[aria-pressed="true"]{opacity:.5}
+#book{max-width:1120px; margin:0 auto; padding:8px 20px; display:grid; grid-template-columns:minmax(0,1.35fr) minmax(0,1fr); gap:22px; align-items:start}
+#stage{position:relative; aspect-ratio:1080/880; border-radius:28px; overflow:hidden; background:#CFE8E0; touch-action:manipulation}
+.art,.art svg,#stage canvas{display:block; width:100%; height:100%}
+#stage canvas{touch-action:none; cursor:grab}
+#panel{background:var(--surface); border-radius:24px; padding:22px 24px; border:2px solid var(--line); min-height:100%}
+#panel h2{font-family:Fredoka, Arial, sans-serif; font-weight:700; font-size:2rem; line-height:1.15; margin:0 0 12px; color:var(--leaf)}
+.txt{max-width:46ch}
+mark{background:var(--mark); color:inherit; border-radius:6px; padding:0 4px; font-weight:700}
+.act{display:flex; flex-wrap:wrap; gap:10px; margin-top:18px}
+.btn{font-family:Fredoka, Arial, sans-serif; font-weight:600; font-size:1.1rem; border:0; border-radius:16px; padding:12px 18px; cursor:pointer; color:#fff; background:var(--green); box-shadow:0 4px 0 rgba(0,0,0,.18); transition:transform .08s}
+.btn:active{transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.18)}
+.btn.c0{background:var(--green)} .btn.c1{background:var(--blue)} .btn.c2{background:var(--orange)}
+.act .btn.c0,.act .btn.c1,.act .btn.c2{flex:1 1 100%; text-align:left}
+.btn.big{font-size:1.4rem; padding:14px 28px; background:var(--orange)}
+.btn.pull{background:var(--blue); font-size:2rem; flex:1 1 100%; padding:22px}
+.btn.ghost{background:transparent; color:var(--ink); border:2px solid var(--line); box-shadow:none}
+.btn:disabled{opacity:.45; cursor:default}
+.btn.wrong{background:#B9473F !important; opacity:.6}
+.btn.right{background:var(--green) !important; outline:4px solid var(--sun)}
+button:focus-visible,[tabindex]:focus-visible,input:focus-visible{outline:4px solid var(--sun); outline-offset:3px}
+.fb{font-weight:700; margin:6px 0 0; flex:1 1 100%}
+.fb.ok{color:var(--green)} .fb.no{color:#B9473F}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .fb.ok{color:#9CD07A} }
+input{font:inherit; padding:10px 14px; border-radius:14px; border:2px solid var(--line); background:var(--bg); color:var(--ink); flex:1 1 200px}
+nav{max-width:1120px; margin:0 auto; padding:12px 20px 24px; display:flex; align-items:center; gap:12px}
+nav .btn{background:var(--leaf); color:var(--surface)}
+#next{margin-left:auto; background:var(--orange); color:#fff; font-size:1.25rem}
+#dots{display:flex; gap:5px; flex-wrap:wrap; justify-content:center; flex:1}
+#dots span{width:9px; height:9px; border-radius:50%; background:var(--line)}
+#dots span.g{background:#F2C23080; border-radius:2px; transform:rotate(45deg)}
+#dots span.on{background:var(--orange); transform:scale(1.4)}
+.hud{position:absolute; top:14px; left:14px; right:14px; display:flex; justify-content:space-between; font-family:Fredoka, Arial, sans-serif; font-weight:700; font-size:clamp(1rem,3vw,1.6rem); pointer-events:none; color:#1F4D3A}
+.hud span{background:#ffffffd9; border-radius:999px; padding:4px 14px}
+.hud span:empty{display:none}
+.meter{position:absolute; left:6%; right:6%; bottom:5%; height:22px; border-radius:999px; background:#ffffffb3; overflow:hidden}
+#bar{height:100%; width:50%; background:linear-gradient(90deg,#E8833A,#F2C230,#5E8C3A); transition:width .05s}
+.clock{position:absolute; top:6%; right:6%; font-family:Fredoka, Arial, sans-serif; font-weight:700; font-size:clamp(2rem,7vw,4.5rem); color:#1F4D3A; background:#ffffffd9; padding:4px 22px; border-radius:24px}
+.bubbles{position:absolute; inset:5% 5% auto 38%; display:flex; flex-direction:column; gap:10px}
+.bub{font-family:Fredoka, Arial, sans-serif; font-weight:600; font-size:clamp(.9rem,2.4vw,1.3rem); padding:10px 16px; border-radius:20px; background:#fff; color:#243B2F; animation:pop .35s}
+.bub.r{align-self:flex-start; background:#1F4D3A; color:#fff; font-size:clamp(1.1rem,3.4vw,1.9rem)}
+.log{cursor:pointer} .log .reveal{opacity:0; transition:opacity .3s} .log .wood{transition:opacity .3s}
+.log.open .reveal{opacity:1} .log.open .wood{opacity:0}
+.log.nope{animation:wob .4s; opacity:.55}
+@keyframes wob{25%{transform:translate(var(--x,0),0) rotate(-3deg)}75%{rotate:3deg}}
+#flyzone{position:absolute; inset:0}
+.fly{position:absolute; width:clamp(44px,9%,72px); aspect-ratio:1; padding:0; border:0; background:none; cursor:crosshair; animation:buzz .8s ease-in-out infinite alternate}
+.fly svg{width:100%; height:100%}
+.fly.hit{animation:none; transform:scale(.2) rotate(180deg); opacity:0; transition:.25s}
+@keyframes buzz{0%{transform:translate(0,0) rotate(-8deg)}50%{transform:translate(14px,-10px) rotate(6deg)}100%{transform:translate(-10px,8px) rotate(-4deg)}}
+.cert{position:absolute; left:5%; right:5%; bottom:5%; background:#fff; color:#243B2F; border-radius:22px; padding:14px 18px; display:flex; gap:14px; align-items:center; border:4px solid var(--sun); animation:pop .6s}
+.cert .medal{flex-shrink:0; width:clamp(44px,9vw,70px); height:auto; font-size:clamp(2rem,6vw,3.4rem); color:var(--sun); -webkit-text-stroke:2px #C79A12; line-height:1}
+.cert small{display:block; color:#4E6A5B} .cert strong{display:block; font-family:Fredoka, Arial, sans-serif; font-size:clamp(1.1rem,3vw,1.6rem); color:#1F4D3A}
+.cert span{display:block; font-family:Fredoka, Arial, sans-serif; font-weight:600} .cert .cs{color:var(--sun); letter-spacing:2px; font-size:.9rem}
+
+.gl{font:inherit; color:inherit; background:none; border:0; padding:0; border-bottom:3px dotted var(--orange); cursor:help}
+.gloss{background:var(--mark); border-radius:14px; padding:10px 14px; margin:14px 0 0; max-width:46ch}
+.small{font-size:.95rem; color:var(--ink2); margin:0 0 8px}
+.clue{font-weight:700; margin:0 0 10px; flex:1 1 100%}
+.builder{flex:1 1 100%; display:flex; flex-direction:column; gap:10px}
+.line{min-height:58px; border:3px dashed var(--line); border-radius:16px; padding:8px; display:flex; flex-wrap:wrap; gap:8px; align-items:center}
+.line.ok{border-color:var(--green); border-style:solid}
+.pool{display:flex; flex-wrap:wrap; gap:8px}
+.pool.col{flex-direction:column}
+.btn.tile{background:var(--blue); padding:10px 14px; min-width:46px; font-size:1.15rem}
+.line .btn.tile{background:var(--leaf); color:var(--surface)}
+.sent{line-height:2.3; font-size:1.15rem}
+.btn.word{background:var(--bg); color:var(--ink); border:2px solid var(--line); box-shadow:none; padding:4px 10px; font-family:inherit; font-weight:400; font-size:1.1rem}
+.btn.word.sel{background:var(--sun); color:#243B2F; border-color:#C79A12; font-weight:700}
+.slots{display:flex; gap:6px; flex-wrap:wrap}
+.slots span{width:40px; height:48px; border-bottom:4px solid var(--line); font-family:Fredoka, Arial, sans-serif; font-weight:700; font-size:1.6rem; text-align:center; line-height:48px}
+.slots span.f{border-color:var(--green); color:var(--green)}
+.builder > .btn.ghost{align-self:flex-start}
+.btn.row{background:var(--bg); color:var(--ink); border:2px solid var(--line); box-shadow:none; text-align:left; font-family:inherit; font-weight:400; font-size:1.02rem; padding:10px 14px; display:flex; justify-content:space-between; gap:10px; align-items:center; width:100%}
+.seq{margin:0 0 8px; padding-left:1.6em; flex:1 1 100%} .seq li{color:var(--green); font-weight:700; margin:2px 0}
+.act > .pool.col{flex:1 1 100%}
+.shake{animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.res{flex:1 1 100%; background:var(--mark); border-radius:16px; padding:12px 16px; animation:pop .4s}
+.res p{margin:4px 0 0}
+.earn{font-size:1.9rem; color:var(--sun); -webkit-text-stroke:1px #C79A12; letter-spacing:3px}
+.earn i{font-style:normal; color:transparent; -webkit-text-stroke:1px var(--ink2); opacity:.5}
+.row .earn{font-size:1.1rem; letter-spacing:1px; white-space:nowrap}
+.score{display:flex; flex-direction:column; gap:6px; flex:1 1 100%; max-height:46vh; overflow:auto}
+#dots span.d{background:var(--sun)}
+.drift1{animation:drift 3.2s ease-in-out infinite alternate} .drift2{animation:drift 2.2s ease-in-out infinite alternate}
+@keyframes drift{from{transform:translateX(-30px)}to{transform:translateX(40px)}}
+.fly{width:auto !important; min-width:60px; display:flex; flex-direction:column; align-items:center}
+.fly svg{width:clamp(36px,7vw,58px); height:clamp(36px,7vw,58px)}
+.fly b{font-family:Fredoka, Arial, sans-serif; font-size:clamp(.85rem,2.2vw,1.15rem); background:#fff; color:#243B2F; border-radius:10px; padding:1px 8px; margin-top:-6px}
+.fly.bad b{background:#B9473F; color:#fff}
+.mem{position:absolute; inset:0; padding:3%; display:grid; grid-template-columns:repeat(4,1fr); grid-template-rows:repeat(3,1fr); gap:2.4%; background:#CFE8E0}
+.card{position:relative; border:0; border-radius:16px; cursor:pointer; background:var(--leaf); color:#fff; font-family:Fredoka, Arial, sans-serif; font-weight:600; font-size:clamp(.75rem,2vw,1.15rem); padding:6px; box-shadow:0 4px 0 rgba(0,0,0,.2)}
+.card .back{font-size:clamp(1.6rem,5vw,2.8rem); color:var(--sun)} .card .face{display:none}
+.card.up{background:#fff; color:#243B2F} .card.up.w{background:#FCE3CF}
+.card.up .back{display:none} .card.up .face{display:block}
+.card.got{outline:4px solid var(--green); opacity:.75}
+@media (max-width:760px){
+  #book{grid-template-columns:1fr; gap:14px; padding:6px 12px}
+  #stage{border-radius:20px} #panel{padding:16px 18px} #panel h2{font-size:1.6rem}
+  header{padding:10px 12px 4px} nav{padding:10px 12px 20px; flex-wrap:wrap} #dots{order:-1; flex:1 1 100%; margin-bottom:6px}
+  #next{flex:1}
+}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
+</style>
+</head>
+<body>
+<header>
+  <h1>The Elephant’s Child</h1>
+  <span id="eta" class="eta"></span>
+  <div id="stars" aria-live="polite"><span class="s">★</span> <span id="starN">0</span></div>
+  <button id="mute" class="icon" aria-pressed="false" aria-label="Sound effects on or off" title="Sound">🔊</button>
+</header>
+<main id="book">
+  <div id="stage"></div>
+  <section id="panel" aria-live="polite"></section>
+</main>
+<nav>
+  <button id="back" class="btn">◀ Back</button>
+  <button id="read" class="btn">🗣 Read to me</button>
+  <div id="dots" aria-hidden="true"></div>
+  <button id="next" class="btn">Next page</button>
+</nav>
+<script>
+// Simple cartoon SVG components for the Elephant's Child deck
+const G = { sky: "#CFE8E0", grass: "#9CC17A", grass2: "#7FA85E", river: "#7E9A7A", river2: "#6C8868",
+  ele: "#A3ADB5", eleD: "#86919A", ear: "#C9A3A8", croc: "#5E8C3A", crocD: "#47702A",
+  snakeA: "#2F6FA8", snakeB: "#F2C230", tree: "#C9C25A", treeTrunk: "#B9B04A", sun: "#F6B94A", orange: "#E8833A" };
+
+function elephant(x, y, s, opt = {}) {
+  const trunk = opt.trunk || 0; // 0 = short boot nose, 1 = medium stretch, 2 = full trunk
+  const flip = opt.flip ? -1 : 1;
+  const eye = opt.surprised ? `<circle cx="62" cy="-38" r="7" fill="#fff"/><circle cx="63" cy="-38" r="4" fill="#222"/>`
+                            : `<circle cx="62" cy="-38" r="5" fill="#222"/><circle cx="64" cy="-40" r="1.6" fill="#fff"/>`;
+  let nose;
+  if (trunk === 0) nose = `<ellipse cx="102" cy="-20" rx="22" ry="16" fill="${G.ele}"/>`;
+  else if (trunk === 1) nose = `<path d="M90 -30 Q170 -36 250 -26 L250 -6 Q170 -10 90 -2 Z" fill="${G.ele}"/>`;
+  else nose = `<path d="M88 -32 Q122 -20 120 30 Q118 80 140 96 L128 108 Q96 86 98 30 Q100 -6 82 -6 Z" fill="${G.ele}"/>
+    <path d="M104 40 L116 42 M102 58 L114 58 M104 74 L116 72" stroke="${G.eleD}" stroke-width="3" fill="none"/>`;
+  return `<g transform="translate(${x},${y}) scale(${s * flip},${s})">
+    <rect x="-70" y="30" width="28" height="60" rx="10" fill="${G.eleD}"/>
+    <rect x="20" y="30" width="28" height="60" rx="10" fill="${G.eleD}"/>
+    <ellipse cx="-10" cy="10" rx="90" ry="62" fill="${G.ele}"/>
+    <rect x="-50" y="36" width="28" height="58" rx="10" fill="${G.ele}"/>
+    <rect x="40" y="36" width="28" height="58" rx="10" fill="${G.ele}"/>
+    <path d="M-98 0 Q-118 20 -110 40" stroke="${G.eleD}" stroke-width="6" fill="none" stroke-linecap="round"/>
+    <circle cx="50" cy="-30" r="52" fill="${G.ele}"/>
+    <ellipse cx="18" cy="-26" rx="30" ry="40" fill="${G.ear}" stroke="${G.ele}" stroke-width="8"/>
+    ${nose}${eye}
+    <path d="M70 -6 Q78 0 86 -4" stroke="#555" stroke-width="3" fill="none" stroke-linecap="round"/>
+  </g>`;
+}
+
+function crocodile(x, y, s, opt = {}) {
+  const open = opt.open;
+  const jaw = open
+    ? `<path d="M120 -10 L300 -60 L300 -40 L130 6 Z" fill="${G.croc}"/>
+       <path d="M140 -6 L160 -18 L170 -10 L190 -24 L200 -16 L220 -30 L230 -22 L250 -36 L260 -28 L280 -44" stroke="#fff" stroke-width="5" fill="none"/>`
+    : `<path d="M120 -18 L300 -10 L300 6 L120 10 Z" fill="${G.croc}"/>
+       <path d="M150 6 l6 8 l6 -8 M180 6 l6 8 l6 -8 M210 6 l6 8 l6 -8 M240 6 l6 8 l6 -8" stroke="#fff" stroke-width="3" fill="#fff"/>`;
+  const eyeL = opt.wink ? `<path d="M96 -40 Q106 -32 116 -40" stroke="#222" stroke-width="4" fill="none"/>`
+                        : `<circle cx="106" cy="-38" r="6" fill="#222"/>`;
+  return `<g transform="translate(${x},${y}) scale(${opt.flip ? -s : s},${s})">
+    <path d="M-300 10 Q-200 -8 -120 -6 L-120 18 Q-200 24 -300 10 Z" fill="${G.crocD}"/>
+    <ellipse cx="0" cy="0" rx="140" ry="32" fill="${G.croc}"/>
+    <path d="M-100 -26 l14 -14 l14 14 M-60 -30 l14 -14 l14 14 M-20 -32 l14 -14 l14 14 M20 -30 l14 -14 l14 14" fill="${G.crocD}"/>
+    ${jaw}
+    <circle cx="106" cy="-34" r="14" fill="${G.croc}"/>${eyeL}
+    <rect x="-80" y="22" width="22" height="26" rx="8" fill="${G.crocD}"/>
+    <rect x="50" y="22" width="22" height="26" rx="8" fill="${G.crocD}"/>
+  </g>`;
+}
+
+function snake(x, y, s) {
+  return `<g transform="translate(${x},${y}) scale(${s})">
+    <path d="M-160 60 C-100 0 -60 120 0 60 C60 0 100 120 160 40 C190 0 180 -60 150 -90" stroke="${G.snakeA}" stroke-width="34" fill="none" stroke-linecap="round"/>
+    <path d="M-160 60 C-100 0 -60 120 0 60 C60 0 100 120 160 40 C190 0 180 -60 150 -90" stroke="${G.snakeB}" stroke-width="34" fill="none" stroke-dasharray="26 26" stroke-linecap="butt"/>
+    <ellipse cx="146" cy="-100" rx="34" ry="24" fill="${G.snakeA}"/>
+    <circle cx="156" cy="-108" r="5" fill="#222"/>
+    <path d="M178 -96 l18 -2 m-18 2 l16 8" stroke="#D23A3A" stroke-width="3"/>
+  </g>`;
+}
+
+function bird(x, y, s) {
+  return `<g transform="translate(${x},${y}) scale(${s})">
+    <ellipse cx="0" cy="0" rx="36" ry="28" fill="${G.orange}"/>
+    <path d="M-30 -4 Q-70 -30 -60 10 Z" fill="#C9652A"/>
+    <circle cx="26" cy="-22" r="20" fill="${G.orange}"/>
+    <circle cx="32" cy="-26" r="4" fill="#222"/>
+    <path d="M44 -24 L66 -18 L44 -12 Z" fill="#F2C230"/>
+    <path d="M-6 26 L-10 44 M8 26 L6 44" stroke="#6B4A2A" stroke-width="4"/>
+  </g>`;
+}
+
+function feverTree(x, y, s) {
+  return `<g transform="translate(${x},${y}) scale(${s})">
+    <path d="M-8 0 L-4 -150 L4 -150 L8 0 Z" fill="${G.treeTrunk}"/>
+    <path d="M0 -120 L-50 -170 M0 -130 L50 -180" stroke="${G.treeTrunk}" stroke-width="8"/>
+    <ellipse cx="0" cy="-190" rx="110" ry="30" fill="${G.tree}" opacity="0.9"/>
+    <ellipse cx="-30" cy="-215" rx="60" ry="22" fill="${G.tree}"/>
+  </g>`;
+}
+
+function bush(x, y, s, c) {
+  return `<g transform="translate(${x},${y}) scale(${s})"><circle cx="-30" cy="0" r="34" fill="${c || G.grass2}"/><circle cx="10" cy="-14" r="40" fill="${c || G.grass2}"/><circle cx="46" cy="4" r="30" fill="${c || G.grass2}"/></g>`;
+}
+
+function fruit(x, y) {
+  return `<g transform="translate(${x},${y})">
+    <ellipse cx="0" cy="0" rx="30" ry="24" fill="#6BAA3F"/><path d="M-20 -6 Q0 -16 20 -6" stroke="#4E8A2A" stroke-width="3" fill="none"/>
+    <path d="M30 -10 Q60 -40 80 -10 Q60 -26 34 0 Z" fill="#F2D23A"/>
+    <rect x="-60" y="-50" width="10" height="70" rx="4" fill="#B88A4A" transform="rotate(-20)"/>
+  </g>`;
+}
+
+function frame(inner, bg) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="880" viewBox="0 0 1080 880">
+    <defs><clipPath id="c"><rect width="1080" height="880" rx="60"/></clipPath></defs>
+    <g clip-path="url(#c)"><rect width="1080" height="880" fill="${bg || G.sky}"/>${inner}</g></svg>`;
+}
+const ground = (y, c) => `<path d="M0 ${y} Q270 ${y - 30} 540 ${y} T1080 ${y} V880 H0 Z" fill="${c || G.grass}"/>`;
+const riverBand = (y) => `<path d="M0 ${y} Q270 ${y - 24} 540 ${y} T1080 ${y} V880 H0 Z" fill="${G.river}"/>
+  <path d="M80 ${y + 60} q30 -10 60 0 M400 ${y + 110} q30 -10 60 0 M760 ${y + 70} q30 -10 60 0 M220 ${y + 170} q30 -10 60 0" stroke="${G.river2}" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+const sun = (x, y) => `<circle cx="${x}" cy="${y}" r="60" fill="${G.sun}"/>`;
+const qmark = (x, y, sz, c) => `<text x="${x}" y="${y}" font-family="Arial" font-weight="bold" font-size="${sz}" fill="${c || G.orange}">?</text>`;
+
+
+// ===== scenes =====
+const lvl = 640;
+const SC = {
+  title: () => frame(sun(900, 130) + feverTree(160, lvl, 1) + ground(lvl) + riverBand(760) + elephant(560, 520, 1.6) + qmark(760, 260, 140) + qmark(860, 340, 90, "#2F6FA8")),
+  longago: () => frame(sun(160, 140) + ground(lvl) + bush(880, 650, 1.3) + bush(150, 690, 1) + elephant(560, 520, 1.7)),
+  questions: () => frame(ground(lvl) + elephant(330, 470, 2.0) + elephant(790, 610, 0.9, { flip: true }) + qmark(700, 300, 110) + qmark(840, 220, 80, "#2F6FA8") + qmark(940, 320, 70) + bush(960, 760, 1)),
+  bigq: () => frame(ground(lvl) + elephant(380, 560, 1.4, { surprised: true }) + qmark(620, 420, 300) + `<text x="740" y="200" font-family="Fredoka, Arial" font-weight="700" font-size="90" fill="#1F4D3A">Hush!</text>` + bush(900, 720, 1)),
+  bird: () => frame(ground(lvl) + `<g transform="translate(760,560)"><circle cx="-60" cy="0" r="90" fill="#6E8F4E"/><circle cx="40" cy="-40" r="110" fill="#7FA85E"/><circle cx="120" cy="20" r="80" fill="#6E8F4E"/><path d="M-100 -30 l-20 -14 M-40 -100 l-6 -24 M60 -140 l10 -22 M160 -20 l22 -10 M-120 40 l-24 4" stroke="#4A5E33" stroke-width="5"/></g>` + bird(780, 400, 1.5) + elephant(290, 560, 1.3)),
+  journey: () => frame(sun(900, 150) + feverTree(880, 520, 0.6) + feverTree(1000, 540, 0.5) + ground(lvl) + `<path d="M0 820 Q400 700 1080 660 L1080 700 Q400 760 60 880 Z" fill="#D8C27A"/>` + elephant(380, 560, 1.3) + fruit(640, 740) + fruit(140, 780)),
+  snake: () => frame(feverTree(140, 560, 0.8) + ground(560) + riverBand(740) + `<ellipse cx="740" cy="560" rx="200" ry="110" fill="#8E8A82"/><ellipse cx="700" cy="520" rx="120" ry="50" fill="#A39F96"/>` + snake(740, 420, 1.2) + elephant(300, 560, 1.1)),
+  croc: () => frame(feverTree(160, 480, 0.8) + feverTree(920, 470, 0.7) + ground(480) + riverBand(560) + crocodile(700, 690, 1.5, { wink: true, flip: true }) + elephant(230, 420, 1.0)),
+  caught: () => frame(ground(500) + riverBand(560) + crocodile(880, 560, 1.2, { open: true, flip: true }) + elephant(230, 520, 1.1, { trunk: 1, surprised: true }) + `<text x="430" y="200" font-family="Fredoka, Arial" font-weight="700" font-size="70" fill="#E8833A">Let go!</text>`),
+  trunk: () => frame(sun(900, 140) + ground(lvl) + elephant(470, 500, 1.6, { trunk: 2 }) + `<path d="M420 360 Q480 300 560 330 Q600 360 560 380 Q480 360 420 380 Z" fill="#7A5A3A"/>` + bush(880, 760, 1, "#7FA85E")),
+  home: () => frame(ground(lvl) + elephant(230, 490, 1.0, { trunk: 2 }) + elephant(560, 470, 1.25, { trunk: 2, flip: true }) + elephant(870, 560, 0.9, { trunk: 2 }) + sun(960, 120)),
+  guess: () => frame(ground(640) + elephant(330, 520, 1.5) + qmark(560, 380, 200) + qmark(700, 300, 120, "#2F6FA8") + qmark(820, 420, 160)),
+  croceat: () => frame(ground(480) + riverBand(560) + crocodile(560, 700, 1.6, { open: true }) + qmark(480, 330, 220)),
+  twister: () => frame(feverTree(200, 520, 1) + feverTree(860, 500, 0.9) + ground(520) + riverBand(600) + bird(540, 260, 1.6)),
+  closer: () => frame(ground(480) + riverBand(560) + crocodile(720, 690, 1.4, { wink: true, flip: true }) + elephant(230, 420, 1.0, { surprised: true }) + qmark(440, 260, 160)),
+  end: () => frame(sun(180, 160) + feverTree(900, 600, 0.9) + ground(lvl) + riverBand(780) + elephant(470, 510, 1.6, { trunk: 2 }) + bird(800, 300, 1.2), "#F6DDB8"),
+};
+
+// ===== book (Primary 3 edition) =====
+const PAGES = [
+  { t: "cover" },
+  { t: "story", scene: "longago", title: "Long, long ago", text: "In the High and Far-Off Times, the Elephant had no trunk. He had only a blackish, {bulgy} nose, as big as a boot. He could wriggle it from side to side, but he couldn't pick up a single thing with it.",
+    words: { bulgy: "swollen and sticking out in a round shape", wriggle: "twist and turn with quick movements" } },
+  { t: "quiz", scene: "longago", title: "Word detective", max: 2, text: "\u201CHe had only a blackish, bulgy nose.\u201D {What does \u201Cbulgy\u201D mean?}",
+    opts: ["Swollen and round", "Long and thin", "Sharp and pointy"], ans: 0, explain: "Something bulgy swells out in a round lump, like a boot toe. Use the clue \u201Cas big as a boot\u201D!" },
+  { t: "story", scene: "questions", title: "Full of questions", text: "Then there was one Elephant, a brand-new Elephant, an Elephant's Child, who was full of {'satiable curiosity}. That means he asked ever so many questions. Why are ostrich feathers so long? Why is the giraffe so spotty? And every time, his tall aunts and uncles grumbled, \u201CHush!\u201D",
+    words: { grumbled: "complained in a low, cross voice" } },
+  { t: "game", g: "build", max: 3, title: "Build the question", text: "The Elephant's Child's questions got jumbled up! Tap the words in the right order to build each question. {Watch out for capital letters and the question mark.}" },
+  { t: "story", scene: "bigq", title: "A brand-new question", text: "One fine morning, the Elephant's Child asked a question he had never asked before: {\u201CWhat does the Crocodile have for dinner?\u201D} Everybody said \u201CHUSH!\u201D in a loud and {dreadful} voice. Nobody would tell him.",
+    words: { dreadful: "very bad, or frightening" } },
+  { t: "quiz", scene: "bigq", title: "Think about it", max: 2, text: "{Why do you think nobody would answer his question?}",
+    opts: ["They didn't know the answer", "They were scared, because the Crocodile eats animals like them", "They were too busy eating"], ans: 1,
+    explain: "Good readers think beyond the words. The grown-ups said HUSH in a \u201Cdreadful\u201D voice, a clue that the answer was frightening!" },
+  { t: "story", scene: "bird", title: "The Kolokolo Bird", text: "So he went to the Kolokolo Bird, who sat in the middle of a wait-a-bit thorn-bush. The Bird said, {\u201CGo to the banks of the great grey-green, greasy Limpopo River, all set about with fever-trees, and find out.\u201D}" },
+  { t: "game", g: "adj", max: 3, title: "Adjective hunt", text: "Adjectives are {describing words}. They tell us more about a noun. Tap {all} the adjectives in each sentence, then tap Check." },
+  { t: "game", g: "twister", scene: "twister", max: 2, title: "Tongue-twister race", text: "Say it as fast as you can, without a mistake: {\u201CThe great grey-green, greasy Limpopo River!\u201D} Tap Start, say it, then tap Stop. Can you beat your best time?" },
+  { t: "story", scene: "journey", title: "Off he goes", text: "The Elephant's Child packed a hundred pounds of bananas, a hundred pounds of sugar-cane and {seventeen melons}. He said goodbye to his family and set off. He walked and walked, eating melons all the way, until at last he reached the Limpopo River." },
+  { t: "game", g: "catch", max: 3, title: "Melon catch", text: "Catch {17 melons} in 45 seconds! Bananas give bonus points, but thorns knock off 2 melons. It gets faster as you go. Drag, or use the \u2190 \u2192 keys." },
+  { t: "story", scene: "snake", title: "The Rock-Snake", text: "First he met the Bi-Coloured-Python-Rock-Snake, curled around a rock. {\u201CExcuse me,\u201D} said the Elephant's Child {politely}, {\u201Chave you seen a Crocodile in these parts?\u201D} The Snake only hissed and looked down at the river.",
+    words: { politely: "in a kind, well-mannered way", "Bi-Coloured": "having two colours (bi- means two, like a bicycle's two wheels)" } },
+  { t: "game", g: "spell", max: 3, title: "Spelling scramble", text: "Unscramble the letters to spell words from the story. Read the clue first! {Fewer mistakes = more stars.}" },
+  { t: "game", g: "findcroc", max: 3, title: "Log or Crocodile?", text: "Crocodiles hide by looking like logs. Find the real {Crocodile} in each round. Each round has more logs, and they start to drift!" },
+  { t: "story", scene: "croc", title: "A log that winked", text: "Then the Elephant's Child stepped on what he thought was a log. But it was the Crocodile! The Crocodile winked one eye. {\u201CCome closer, Little One,\u201D} he said softly, {\u201Cand I'll whisper the answer.\u201D}" },
+  { t: "quiz", scene: "closer", title: "Read between the lines", max: 2, text: "The Crocodile {winked} and spoke {softly}. What does this tell us about him?",
+    opts: ["He is friendly and kind", "He is planning a trick", "He has something in his eye"], ans: 1,
+    explain: "Authors give clues instead of saying things directly. A wink and a soft, sweet voice from a hungry Crocodile? That's a sly trick!" },
+  { t: "story", scene: "caught", title: "Snap!", text: "The Elephant's Child put his head down close, and SNAP! The Crocodile caught him by his little nose. {\u201CLet go! You are hurting me!\u201D} cried the Elephant's Child. He pulled, and the Crocodile pulled, and the nose began to stretch." },
+  { t: "game", g: "tug", max: 3, title: "The great pull", text: "The Rock-Snake is helping! Tap {PULL} as fast as you can (or press the space bar) before the Crocodile drags the Elephant's Child into the river." },
+  { t: "game", g: "stones", max: 3, title: "Past-tense stepping stones", text: "Help the Elephant's Child cross the river. Pick the correct {past tense} of each verb to hop to the next stone. Three splashes and you fall in!" },
+  { t: "story", scene: "trunk", title: "A most useful nose", text: "Now his nose was a long, long trunk. He waited three whole days for it to shrink, but it never did. Then he found he could swat a fly, pull up grass, and scoop a cool mud-cap for his hot head. {\u201CThat's very handy!\u201D} said the Snake." },
+  { t: "game", g: "flies", max: 3, title: "Swat the adjectives", text: "Each fly carries a word. Swat {only the adjectives} (describing words)! Swatting a noun or verb costs a point. Get {10 points} in 40 seconds." },
+  { t: "story", scene: "home", title: "Home again", text: "When he got home, his family were {amazed}. He showed them all the clever things his trunk could do. Then, one by one, they hurried off to the Limpopo to get new noses too. And ever since, every elephant has had a trunk just like his.",
+    words: { amazed: "very surprised" } },
+  { t: "game", g: "sequence", max: 3, title: "Story order", text: "Tap the events {in the order they happened}, from first to last." },
+  { t: "game", g: "memory", max: 3, title: "Word match", text: "Flip two cards at a time. Match each {word} to its {meaning}. Finish in as few moves as you can!" },
+  { t: "game", g: "boss", max: 6, title: "The Crocodile Challenge", text: "Six tricky questions, 15 seconds each. Every wrong answer lets the Crocodile creep closer. {Can you beat him?}" },
+  { t: "end" },
+];
+// 20-minute edition: keep the story plus 8 quick games
+const CUT = ["Think about it", "Tongue-twister race", "Spelling scramble", "Log or Crocodile?", "Story order", "Word match"];
+for (let k = PAGES.length - 1; k >= 0; k--) if (CUT.includes(PAGES[k].title)) PAGES.splice(k, 1);
+const MAXSTARS = PAGES.reduce((s, p) => s + (p.max || 0), 0);
+
+const BOSS = [
+  { q: "What does \u201C'satiable curtiosity\u201D mean?", o: ["Never stopping wanting to know things", "Always being hungry", "Being very polite"], a: 0 },
+  { q: "Why did the Crocodile tell him to come closer?", o: ["To whisper a secret", "To catch him", "To be his friend"], a: 1 },
+  { q: "Which word best describes the Crocodile?", o: ["Shy", "Sly", "Sleepy"], a: 1 },
+  { q: "\u201CThey pulled and pulled and PULLED.\u201D Why is the last word in capital letters?", o: ["It is a name", "It's a mistake", "To show they pulled hardest of all"], a: 2 },
+  { q: "What is the past tense of \u201Ccatch\u201D?", o: ["Catched", "Caught", "Catching"], a: 1 },
+  { q: "Which sentence is correct?", o: ["The elephants was curious.", "The elephant were curious.", "The elephants were curious."], a: 2 },
+  { q: "Which word means the same as \u201Camazed\u201D?", o: ["Astonished", "Bored", "Annoyed"], a: 0 },
+  { q: "The Rock-Snake helped pull him free. This shows the Snake was\u2026", o: ["Selfish", "Helpful", "Lazy"], a: 1 },
+  { q: "Why did the other elephants go to the Limpopo River?", o: ["To get trunks of their own", "To fight the Crocodile", "To find more melons"], a: 0 },
+  { q: "What lesson can we learn from this story?", o: ["Never ask questions", "Curiosity can lead to great things, but be careful whom you trust", "Always pack melons"], a: 1 },
+];
+
+// ===== state =====
+const st = { i: 0, stars: 0, done: {}, name: "", best: null };
+try { Object.assign(st, JSON.parse(localStorage.getItem("ec-p3-20") || "{}")); } catch (e) {}
+const save = () => { try { localStorage.setItem("ec-p3-20", JSON.stringify(st)); } catch (e) {} };
+
+const $ = (s) => document.querySelector(s);
+const stage = $("#stage"), panel = $("#panel"), starEl = $("#stars"), dots = $("#dots");
+let cleanup = null;
+const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+function fmt(t, words) {
+  let h = t.replace(/\{([^}]*)\}/g, "<mark>$1</mark>");
+  if (words) for (const w in words) h = h.replace(new RegExp("(^|[^\\w-])(" + w.replace(/[-]/g, "\\-") + ")(?![\\w-])"), `$1<button class="gl" data-m="${esc(words[w])}">$2</button>`);
+  return h;
+}
+function plain(t) { return t.replace(/[{}]/g, ""); }
+
+let ac = null;
+function beep(f, d = 0.12, type = "sine", v = 0.15) {
+  if ($("#mute").getAttribute("aria-pressed") === "true") return;
+  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(v, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d);
+    o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + d); } catch (e) {}
+}
+const yay = () => { beep(523); setTimeout(() => beep(659), 110); setTimeout(() => beep(784, 0.25), 220); };
+const boo = () => beep(180, 0.25, "square", 0.08);
+
+function award(n) {
+  const key = "p" + st.i, prev = st.done[key] || 0;
+  if (n <= prev) return;
+  st.done[key] = n; st.stars += n - prev; save(); renderStars();
+  starEl.classList.remove("pop"); void starEl.offsetWidth; starEl.classList.add("pop");
+}
+const starsTxt = (n, m) => `<span class="earn">${"\u2605".repeat(n)}<i>${"\u2605".repeat(Math.max(0, m - n))}</i></span>`;
+function renderStars() { $("#starN").textContent = st.stars; }
+
+function speak(text) {
+  if (!("speechSynthesis" in window)) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(plain(text)); u.rate = 0.95;
+  const vs = speechSynthesis.getVoices(); const v = vs.find((v) => /en-GB/i.test(v.lang)) || vs.find((v) => /^en/i.test(v.lang));
+  if (v) u.voice = v; speechSynthesis.speak(u);
+}
+
+function setPanel(title, html) {
+  panel.innerHTML = `<h2>${title}</h2><div class="txt">${html}</div><div class="act"></div><p class="gloss" hidden></p>`;
+  panel.querySelectorAll(".gl").forEach((b) => (b.onclick = () => { const g = panel.querySelector(".gloss"); g.hidden = false; g.innerHTML = `<b>${esc(b.textContent)}</b>: ${esc(b.dataset.m)}`; beep(660, 0.08); }));
+  return panel.querySelector(".act");
+}
+function btn(label, cls, fn) { const b = document.createElement("button"); b.className = "btn " + (cls || ""); b.innerHTML = label; b.onclick = fn; return b; }
+function scene(key) { stage.innerHTML = `<div class="art">${SC[key]()}</div>`; }
+function result(a, n, max, msg, again) {
+  award(n); n >= max ? yay() : beep(523, 0.2);
+  a.insertAdjacentHTML("beforeend", `<div class="res">${starsTxt(n, max)}<p>${msg}</p></div>`);
+  if (again && n < max) a.append(btn("Play again for more stars", "ghost", again));
+}
+
+function go(n) {
+  if (cleanup) { cleanup(); cleanup = null; }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  st.i = Math.max(0, Math.min(PAGES.length - 1, n)); save(); render();
+  $("#book").scrollIntoView({ block: "nearest" });
+}
+const EST = (p) => p.t === "story" ? 0.75 : p.t === "quiz" ? 0.5 : p.g === "boss" ? 2 : p.max ? 1.5 : 0;
+function renderDots() {
+  const left = Math.max(1, Math.round(PAGES.slice(st.i).reduce((s, p) => s + EST(p), 0)));
+  const eta = $("#eta"); if (eta) eta.textContent = st.i === PAGES.length - 1 ? "" : `\u23F1 about ${left} min left`;
+  dots.innerHTML = PAGES.map((p, k) => `<span class="${k === st.i ? "on" : ""} ${p.max ? "g" : ""} ${st.done["p" + k] ? "d" : ""}"></span>`).join("");
+}
+
+function render() {
+  const p = PAGES[st.i]; renderDots(); renderStars();
+  $("#back").disabled = st.i === 0;
+  $("#next").hidden = p.t === "end";
+  $("#read").hidden = !p.text;
+  $("#next").textContent = p.t === "cover" ? "Start the story" : p.max ? "Next" : "Next page";
+  if (p.t === "cover") {
+    scene("title");
+    const a = setPanel("The Elephant's Child", `A Just So Story by Rudyard Kipling, with ${PAGES.filter((q) => q.max).length} games and challenges along the way. It takes about 20 minutes.<br><br>Earn up to <b>${MAXSTARS} stars</b> and find out your explorer rank at the end. Tap any <span class="gl demo">dotted word</span> in the story to see what it means.`);
+    const inp = document.createElement("input"); inp.placeholder = "Your name"; inp.value = st.name || ""; inp.setAttribute("aria-label", "Your name");
+    inp.oninput = () => { st.name = inp.value; save(); };
+    a.append(inp);
+    if (st.stars) a.append(btn("Start over", "ghost", () => { Object.assign(st, { i: 0, stars: 0, done: {}, best: null }); save(); render(); }));
+  } else if (p.t === "story") {
+    scene(p.scene); setPanel(p.title, fmt(p.text, p.words));
+  } else if (p.t === "quiz") {
+    scene(p.scene); const a = setPanel(p.title, fmt(p.text)); let tries = 0;
+    p.opts.forEach((o, k) => a.append(btn(o, "c" + k, (e) => {
+      if (k === p.ans) { a.querySelectorAll("button").forEach((b) => (b.disabled = true)); e.target.disabled = false; e.target.classList.add("right");
+        result(a, tries ? 1 : 2, 2, (tries ? "Got it! " : "Spot on! ") + p.explain); }
+      else { boo(); tries++; e.target.disabled = true; e.target.classList.add("wrong"); }
+    })));
+  } else if (p.t === "game") {
+    setPanel(p.title, fmt(p.text)); GAMES[p.g](p);
+  } else if (p.t === "end") {
+    scene("end");
+    const pct = st.stars / MAXSTARS;
+    const rank = pct >= 0.8 ? ["Limpopo Legend", "You're as clever as an elephant's trunk!"] : pct >= 0.5 ? ["Rock-Snake Ranger", "Brilliant work. Play a few games again to become a Limpopo Legend!"] : ["Kolokolo Cadet", "Good start! Go back and replay games to earn more stars."];
+    const a = setPanel("The End", `Well done${st.name ? ", " + esc(st.name) : ""}! You earned <b>${st.stars} of ${MAXSTARS} stars</b>.<br>${rank[1]}`);
+    stage.insertAdjacentHTML("beforeend", `<div class="cert"><svg class="medal" viewBox="-12 -12 24 24" aria-hidden="true"><path d="M0 -10 L2.9 -3.1 L9.5 -3.1 L4.2 1.2 L6.2 8 L0 4 L-6.2 8 L-4.2 1.2 L-9.5 -3.1 L-2.9 -3.1 Z" fill="#F2C230" stroke="#C79A12" stroke-width="1"/></svg><div><small>Explorer rank</small><strong>${rank[0]}</strong><span>${esc(st.name || "Curious Explorer")}</span></div></div>`);
+    const list = document.createElement("div"); list.className = "score";
+    PAGES.forEach((q, k) => { if (q.max) { const r = btn(`<span>${q.title}</span>${starsTxt(st.done["p" + k] || 0, q.max)}`, "row", () => go(k)); list.append(r); } });
+    a.append(list, btn("Read it again", "", () => go(0)));
+    if (pct >= 0.5) yay();
+  }
+}
+
+// ===== games =====
+const GAMES = {};
+
+GAMES.build = () => {
+  scene("questions");
+  const rounds = [
+    ["Why", "is", "the", "giraffe", "so", "spotty", "?"],
+    ["What", "does", "the", "Crocodile", "have", "for", "dinner", "?"],
+    ["How", "did", "the", "Elephant", "get", "his", "long", "trunk", "?"],
+  ];
+  let r = 0, mistakes = 0; const a = panel.querySelector(".act");
+  const box = document.createElement("div"); box.className = "builder"; a.append(box);
+  function deal() {
+    const words = rounds[r]; let picked = [];
+    box.innerHTML = `<p class="small">Question ${r + 1} of 3</p><div class="line" aria-label="Your question"></div><div class="pool"></div>`;
+    const line = box.querySelector(".line"), pool = box.querySelector(".pool");
+    const pos = shuffle(words.map((w, k) => k));
+    pos.forEach((k) => { const t = btn(words[k], "tile", () => { if (t.parentNode === pool) { line.append(t); picked.push(k); } else { pool.append(t); picked = picked.filter((x) => x !== k); } beep(500, 0.05); check(); }); t.dataset.k = k; pool.append(t); });
+    function check() {
+      if (picked.length < words.length) return;
+      const sentence = [...line.children].map((t) => t.textContent).join(" ");
+      if (sentence === words.join(" ")) { beep(784, 0.15); line.classList.add("ok"); setTimeout(() => { r++; r < rounds.length ? deal() : finish(); }, 700); }
+      else { mistakes++; boo(); line.classList.add("shake"); setTimeout(() => line.classList.remove("shake"), 400); }
+    }
+  }
+  function finish() { box.innerHTML = ""; result(a, mistakes === 0 ? 3 : mistakes <= 2 ? 2 : 1, 3, mistakes ? `All three built, with ${mistakes} wrong tr${mistakes === 1 ? "y" : "ies"}.` : "Perfect! Every question starts with a capital letter and ends with a question mark.", () => go(st.i)); }
+  deal();
+};
+
+GAMES.adj = () => {
+  scene("bird");
+  const rounds = [
+    { s: "Go to the banks of the great grey-green , greasy Limpopo River .", adj: ["great", "grey-green", "greasy"] },
+    { s: "He had only a blackish , bulgy nose , as big as a boot .", adj: ["blackish", "bulgy", "big"] },
+  ];
+  let r = 0, mistakes = 0; const a = panel.querySelector(".act");
+  const box = document.createElement("div"); box.className = "builder"; a.append(box);
+  function deal() {
+    const R = rounds[r];
+    box.innerHTML = `<p class="small">Sentence ${r + 1} of ${rounds.length}: find ${R.adj.length} adjectives</p><div class="sent"></div>`;
+    const sent = box.querySelector(".sent");
+    R.s.split(" ").forEach((w) => { if (/^[,.]$/.test(w)) { sent.insertAdjacentText("beforeend", w); return; }
+      const t = btn(w, "word", () => { t.classList.toggle("sel"); beep(520, 0.04); }); t.setAttribute("aria-pressed", "false"); sent.append(" ", t); });
+    const c = btn("Check", "", () => {
+      const sel = [...sent.querySelectorAll(".sel")].map((b) => b.textContent);
+      const ok = sel.length === R.adj.length && sel.every((w) => R.adj.includes(w));
+      if (ok) { beep(784, 0.15); sent.querySelectorAll(".sel").forEach((b) => b.classList.add("right")); setTimeout(() => { r++; r < rounds.length ? deal() : finish(); }, 800); }
+      else { mistakes++; boo(); const wrong = sel.filter((w) => !R.adj.includes(w)).length, miss = R.adj.filter((w) => !sel.includes(w)).length;
+        fb.textContent = wrong ? `${wrong} of your words ${wrong > 1 ? "aren't adjectives" : "isn't an adjective"}. Does it describe a noun?` : `You've missed ${miss}. Look for words describing the noun.`; }
+    });
+    const fb = document.createElement("p"); fb.className = "fb no"; box.append(c, fb);
+  }
+  function finish() { box.innerHTML = ""; result(a, mistakes === 0 ? 3 : mistakes <= 2 ? 2 : 1, 3, "Adjectives like \u201Cgreasy\u201D and \u201Cbulgy\u201D help us picture the story. Kipling loved them!", () => go(st.i)); }
+  deal();
+};
+
+GAMES.twister = () => {
+  scene("twister");
+  const a = panel.querySelector(".act"); let t0 = 0, raf, tries = 0;
+  const clock = document.createElement("div"); clock.className = "clock"; clock.textContent = "0.0s"; stage.append(clock);
+  const best = document.createElement("p"); best.className = "fb"; best.textContent = st.best ? `Best: ${st.best.toFixed(1)}s` : "Target: under 4 seconds for 2 stars!";
+  const tick = () => { clock.textContent = ((performance.now() - t0) / 1000).toFixed(1) + "s"; raf = requestAnimationFrame(tick); };
+  const b = btn("Start", "big", () => {
+    if (!t0) { t0 = performance.now(); b.textContent = "Stop"; tick(); beep(440); }
+    else { cancelAnimationFrame(raf); const s = (performance.now() - t0) / 1000; t0 = 0; tries++; b.textContent = "Try again";
+      const nb = !st.best || s < st.best; if (nb) st.best = s; save();
+      best.textContent = (nb ? "New best! " : "") + `${s.toFixed(1)}s. Best: ${st.best.toFixed(1)}s`; nb ? yay() : beep(330);
+      award(s < 4 ? 2 : 1); }
+  });
+  a.append(b, best); cleanup = () => cancelAnimationFrame(raf);
+};
+
+GAMES.spell = () => {
+  scene("snake");
+  const words = shuffle([["PYTHON", "A very long snake that squeezes"], ["CROCODILE", "It pretends to be a log"], ["LIMPOPO", "The grey-green, greasy river"], ["CURIOUS", "Wanting to know things"], ["ELEPHANT", "Big, grey, and now has a trunk"]]).slice(0, 4);
+  let w = 0, mistakes = 0, hints = 0; const a = panel.querySelector(".act");
+  const box = document.createElement("div"); box.className = "builder"; a.append(box);
+  function deal() {
+    const [word, clue] = words[w]; let n = 0;
+    box.innerHTML = `<p class="small">Word ${w + 1} of ${words.length}</p><p class="clue">${clue}</p><div class="slots">${[...word].map(() => "<span></span>").join("")}</div><div class="pool"></div>`;
+    const slots = box.querySelectorAll(".slots span"), pool = box.querySelector(".pool");
+    const place = (t) => { slots[n].textContent = word[n]; slots[n].classList.add("f"); t.remove(); n++; beep(500 + n * 40, 0.06);
+      if (n === word.length) { beep(784, 0.15); setTimeout(() => { w++; w < words.length ? deal() : finish(); }, 700); } };
+    shuffle([...word]).forEach((L) => { const t = btn(L, "tile", () => { if (L === word[n]) place(t); else { mistakes++; boo(); t.classList.add("shake"); setTimeout(() => t.classList.remove("shake"), 400); } }); pool.append(t); });
+    const h = btn("Hint", "ghost", () => { const t = [...pool.children].find((x) => x.textContent === word[n]); if (t) { hints++; place(t); } }); box.append(h);
+  }
+  function finish() { box.innerHTML = ""; const e = mistakes + hints * 2; result(a, e <= 1 ? 3 : e <= 5 ? 2 : 1, 3, `${mistakes} wrong letter${mistakes === 1 ? "" : "s"}, ${hints} hint${hints === 1 ? "" : "s"}.`, () => go(st.i)); }
+  deal();
+};
+
+GAMES.stones = () => {
+  const verbs = shuffle([["ask", "asked", ["askt", "asken"]], ["go", "went", ["goed", "gone"]], ["catch", "caught", ["catched", "cought"]], ["say", "said", ["sayed", "sed"]],
+    ["find", "found", ["finded", "fond"]], ["take", "took", ["taked", "tooked"]], ["eat", "ate", ["eated", "eaten"]], ["swim", "swam", ["swimmed", "swum"]], ["run", "ran", ["runned", "runs"]], ["see", "saw", ["seed", "seen"]]]).slice(0, 5);
+  let pos = 0, splash = 0; const a = panel.querySelector(".act");
+  const N = verbs.length + 1;
+  function draw(fell) {
+    let stones = ""; for (let k = 0; k <= N; k++) { const x = 70 + k * (940 / N), y = 600 + (k % 2 ? 40 : -10); stones += `<ellipse cx="${x}" cy="${y + 60}" rx="56" ry="22" fill="${k === 0 || k === N ? "#9CC17A" : "#8E8A82"}"/>`;
+      if (k > 0 && k < N && k > pos) stones += `<text x="${x}" y="${y + 70}" text-anchor="middle" font-family="Fredoka, Arial" font-weight="700" font-size="32" fill="#fff">${verbs[k - 1][0]}</text>`; }
+    const ex = 70 + pos * (940 / N), ey = 600 + (pos % 2 ? 40 : -10);
+    stage.innerHTML = `<div class="art">${frame(feverTree(120, 360, 0.6) + feverTree(980, 360, 0.6) + ground(360) + riverBand(420) + stones +
+      crocodile(820, 830, 0.9, { flip: true }) + (fell ? `<circle cx="${ex}" cy="${ey + 50}" r="70" fill="#CFE8E0" opacity=".7"/>` : "") + elephant(ex, ey - 50 + (fell ? 60 : 0), 0.7, { surprised: fell }) +
+      `<text x="1040" y="90" text-anchor="end" font-family="Fredoka, Arial" font-weight="700" font-size="44" fill="#2F6FA8">${"\uD83D\uDCA6".repeat(splash)}</text>`)}</div>`;
+  }
+  function ask() {
+    draw(); a.innerHTML = "";
+    if (pos >= verbs.length) { result(a, splash === 0 ? 3 : splash === 1 ? 2 : 1, 3, "Across the Limpopo! Remember: many verbs just add -ed, but tricky ones like go \u2192 went change completely.", () => go(st.i)); return; }
+    const [v, right, wrong] = verbs[pos];
+    a.insertAdjacentHTML("beforeend", `<p class="clue">Today I <b>${v}</b>. Yesterday I \u2026</p>`);
+    shuffle([right, ...wrong]).forEach((o, k) => a.append(btn(o, "c" + k, () => {
+      if (o === right) { pos++; beep(600 + pos * 40, 0.1); ask(); }
+      else { splash++; boo(); draw(true);
+        if (splash >= 3) { a.innerHTML = `<p class="fb no">SPLASH! Into the river. The answer was \u201C${right}\u201D.</p>`; a.append(btn("Try again", "big", () => GAMES.stones())); }
+        else { a.insertAdjacentHTML("beforeend", `<p class="fb no">Splash! Not \u201C${o}\u201D. Try again.</p>`); } }
+    })));
+  }
+  ask();
+};
+
+GAMES.sequence = () => {
+  scene("home");
+  const ev = ["He asked what the Crocodile eats for dinner.", "The Kolokolo Bird told him where to go.", "He packed bananas, sugar-cane and melons.", "He met the Rock-Snake on a rock.", "The Crocodile caught him by the nose.", "He went home and showed off his trunk."];
+  let n = 0, mistakes = 0; const a = panel.querySelector(".act");
+  const done = document.createElement("ol"); done.className = "seq";
+  const pool = document.createElement("div"); pool.className = "pool col";
+  shuffle(ev.map((e, k) => k)).forEach((k) => { const b = btn(ev[k], "row", () => {
+    if (k === n) { const li = document.createElement("li"); li.textContent = ev[k]; done.append(li); b.remove(); n++; beep(500 + n * 60, 0.08);
+      if (n === ev.length) result(a, mistakes === 0 ? 3 : mistakes <= 2 ? 2 : 1, 3, mistakes ? `Done, with ${mistakes} mix-up${mistakes === 1 ? "" : "s"}.` : "Perfect order! You really know this story.", () => go(st.i)); }
+    else { mistakes++; boo(); b.classList.add("shake"); setTimeout(() => b.classList.remove("shake"), 400); } }); pool.append(b); });
+  a.append(done, pool);
+};
+
+GAMES.memory = () => {
+  const pairs = [["bulgy", "swollen and round"], ["politely", "with good manners"], ["dreadful", "very bad or scary"], ["amazed", "very surprised"], ["curious", "wanting to know"], ["sly", "sneaky and tricky"]];
+  const cards = shuffle(pairs.flatMap(([w, m], k) => [{ k, txt: w, word: true }, { k, txt: m }]));
+  let open = [], moves = 0, matched = 0, lock = false; const a = panel.querySelector(".act");
+  const m = document.createElement("p"); m.className = "fb"; m.textContent = "Moves: 0"; a.append(m);
+  stage.innerHTML = `<div class="mem"></div>`; const grid = stage.querySelector(".mem");
+  cards.forEach((c) => { const b = document.createElement("button"); b.className = "card" + (c.word ? " w" : ""); b.innerHTML = `<span class="back">?</span><span class="face">${c.txt}</span>`; b.setAttribute("aria-label", "Hidden card");
+    b.onclick = () => { if (lock || b.classList.contains("up")) return; b.classList.add("up"); b.setAttribute("aria-label", c.txt); open.push([b, c]); beep(440, 0.05);
+      if (open.length === 2) { moves++; m.textContent = `Moves: ${moves}`; const [[b1, c1], [b2, c2]] = open; open = [];
+        if (c1.k === c2.k && c1.word !== c2.word) { b1.classList.add("got"); b2.classList.add("got"); matched++; beep(784, 0.12);
+          if (matched === pairs.length) result(a, moves <= 10 ? 3 : moves <= 15 ? 2 : 1, 3, `All matched in ${moves} moves! (10 or fewer for 3 stars.)`, () => go(st.i)); }
+        else { lock = true; setTimeout(() => { b1.classList.remove("up"); b2.classList.remove("up"); b1.setAttribute("aria-label", "Hidden card"); b2.setAttribute("aria-label", "Hidden card"); lock = false; }, 900); } } };
+    grid.append(b); });
+};
+
+GAMES.boss = () => {
+  const qs = BOSS.filter((q, i) => [0, 1, 2, 4, 6, 9].includes(i)); let k = 0, score = 0, wrong = 0, timer, left;
+  const a = panel.querySelector(".act");
+  function draw() {
+    const cx = 960 - wrong * 75;
+    stage.innerHTML = `<div class="art">${frame(ground(500) + riverBand(560) + elephant(170, 470, 1.0) + crocodile(cx, 680, 1.1, { open: wrong > 3, flip: true }))}</div><div class="hud"><span>Score ${score}/${qs.length}</span><span id="bt">${left}s</span></div>`;
+  }
+  function next() {
+    clearInterval(timer);
+    if (k >= qs.length) { a.innerHTML = ""; const st3 = score; result(a, st3, qs.length, score >= 6 ? "You beat the Crocodile! A true Limpopo Legend." : score >= 4 ? "The Crocodile slinks away. Well fought!" : "The Crocodile got a bit too close. Try again!", () => go(st.i)); draw(); return; }
+    const q = qs[k]; left = 15; draw();
+    panel.querySelector("h2").textContent = `Question ${k + 1} of ${qs.length}`;
+    panel.querySelector(".txt").innerHTML = q.q; a.innerHTML = "";
+    q.o.forEach((o, j) => a.append(btn(o, "c" + j, (e) => answer(j, e.target))));
+    timer = setInterval(() => { left--; const t = $("#bt"); if (t) t.textContent = left + "s"; if (left <= 5) beep(900, 0.04, "square", 0.05); if (left <= 0) answer(-1); }, 1000);
+  }
+  function answer(j, el) {
+    clearInterval(timer); const q = qs[k]; const bs = a.querySelectorAll("button"); bs.forEach((b) => (b.disabled = true));
+    bs[q.a].classList.add("right");
+    if (j === q.a) { score++; beep(784, 0.15); } else { wrong++; boo(); if (el) el.classList.add("wrong"); }
+    draw(); k++; setTimeout(next, 1300);
+  }
+  const s = btn("I'm ready!", "big", next); a.append(s); left = 15; draw();
+  cleanup = () => clearInterval(timer);
+};
+GAMES.catch = () => {
+  stage.innerHTML = `<canvas id="cv" width="1080" height="880" aria-label="Melon catching game"></canvas><div class="hud"><span id="mel">\uD83C\uDF48 0 / 17</span><span id="ban"></span><span id="ctm"></span></div>`;
+  const cv = $("#cv"), ctx = cv.getContext("2d");
+  const eimg = new Image(); eimg.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="300" height="260" viewBox="-130 -100 300 260">${elephant(0, 0, 1)}</svg>`);
+  let ex = 540, keys = {}, items = [], got = 0, ban = 0, t = 0, running = false, raf, last = 0, flash = 0;
+  const a = panel.querySelector(".act");
+  let tl = 45;
+  const start = btn("Play", "big", () => { got = 0; ban = 0; items = []; tl = 45; running = true; start.hidden = true; last = performance.now(); loop(last); });
+  a.append(start);
+  const W = 1080, H = 880, EY = 760;
+  function spawn() {
+    const r = Math.random(); const type = r < 0.6 ? "melon" : r < 0.8 ? "banana" : "thorn";
+    items.push({ type, x: 60 + Math.random() * 960, y: -40, v: 260 + Math.random() * 140 + got * 14 });
+  }
+  function drawItem(it) {
+    ctx.save(); ctx.translate(it.x, it.y);
+    if (it.type === "melon") { ctx.fillStyle = "#6BAA3F"; ctx.beginPath(); ctx.ellipse(0, 0, 36, 29, 0, 0, 7); ctx.fill(); ctx.strokeStyle = "#4E8A2A"; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(-24, -8); ctx.quadraticCurveTo(0, -20, 24, -8); ctx.stroke(); }
+    else if (it.type === "banana") { ctx.fillStyle = "#F2D23A"; ctx.beginPath(); ctx.moveTo(-34, -10); ctx.quadraticCurveTo(0, 40, 34, -10); ctx.quadraticCurveTo(0, 18, -34, -10); ctx.fill(); }
+    else { ctx.fillStyle = "#6B4A2A"; ctx.beginPath(); for (let k = 0; k < 16; k++) { const ang = k * Math.PI / 8, rr = k % 2 ? 14 : 34; ctx.lineTo(Math.cos(ang) * rr, Math.sin(ang) * rr); } ctx.fill(); }
+    ctx.restore();
+  }
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now; t += dt;
+    if (keys.ArrowLeft) ex -= 600 * dt; if (keys.ArrowRight) ex += 600 * dt; ex = Math.max(80, Math.min(1000, ex));
+    tl -= dt; if (Math.random() < dt * (1.6 + got * 0.08)) spawn();
+    ctx.fillStyle = "#CFE8E0"; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#F6B94A"; ctx.beginPath(); ctx.arc(920, 120, 60, 0, 7); ctx.fill();
+    ctx.fillStyle = "#9CC17A"; ctx.fillRect(0, 820, W, 60);
+    if (flash > 0) { ctx.fillStyle = `rgba(210,58,58,${flash})`; ctx.fillRect(0, 0, W, H); flash -= dt * 2; }
+    for (const it of items) { it.y += it.v * dt; drawItem(it);
+      if (!it.gone && it.y > EY - 90 && it.y < EY + 10 && Math.abs(it.x - ex) < 110) { it.gone = true;
+        if (it.type === "melon") { got++; beep(600 + got * 20); } else if (it.type === "banana") { ban++; beep(880); } else { got = Math.max(0, got - 2); boo(); flash = 0.5; } } }
+    items = items.filter((i) => !i.gone && i.y < H + 50);
+    ctx.drawImage(eimg, ex - 150, EY - 160, 300, 260);
+    $("#mel").textContent = `\uD83C\uDF48 ${got} / 17`; $("#ban").textContent = ban ? `\uD83C\uDF4C ${ban}` : ""; $("#ctm").textContent = Math.ceil(tl) + "s";
+    if (tl <= 0) { running = false; boo(); a.innerHTML = `<p class="fb no">Time's up! You caught ${got} melons.</p>`; a.append(btn("Try again", "big", () => GAMES.catch())); return; }
+    if (got >= 17) { running = false; a.innerHTML = "";
+      result(a, ban >= 3 ? 3 : 2, 3, `All 17 melons packed with ${Math.ceil(tl)}s left${ban ? `, plus ${ban} banana${ban === 1 ? "" : "s"}` : ""}! ${ban >= 3 ? "" : "Catch 3 bananas too for the third star."}`, () => GAMES.catch()); return; }
+    if (running) raf = requestAnimationFrame(loop);
+  }
+  const kd = (e) => { if (e.key.startsWith("Arrow")) { keys[e.key] = true; e.preventDefault(); } }, ku = (e) => (keys[e.key] = false);
+  const pm = (e) => { const r = cv.getBoundingClientRect(); ex = ((e.touches ? e.touches[0].clientX : e.clientX) - r.left) / r.width * W; };
+  addEventListener("keydown", kd); addEventListener("keyup", ku); cv.addEventListener("pointermove", pm); cv.addEventListener("touchmove", (e) => { pm(e); e.preventDefault(); }, { passive: false });
+  eimg.onload = () => { ctx.fillStyle = "#CFE8E0"; ctx.fillRect(0, 0, W, H); ctx.fillStyle = "#9CC17A"; ctx.fillRect(0, 820, W, 60); ctx.drawImage(eimg, ex - 150, EY - 160, 300, 260); };
+  cleanup = () => { running = false; cancelAnimationFrame(raf); removeEventListener("keydown", kd); removeEventListener("keyup", ku); };
+};
+
+GAMES.findcroc = () => {
+  let round = 0, found = 0, misses = 0; const a = panel.querySelector(".act");
+  const status = document.createElement("p"); status.className = "fb"; a.append(status);
+  function deal() {
+    const n = 4 + round; const ci = Math.floor(Math.random() * n);
+    let logs = "";
+    for (let k = 0; k < n; k++) {
+      const x = 200 + (k % 3) * 340 + (k % 2) * 20, y = 590 + Math.floor(k / 3) * 170 + (k % 3 === 1 ? 30 : 0);
+      logs += `<g class="drift${round}" style="animation-delay:-${k * 0.7}s"><g class="log" data-c="${k === ci ? 1 : 0}" transform="translate(${x},${y}) scale(1.15)" tabindex="0" role="button" aria-label="Log ${k + 1}">
+        <g class="wood"><rect x="-120" y="-28" width="240" height="56" rx="28" fill="#7A5A3A"/><ellipse cx="110" cy="0" rx="18" ry="28" fill="#A07A4E"/><ellipse cx="110" cy="0" rx="8" ry="14" fill="#7A5A3A"/>
+        <path d="M-80 -10 q20 -8 40 0 M0 8 q20 -8 40 0" stroke="#5E4428" stroke-width="5" fill="none"/></g>
+        <g class="reveal">${crocodile(0, 0, 0.42, { wink: true })}</g></g></g>`;
+    }
+    stage.innerHTML = `<div class="art">${frame(feverTree(140, 420, 0.7) + feverTree(960, 400, 0.6) + ground(420) + riverBand(470) + logs)}</div>`;
+    status.textContent = `Round ${round + 1} of 3`;
+    stage.querySelectorAll(".log").forEach((g) => {
+      const hit = () => {
+        if (g.classList.contains("open") || g.classList.contains("nope")) return;
+        if (g.dataset.c === "1") { g.classList.add("open"); yay(); found++; status.textContent = "You found the Crocodile! He winked at you!";
+          setTimeout(() => { round++; if (round < 3) deal(); else { status.textContent = ""; result(a, misses <= 2 ? 3 : misses <= 5 ? 2 : 1, 3, `Found him 3 times with ${misses} wrong log${misses === 1 ? "" : "s"}.`, () => go(st.i)); } }, 1300); }
+        else { misses++; g.classList.add("nope"); beep(220, 0.15, "triangle"); status.textContent = "Just a log! Try another."; }
+      };
+      g.addEventListener("click", hit); g.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); hit(); } });
+    });
+  }
+  deal();
+};
+
+GAMES.tug = () => {
+  let v = 50, raf, last, running = false, tt = 0;
+  const a = panel.querySelector(".act");
+  stage.innerHTML = `<div class="art" id="tugart"></div><div class="meter" aria-hidden="true"><div id="bar"></div></div>`;
+  const draw = () => {
+    const len = 0.4 + v / 100 * 1.2; // trunk stretch
+    const ex = 360 - v * 1.6;
+    $("#tugart").innerHTML = frame(ground(500) + riverBand(560) + crocodile(930, 560, 1.1, { open: true, flip: true }) +
+      `<rect x="${ex + 90}" y="484" width="${930 - 330 - ex - 90}" height="22" rx="10" fill="#A3ADB5"/>` +
+      snake(ex - 180, 440, 0.7) + elephant(ex, 520, 1.1) + `<text x="540" y="160" text-anchor="middle" font-family="Fredoka, Arial" font-weight="700" font-size="${70 + v / 3}" fill="#2F6FA8">PULL!</text>`);
+    $("#bar").style.width = v + "%";
+  };
+  const pull = () => { if (!running) return; v = Math.min(100, v + 5.5); beep(200 + v * 4, 0.06, "triangle", 0.1); };
+  const pb = btn("PULL!", "big pull", pull);
+  const start = btn("Start pulling", "big", () => { v = 50; tt = 0; running = true; start.hidden = true; pb.hidden = false; pb.focus(); last = performance.now(); loop(last); });
+  pb.hidden = true; a.append(start, pb);
+  function loop(now) { const dt = Math.min(0.05, (now - last) / 1000); last = now; v -= 14 * dt; tt += dt; draw();
+    if (v >= 100) { running = false; pb.hidden = true;
+      result(a, tt < 8 ? 3 : tt < 14 ? 2 : 1, 3, `SPLASH! Free in ${tt.toFixed(1)} seconds! (Under 8s for 3 stars.)`, () => GAMES.tug()); return; }
+    if (v <= 0) { running = false; pb.hidden = true; boo(); v = 50; draw(); start.hidden = false; start.textContent = "Try again";
+      return; }
+    raf = requestAnimationFrame(loop); }
+  const kd = (e) => { if (e.code === "Space" && running) { e.preventDefault(); if (!e.repeat) pull(); } };
+  addEventListener("keydown", kd); draw();
+  cleanup = () => { running = false; cancelAnimationFrame(raf); removeEventListener("keydown", kd); };
+};
+
+
+GAMES.flies = () => {
+  stage.innerHTML = `<div class="art">${frame(sun(900, 140) + ground(640) + elephant(470, 520, 1.6, { trunk: 2 }) + bush(880, 760, 1, "#7FA85E"))}</div><div class="hud"><span id="fc">0 / 10</span><span id="tm"></span></div><div id="flyzone"></div>`;
+  const ADJ = ["curious", "greasy", "sly", "hungry", "tall", "clever", "bulgy", "cool", "dreadful", "spotty", "polite", "huge", "grey", "loud", "useful"];
+  const NOT = ["river", "pulled", "snake", "melon", "asked", "trunk", "crocodile", "swam", "nose", "winked", "bird", "jumped", "mud", "ran"];
+  const zone = $("#flyzone"), a = panel.querySelector(".act"); let n = 0, oops = 0, timer, spawnT, left = 40, running = false;
+  const start = btn("Start", "big", () => { n = 0; oops = 0; left = 40; running = true; start.hidden = true; zone.innerHTML = ""; $("#fc").textContent = "0 / 10";
+    timer = setInterval(() => { left--; $("#tm").textContent = left + "s"; if (left <= 0) end(false); }, 1000); $("#tm").textContent = left + "s"; fly(); fly(); fly(); spawnT = setInterval(fly, 900); });
+  a.append(start);
+  function fly() {
+    if (!running || zone.children.length > 5) return;
+    const isAdj = Math.random() < 0.5; const word = (isAdj ? ADJ : NOT)[Math.floor(Math.random() * (isAdj ? ADJ : NOT).length)];
+    const f = document.createElement("button"); f.className = "fly"; f.setAttribute("aria-label", "Fly with the word " + word);
+    f.style.left = 4 + Math.random() * 78 + "%"; f.style.top = 10 + Math.random() * 62 + "%"; f.style.animationDuration = 0.7 + Math.random() * 0.6 + "s";
+    f.innerHTML = `<svg viewBox="-20 -20 40 40"><ellipse cx="-8" cy="-9" rx="9" ry="6" fill="#fff" opacity=".85"/><ellipse cx="8" cy="-9" rx="9" ry="6" fill="#fff" opacity=".85"/><circle r="9" fill="#333"/><circle cx="4" cy="-2" r="2" fill="#E23"/></svg><b>${word}</b>`;
+    f.onclick = () => { if (f.classList.contains("hit")) return; f.classList.add("hit");
+      if (isAdj) { n++; beep(700, 0.08, "square", 0.08); } else { n = Math.max(0, n - 1); oops++; boo(); f.classList.add("bad"); }
+      $("#fc").textContent = `${n} / 10`; setTimeout(() => f.remove(), 300); if (n >= 10) end(true); };
+    zone.append(f); setTimeout(() => f.isConnected && !f.classList.contains("hit") && f.remove(), 3200);
+  }
+  function end(win) { running = false; clearInterval(timer); clearInterval(spawnT); zone.innerHTML = "";
+    if (win) result(a, oops === 0 ? 3 : oops <= 2 ? 2 : 1, 3, `10 adjectives swatted with ${left}s left${oops ? ` (${oops} wrong swat${oops === 1 ? "" : "s"})` : ""}!`, () => GAMES.flies());
+    else { boo(); a.insertAdjacentHTML("beforeend", `<p class="fb no">Time's up! You reached ${n}.</p>`); start.hidden = false; start.textContent = "Try again"; } }
+  cleanup = () => { running = false; clearInterval(timer); clearInterval(spawnT); };
+};
+
+// ===== wiring =====
+$("#back").onclick = () => go(st.i - 1);
+$("#next").onclick = () => go(st.i + 1);
+$("#read").onclick = () => { const p = PAGES[st.i]; const t = p.t === "game" || p.t === "quiz" ? panel.querySelector(".txt").textContent : p.text; if (t) speak(t); };
+$("#mute").onclick = (e) => { const b = e.currentTarget; b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true"); };
+addEventListener("keydown", (e) => { if (e.target.tagName === "INPUT") return; const g = PAGES[st.i].t === "game";
+  if (e.key === "PageDown" || (!g && e.key === "ArrowRight")) go(st.i + 1); if (e.key === "PageUp" || (!g && e.key === "ArrowLeft")) go(st.i - 1); });
+if (!("speechSynthesis" in window)) $("#read").remove();
+render();
+
+</script>
+</body>
+</html>
