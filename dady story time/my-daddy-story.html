@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daddy Story Time: My Daddy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EEF4FB; --surface:#FFFFFF; --ink:#22304F; --ink2:#5A6785; --brand:#2B3A67; --accent:#E8833A; --pink:#C2347A; --line:#D5E0EF; --chip:#E6EEF9; --mark:#FCE3CF; --sun:#F2C230; --green:#5E8C3A; --blue:#2F6FA8;
+  color-scheme:light; box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#141B2E; --surface:#1F2840; --ink:#EEF2FA; --ink2:#B6C0D8; --brand:#BFD0F5; --line:#33405F; --chip:#2A3552; --mark:#5A3A22; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#141B2E; --surface:#1F2840; --ink:#EEF2FA; --ink2:#B6C0D8; --brand:#BFD0F5; --line:#33405F; --chip:#2A3552; --mark:#5A3A22; color-scheme:dark; }
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+body{background:var(--bg); color:var(--ink); font-family:Andika,"Trebuchet MS",system-ui,sans-serif; font-size:1.1rem; line-height:1.5}
+header{max-width:1120px; margin:0 auto; padding:14px 20px 4px; display:flex; align-items:center; gap:12px}
+.hgroup{flex:1} .series{font-family:Fredoka,Arial,sans-serif; font-weight:600; color:var(--ink2); font-size:.9rem}
+h1{font-family:Fredoka,Arial,sans-serif; font-weight:700; color:var(--brand); font-size:clamp(1.3rem,3.4vw,1.8rem); margin:0; line-height:1.1}
+#stars{font-family:Fredoka,Arial,sans-serif; font-weight:700; font-size:1.2rem; background:var(--surface); border:2px solid var(--line); border-radius:999px; padding:4px 14px}
+#stars .s{color:var(--sun); -webkit-text-stroke:1px #C79A12}
+#stars.pop{animation:pop .5s} @keyframes pop{40%{transform:scale(1.3)}}
+.icon{background:var(--surface); border:2px solid var(--line); border-radius:50%; width:44px; height:44px; font-size:1.1rem; cursor:pointer; color:var(--ink)}
+.icon[aria-pressed="true"]{opacity:.45}
+#book{max-width:1120px; margin:0 auto; padding:8px 20px; display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:22px; align-items:start}
+#stage{position:relative; aspect-ratio:1080/880; border-radius:28px; overflow:hidden; background:#DCEBFA}
+#stage.tall{aspect-ratio:600/760; background:linear-gradient(#FFE3EF,#FFD1E5); max-height:82vh; margin:0 auto; width:100%}
+.art,.art svg,#dsvg{display:block; width:100%; height:100%}
+#dsvg{cursor:pointer}
+#panel{background:var(--surface); border:2px solid var(--line); border-radius:24px; padding:20px 22px}
+#panel h2{font-family:Fredoka,Arial,sans-serif; font-weight:700; font-size:1.9rem; line-height:1.15; margin:0 0 10px; color:var(--brand)}
+#panel h3{font-family:Fredoka,Arial,sans-serif; font-weight:600; font-size:1.15rem; margin:20px 0 4px; color:var(--brand)}
+.txt{max-width:48ch; margin:0}
+mark{background:var(--mark); color:inherit; border-radius:6px; padding:0 4px; font-weight:700}
+.act{display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; align-items:center}
+.btn{font-family:Fredoka,Arial,sans-serif; font-weight:600; font-size:1.08rem; border:0; border-radius:16px; padding:12px 18px; cursor:pointer; color:#fff; background:var(--green); box-shadow:0 4px 0 rgba(0,0,0,.18)}
+.btn:active{transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.18)}
+.btn.c0{background:var(--green)} .btn.c1{background:var(--blue)} .btn.c2{background:var(--accent)}
+.act > .btn.c0,.act > .btn.c1,.act > .btn.c2{flex:1 1 100%; text-align:left}
+.btn.big{background:var(--accent); font-size:1.2rem} .btn.alt{background:#7A5AC8} .btn.pink{background:var(--pink)}
+.btn.ghost{background:transparent; color:var(--ink); border:2px solid var(--line); box-shadow:none}
+.btn:disabled{opacity:.45; cursor:default}
+.btn.wrong{background:#B9473F !important; opacity:.6}
+.btn.right{outline:4px solid var(--sun); opacity:1 !important}
+button:focus-visible,input:focus-visible,label:focus-within{outline:4px solid var(--sun); outline-offset:3px}
+.pill{background:var(--accent); color:#fff; font-family:Fredoka,Arial,sans-serif; font-weight:600; border-radius:999px; padding:8px 16px}
+.count{font-family:Fredoka,Arial,sans-serif; font-weight:700; color:var(--accent)}
+.res{flex:1 1 100%; background:var(--mark); border-radius:16px; padding:12px 16px; animation:rise .35s}
+@keyframes rise{from{opacity:0; transform:translateY(8px)}}
+.res p{margin:4px 0 0}
+.earn{font-size:1.8rem; color:var(--sun); -webkit-text-stroke:1px #C79A12; letter-spacing:3px}
+.earn i{font-style:normal; color:transparent; -webkit-text-stroke:1px var(--ink2); opacity:.5}
+.row .earn{font-size:1.05rem; letter-spacing:1px; white-space:nowrap}
+.btn.row{background:var(--bg); color:var(--ink); border:2px solid var(--line); box-shadow:none; font-family:inherit; font-weight:400; font-size:1rem; padding:9px 14px; display:flex; justify-content:space-between; gap:10px; align-items:center; width:100%}
+.score{display:flex; flex-direction:column; gap:6px; flex:1 1 100%}
+.traits{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; flex:1 1 100%}
+.btn.trait{background:var(--chip); color:var(--ink); box-shadow:none; border:3px solid transparent; display:flex; flex-direction:column; align-items:center; gap:2px}
+.btn.trait .e{font-size:1.8rem}
+.btn.trait.right{border-color:var(--accent); outline:none; background:var(--surface)}
+.small{font-size:.9rem; color:var(--ink2); margin:0}
+nav{max-width:1120px; margin:0 auto; padding:12px 20px 24px; display:flex; align-items:center; gap:12px}
+nav .btn{background:var(--brand); color:var(--surface)}
+#next{margin-left:auto; background:var(--accent); color:#fff; font-size:1.2rem}
+#dots{display:flex; gap:5px; flex-wrap:wrap; justify-content:center; flex:1}
+#dots span{width:9px; height:9px; border-radius:50%; background:var(--line)}
+#dots span.g{border-radius:2px; transform:rotate(45deg); background:#F2C23070} #dots span.d{background:var(--sun)}
+#dots span.on{background:var(--accent); transform:scale(1.4)}
+/* dress-up */
+#bubble{position:absolute; top:4%; right:4%; max-width:58%; background:#fff; color:#2B2340; font-family:Fredoka,Arial,sans-serif; font-weight:600; font-size:clamp(.95rem,2.2vw,1.2rem); padding:10px 16px; border-radius:20px 20px 4px 20px; box-shadow:0 4px 0 #0001; opacity:0; transform:scale(.8); transition:.2s; pointer-events:none}
+#bubble.on{opacity:1; transform:none}
+.meter{position:absolute; left:5%; right:5%; bottom:4%; background:#ffffffcc; border-radius:999px; padding:6px 12px; display:flex; align-items:center; gap:10px; font-family:Fredoka,Arial,sans-serif; font-weight:600; font-size:.95rem; color:#2B2340}
+.bar{flex:1; height:14px; background:#F4D3E2; border-radius:99px; overflow:hidden}
+#fill{height:100%; width:0; background:linear-gradient(90deg,#F2C230,#F07AAE,#C2347A); transition:width .3s}
+#flash{position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none}
+#flash.go{animation:flash .6s} @keyframes flash{0%{opacity:.95}100%{opacity:0}}
+.tabs{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 10px}
+.tab{font-family:Fredoka,Arial,sans-serif; font-weight:600; font-size:.98rem; border:2px solid var(--line); background:var(--bg); color:var(--ink); border-radius:999px; padding:7px 13px; cursor:pointer}
+.tab[aria-selected="true"]{background:var(--pink); border-color:var(--pink); color:#fff}
+.hint{color:var(--ink2); margin:0 0 10px; font-size:.95rem}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:10px}
+.item{border:3px solid transparent; background:var(--chip); color:var(--ink); border-radius:18px; padding:10px 6px; cursor:pointer; font-family:Fredoka,Arial,sans-serif; font-weight:600; font-size:.95rem; display:flex; flex-direction:column; align-items:center; gap:4px}
+.item .e{font-size:1.9rem; line-height:1}
+.item[aria-pressed="true"]{border-color:var(--pink); background:var(--surface)}
+.actions{display:flex; flex-wrap:wrap; gap:10px; margin-top:16px}
+.actions #photo{background:var(--pink)}
+#card{margin-top:16px; background:var(--mark); border-radius:18px; padding:14px 16px}
+#card[hidden]{display:none}
+#card h2{font-size:1.35rem !important; margin:0 0 4px !important}
+#card .stars{font-size:1.5rem; color:var(--sun); letter-spacing:2px; -webkit-text-stroke:1px #C79A12}
+#card .stars i{font-style:normal; color:transparent; -webkit-text-stroke:1px var(--ink2); opacity:.5}
+#card mark{background:var(--surface); color:var(--pink)}
+#card p{margin:6px 0}
+.facebox{grid-column:1/-1; display:flex; flex-direction:column; gap:12px}
+.facebox .btn.up{align-self:flex-start; display:inline-block; background:var(--pink); font-size:1.12rem; padding:13px 20px}
+.sl{display:flex; align-items:center; gap:12px; font-family:Fredoka,Arial,sans-serif; font-weight:600}
+.sl input{flex:1; accent-color:var(--pink); height:28px}
+.facebox .btn.ghost{align-self:flex-start}
+.who{display:flex; flex-wrap:wrap; gap:8px}
+.whob{font-family:Fredoka,Arial,sans-serif; font-weight:600; font-size:1rem; border:2px solid var(--line); background:var(--bg); color:var(--ink); border-radius:999px; padding:7px 14px; cursor:pointer}
+.whob[aria-selected="true"]{background:var(--brand); color:var(--surface); border-color:var(--brand)}
+.cert{position:absolute; left:6%; right:6%; bottom:4%; background:#fff; color:#22304F; border-radius:20px; padding:10px 16px; display:flex; gap:12px; align-items:center; border:4px solid var(--sun); animation:rise .6s}
+.cert .medal{width:clamp(40px,8vw,60px); flex-shrink:0}
+.cert small{display:block; color:#5A6785} .cert strong{display:block; font-family:Fredoka,Arial,sans-serif; font-size:clamp(1.2rem,3vw,1.7rem); color:#C2347A}
+@media (max-width:760px){
+  #book{grid-template-columns:1fr; gap:14px; padding:6px 12px} #panel{padding:16px} #panel h2{font-size:1.55rem}
+  header{padding:10px 12px 2px} nav{padding:10px 12px 20px; flex-wrap:wrap} #dots{order:-1; flex:1 1 100%; margin-bottom:6px} #next{flex:1}
+  #stage.tall{max-height:none; aspect-ratio:600/700} .grid{grid-template-columns:repeat(3,1fr)}
+}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
+</style>
+</head>
+<body>
+<header>
+  <div class="hgroup"><div class="series">Daddy Story Time</div><h1>My Daddy</h1></div>
+  <div id="stars" aria-live="polite"><span class="s">★</span> <span id="starN">0</span></div>
+  <button id="mute" class="icon" aria-pressed="false" aria-label="Sound on or off">🔊</button>
+</header>
+<main id="book">
+  <div id="stage"></div>
+  <section id="panel" aria-live="polite"></section>
+</main>
+<nav>
+  <button id="back" class="btn">◀ Back</button>
+  <button id="read" class="btn">🗣 Read to me</button>
+  <div id="dots" aria-hidden="true"></div>
+  <button id="next" class="btn">Next</button>
+</nav>
+<script>
+// Cartoon people + props for the "My Daddy" deck
+
+function person(x, y, s, o = {}) {
+  const rx = (o.kid ? 72 : 118) * (o.belly || 1), shirt = o.shirt || "#2F6FA8", pants = o.pants || "#2B3A67";
+  const by = o.kid ? -215 : -255, bry = (o.kid ? 95 : 128) * (o.belly ? 1.08 : 1), hy = o.kid ? -365 : -445, hr = o.kid ? 62 : 68;
+  const sh = o.kid ? -280 : -330; // shoulder y
+  const arm = (x1, y1, x2, y2, x3, y3) => `<path d="M${x1} ${y1} L${x2} ${y2}${x3 !== undefined ? ` L${x3} ${y3}` : ""}" stroke="${shirt}" stroke-width="${o.kid ? 26 : 36}" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="${x3 ?? x2}" cy="${y3 ?? y2}" r="${o.kid ? 15 : 20}" fill="${SKIN}"/>`;
+  const ax = rx * 0.8;
+  let arms = "";
+  const pose = o.arms || "down";
+  const L = pose === "up" || pose === "flex" ? (pose === "flex" ? arm(-ax, sh, -ax - 80, sh - 10, -ax - 80, sh - 120) : arm(-ax, sh, -ax - 50, sh - 170))
+    : pose === "hug" ? arm(-ax, sh, -ax + 20, sh + 110) : arm(-ax, sh, -ax - 40, sh + 140);
+  const R = pose === "up" || pose === "flex" ? (pose === "flex" ? arm(ax, sh, ax + 80, sh - 10, ax + 80, sh - 120) : arm(ax, sh, ax + 50, sh - 170))
+    : pose === "wave" ? arm(ax, sh, ax + 70, sh - 140) : pose === "give" ? arm(ax, sh, ax + 110, sh + 40) : pose === "hug" ? arm(ax, sh, ax - 20, sh + 110) : arm(ax, sh, ax + 40, sh + 140);
+  arms = L + R;
+  const muscles = pose === "flex" ? `<circle cx="${-ax - 70}" cy="${sh - 40}" r="26" fill="${shirt}"/><circle cx="${ax + 70}" cy="${sh - 40}" r="26" fill="${shirt}"/>` : "";
+  const face = o.tongue
+    ? `<path d="M-26 ${hy + 18} Q0 ${hy + 44} 26 ${hy + 18} Z" fill="#7A2E2E"/><ellipse cx="0" cy="${hy + 36}" rx="11" ry="12" fill="#E86A7A"/>`
+    : o.laugh ? `<path d="M-28 ${hy + 14} Q0 ${hy + 54} 28 ${hy + 14} Z" fill="#7A2E2E"/>`
+    : `<path d="M-24 ${hy + 18} Q0 ${hy + 38} 24 ${hy + 18}" stroke="#7A2E2E" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+  const eyes = o.wink
+    ? `<circle cx="-24" cy="${hy - 8}" r="7" fill="#222"/><path d="M14 ${hy - 8} Q24 ${hy - 16} 34 ${hy - 8}" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/>`
+    : o.silly ? `<circle cx="-24" cy="${hy - 8}" r="11" fill="#fff" stroke="#222" stroke-width="3"/><circle cx="-20" cy="${hy - 4}" r="5" fill="#222"/><circle cx="24" cy="${hy - 8}" r="11" fill="#fff" stroke="#222" stroke-width="3"/><circle cx="20" cy="${hy - 12}" r="5" fill="#222"/>`
+    : `<circle cx="-24" cy="${hy - 8}" r="7" fill="#222"/><circle cx="24" cy="${hy - 8}" r="7" fill="#222"/><circle cx="-21" cy="${hy - 11}" r="2" fill="#fff"/><circle cx="27" cy="${hy - 11}" r="2" fill="#fff"/>`;
+  const hair = o.kid
+    ? `<path d="M${-hr} ${hy - 6} Q${-hr} ${hy - hr - 18} 0 ${hy - hr - 10} Q${hr} ${hy - hr - 18} ${hr} ${hy - 6} Q${hr * 0.5} ${hy - hr * 0.55} ${-hr * 0.2} ${hy - hr * 0.6} Q${-hr * 0.7} ${hy - hr * 0.4} ${-hr} ${hy - 6} Z" fill="${HAIR}"/>`
+    : `<path d="M${-hr - 2} ${hy - 4} Q${-hr - 4} ${hy - hr - 20} 0 ${hy - hr - 14} Q${hr + 6} ${hy - hr - 16} ${hr + 2} ${hy - 10} Q${hr * 0.4} ${hy - hr * 0.7} ${-hr * 0.4} ${hy - hr * 0.62} Q${-hr * 0.8} ${hy - hr * 0.5} ${-hr - 2} ${hy - 4} Z" fill="${HAIR}"/>`;
+  const glasses = o.shades ? `<rect x="-48" y="${hy - 22}" width="40" height="26" rx="8" fill="#222"/><rect x="8" y="${hy - 22}" width="40" height="26" rx="8" fill="#222"/><path d="M-8 ${hy - 12} L8 ${hy - 12}" stroke="#222" stroke-width="5"/>` : "";
+  const bow = o.bow ? `<path d="M0 ${by - bry + 14} l-34 -18 l0 36 Z M0 ${by - bry + 14} l34 -18 l0 36 Z" fill="#D23A3A"/><circle cx="0" cy="${by - bry + 14}" r="9" fill="#B02A2A"/>` : "";
+  const buttons = o.kid ? "" : `<circle cx="0" cy="${by - 40}" r="6" fill="#ffffff90"/><circle cx="0" cy="${by + 10}" r="6" fill="#ffffff90"/><circle cx="0" cy="${by + 60}" r="6" fill="#ffffff90"/>`;
+  return `<g transform="translate(${x},${y}) scale(${s})">
+    <rect x="${o.kid ? -36 : -52}" y="${o.kid ? -130 : -160}" width="${o.kid ? 28 : 38}" height="${o.kid ? 124 : 154}" rx="12" fill="${pants}"/>
+    <rect x="${o.kid ? 8 : 14}" y="${o.kid ? -130 : -160}" width="${o.kid ? 28 : 38}" height="${o.kid ? 124 : 154}" rx="12" fill="${pants}"/>
+    <ellipse cx="${o.kid ? -24 : -34}" cy="0" rx="${o.kid ? 24 : 32}" ry="12" fill="#333"/><ellipse cx="${o.kid ? 24 : 34}" cy="0" rx="${o.kid ? 24 : 32}" ry="12" fill="#333"/>
+    ${o.hug ? "" : arms}
+    <ellipse cx="0" cy="${by}" rx="${rx}" ry="${bry}" fill="${shirt}"/>${buttons}${muscles}${o.girl ? `<path d="M-58 ${by + bry - 34} L-86 -104 Q0 -90 86 -104 L58 ${by + bry - 34} Z" fill="${o.skirt || "#C2347A"}"/>` : ""}
+    ${o.hug ? arms : ""}
+    ${o.girl ? `<circle cx="${-hr - 16}" cy="${hy - 6}" r="28" fill="${HAIR}"/><circle cx="${hr + 16}" cy="${hy - 6}" r="28" fill="${HAIR}"/><circle cx="${-hr - 4}" cy="${hy - 30}" r="10" fill="#F07AAE"/><circle cx="${hr + 4}" cy="${hy - 30}" r="10" fill="#F07AAE"/>` : ""}
+    ${FACES[o.who || "daddy"].src ? photoHead(hy, hr, o.drag, o.who || "daddy", s) : `<circle cx="${-hr}" cy="${hy}" r="13" fill="${SKIND}"/><circle cx="${hr}" cy="${hy}" r="13" fill="${SKIND}"/>
+    <circle cx="0" cy="${hy}" r="${hr}" fill="${SKIN}"/>${hair}${eyes}${glasses}
+    <circle cx="-36" cy="${hy + 12}" r="9" fill="#E88A8A" opacity=".5"/><circle cx="36" cy="${hy + 12}" r="9" fill="#E88A8A" opacity=".5"/>
+    ${face}`}${bow}
+  </g>`;
+}
+
+const heart = (x, y, s, c) => `<path transform="translate(${x},${y}) scale(${s})" d="M0 12 C-30 -10 -24 -36 0 -22 C24 -36 30 -10 0 12 Z" fill="${c || "#E8566A"}"/>`;
+const sparkle = (x, y, s, c) => `<path transform="translate(${x},${y}) scale(${s})" d="M0 -30 L7 -7 L30 0 L7 7 L0 30 L-7 7 L-30 0 L-7 -7 Z" fill="${c || "#F2C230"}"/>`;
+const dumbbell = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s})"><rect x="-120" y="-8" width="240" height="16" rx="6" fill="#7A7F87"/><rect x="-150" y="-40" width="34" height="80" rx="8" fill="#333"/><rect x="116" y="-40" width="34" height="80" rx="8" fill="#333"/></g>`;
+const bags = (x, y) => [0, 1, 2, 3, 4].map((k) => `<g transform="translate(${x + k * 70},${y - (k % 2) * 10})"><path d="M-28 -60 h56 l6 60 h-68 Z" fill="${["#E8833A", "#5E8C3A", "#2F6FA8", "#F2C230", "#C9652A"][k]}"/><path d="M-14 -60 q14 -26 28 0" stroke="#555" stroke-width="5" fill="none"/></g>`).join("");
+const clock = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s})"><circle cx="-46" cy="-62" r="20" fill="#D23A3A"/><circle cx="46" cy="-62" r="20" fill="#D23A3A"/><circle r="70" fill="#fff" stroke="#D23A3A" stroke-width="14"/><path d="M0 0 L0 -46 M0 0 L0 46" stroke="#222" stroke-width="8" stroke-linecap="round"/><circle r="8" fill="#222"/><text y="-80" x="80" font-family="Arial" font-weight="bold" font-size="40" fill="#D23A3A">RING!</text></g>`;
+const checklist = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s})"><rect x="-90" y="-120" width="180" height="240" rx="16" fill="#fff" stroke="#2B3A67" stroke-width="8"/>${[0, 1, 2].map((k) => `<path d="M-60 ${-60 + k * 60} l14 14 l26 -28" stroke="#5E8C3A" stroke-width="10" fill="none" stroke-linecap="round"/><rect x="-6" y="${-62 + k * 60}" width="70" height="12" rx="6" fill="#B8C2D9"/>`).join("")}</g>`;
+const broccoli = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s})"><rect x="-10" y="0" width="20" height="60" rx="8" fill="#8DBE5A"/><circle cx="-22" cy="-6" r="24" fill="#3E7E2E"/><circle cx="22" cy="-6" r="24" fill="#3E7E2E"/><circle cx="0" cy="-26" r="26" fill="#4E8E3A"/></g>`;
+const house = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s})"><rect x="-120" y="-160" width="240" height="160" fill="#F7E0B8"/><path d="M-150 -150 L0 -270 L150 -150 Z" fill="#C9652A"/><rect x="-30" y="-90" width="60" height="90" fill="#8A5A3A"/><rect x="-100" y="-130" width="50" height="44" fill="#BFE3F2"/><rect x="50" y="-130" width="50" height="44" fill="#BFE3F2"/></g>`;
+const bike = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s})" fill="none" stroke="#D23A3A" stroke-width="8"><circle cx="-70" cy="0" r="44" stroke="#333"/><circle cx="70" cy="0" r="44" stroke="#333"/><path d="M-70 0 L-10 -60 L50 -60 L70 0 M-10 -60 L0 0 L-70 0 M50 -60 L44 -84"/></g>`;
+const plaster = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s}) rotate(-20)"><rect x="-40" y="-14" width="80" height="28" rx="12" fill="#F2C9A0"/><rect x="-14" y="-14" width="28" height="28" fill="#E8B98F"/></g>`;
+const jelly = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s})"><ellipse cx="0" cy="10" rx="80" ry="16" fill="#fff"/><path d="M-60 0 Q-64 -80 -40 -90 L40 -90 Q64 -80 60 0 Z" fill="#E8566A" opacity=".85"/><path d="M-30 -80 q10 30 0 60" stroke="#fff" stroke-width="8" fill="none" opacity=".6"/></g>`;
+
+function frame(inner, bg) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="880" viewBox="0 0 1080 880"><defs><clipPath id="c"><rect width="1080" height="880" rx="60"/></clipPath></defs><g clip-path="url(#c)"><rect width="1080" height="880" fill="${bg || "#DCEBFA"}"/>${inner}</g></svg>`;
+}
+const floor = (y, c) => `<rect x="0" y="${y}" width="1080" height="${880 - y}" fill="${c || "#F4D9A8"}"/><path d="M0 ${y} H1080" stroke="#E0BE86" stroke-width="6"/>`;
+const grass = (y) => `<path d="M0 ${y} Q270 ${y - 30} 540 ${y} T1080 ${y} V880 H0 Z" fill="#9CC17A"/>`;
+const sun = (x, y) => `<circle cx="${x}" cy="${y}" r="60" fill="#F6B94A"/>`;
+const txt = (x, y, t, sz, c, anchor) => `<text x="${x}" y="${y}" text-anchor="${anchor || "middle"}" font-family="Arial" font-weight="bold" font-size="${sz}" fill="${c}">${t}</text>`;
+
+
+let PHN = 0;
+function photoHead(hy, hr, drag, who, sc) { const F = FACES[who], k = ++PHN, rx = hr + 12, ry = hr + 20, sz = ry * 2 * F.z;
+  return `<defs><clipPath id="ph${k}"><ellipse cx="0" cy="${hy}" rx="${rx}" ry="${ry}"/></clipPath></defs><ellipse cx="0" cy="${hy}" rx="${rx}" ry="${ry}" fill="${SKIN}"/><image ${drag ? `data-who="${who}" data-s="${sc}" style="cursor:grab"` : ""} href="${F.src}" x="${-sz / 2 + F.x}" y="${hy - sz / 2 + F.y}" width="${sz}" height="${sz}" clip-path="url(#ph${k})" preserveAspectRatio="xMidYMid slice"/><ellipse cx="0" cy="${hy}" rx="${rx}" ry="${ry}" fill="none" stroke="#fff" stroke-width="4"/>`; }
+
+// ===== wardrobe =====
+// layer: hairBack | shoes | dress | neck | face | hair | hat | hand
+const CATS = [
+  { id: "face", label: "📷 Face", custom: true },
+  { id: "hair", label: "💇 Hair", multi: false, hint: "Pick a hairstyle for Daddy." },
+  { id: "hat", label: "👑 Hats", multi: false, hint: "Something special for Daddy's head." },
+  { id: "dress", label: "👗 Dresses", multi: false, hint: "Choose Daddy's dress." },
+  { id: "shoes", label: "👠 Shoes", multi: false, hint: "Can Daddy walk in these?" },
+  { id: "bling", label: "💎 Bling", multi: true, hint: "Add as many as you like!" },
+  { id: "makeup", label: "💄 Make-up", multi: true, hint: "Add as many as you like!" },
+];
+const ITEMS = [
+  { id: "pigtails", cat: "hair", e: "🎀", name: "Pigtails", adj: "bouncy pigtails" },
+  { id: "wig", cat: "hair", e: "👱‍♀️", name: "Long wig", adj: "a long golden wig" },
+  { id: "bun", cat: "hair", e: "🍩", name: "Ballet bun", adj: "a neat ballet bun" },
+  { id: "curls", cat: "hair", e: "💗", name: "Pink curls", adj: "fluffy pink curls" },
+  { id: "tiara", cat: "hat", e: "👑", name: "Tiara", adj: "a sparkly tiara" },
+  { id: "flowers", cat: "hat", e: "🌸", name: "Flower crown", adj: "a pretty flower crown" },
+  { id: "bigbow", cat: "hat", e: "🎀", name: "Giant bow", adj: "a giant pink bow" },
+  { id: "sunhat", cat: "hat", e: "👒", name: "Sun hat", adj: "a floppy sun hat" },
+  { id: "gown", cat: "dress", e: "👸", name: "Princess gown", adj: "a puffy princess gown" },
+  { id: "polka", cat: "dress", e: "🔴", name: "Polka dots", adj: "a spotty red dress" },
+  { id: "tutu", cat: "dress", e: "🩰", name: "Ballet tutu", adj: "a frilly ballet tutu" },
+  { id: "sundress", cat: "dress", e: "🌻", name: "Sundress", adj: "a sunny yellow sundress" },
+  { id: "heels", cat: "shoes", e: "👠", name: "High heels", adj: "wobbly red high heels" },
+  { id: "slippers", cat: "shoes", e: "🩰", name: "Ballet slippers", adj: "pink ballet slippers" },
+  { id: "boots", cat: "shoes", e: "👢", name: "Glitter boots", adj: "glittery purple boots" },
+  { id: "pearls", cat: "bling", e: "📿", name: "Pearls", adj: "a shiny pearl necklace" },
+  { id: "earrings", cat: "bling", e: "💎", name: "Earrings", adj: "dangly earrings" },
+  { id: "bag", cat: "bling", e: "👜", name: "Handbag", adj: "a fancy handbag" },
+  { id: "wand", cat: "bling", e: "🪄", name: "Magic wand", adj: "a magic wand" },
+  { id: "lipstick", cat: "makeup", e: "💄", name: "Lipstick", adj: "bright red lipstick" },
+  { id: "blush", cat: "makeup", e: "😊", name: "Rosy cheeks", adj: "rosy pink cheeks" },
+  { id: "lashes", cat: "makeup", e: "👁️", name: "Eyelashes", adj: "long fluttery eyelashes" },
+  { id: "hearts", cat: "makeup", e: "💖", name: "Heart glasses", adj: "heart-shaped glasses" },
+];
+const LINES = {
+  pigtails: "Boing, boing! Do I bounce now?", wig: "Ooh, I feel like a pop star!", bun: "I'm ready for ballet class!", curls: "Pink is SO my colour.",
+  tiara: "Call me Princess Daddy!", flowers: "I smell like a garden!", bigbow: "Is this bow bigger than my head?", sunhat: "Fancy a picnic, darling?",
+  gown: "It's a bit tight around the tummy\u2026", polka: "Spots! I love spots!", tutu: "Watch me twirl! Whoops!", sundress: "So breezy! So sunny!",
+  heels: "Help! How do people walk in these?!", slippers: "Tippy-toe, tippy-toe\u2026", boots: "These boots were made for dancing!",
+  pearls: "Very fancy, very shiny.", earrings: "Jingle jangle!", bag: "Where do I put my wallet?", wand: "Bibbidi-bobbidi-DADDY!",
+  lipstick: "Mwah! Kisses for everyone!", blush: "Now I'm blushing for real.", lashes: "Flutter, flutter\u2026", hearts: "I see love everywhere!",
+};
+const TAP = ["Hee hee, that tickles!", "Do I look beautiful?", "Don't tell my office!", "Quick, take a photo!", "I'm the prettiest Daddy in Singapore!", "Twirl time!"];
+
+
+// ===== drawing =====
+const SKIN = "#E8B98F", SKIND = "#D19C70", HAIR = "#3A2A20";
+const RX = 148, BY = -255, BRY = 138, HY = -445, HR = 68, SH = -330, AX = RX * 0.78;
+const on = new Set();
+const face = { src: null, z: 1, x: 0, y: 0 };
+try { Object.assign(face, JSON.parse(localStorage.getItem("md-face") || "{}")); } catch (e) {}
+const has = (id) => on.has(id);
+const dressOf = () => ITEMS.find((i) => i.cat === "dress" && on.has(i.id));
+const DRESS_COL = { gown: ["#F07AAE", "#F9B7D3"], polka: ["#D23A3A", "#fff"], tutu: ["#F9B7D3", "#FBD3E6"], sundress: ["#F2C230", "#fff"] };
+
+function draw(target = "#dsvg") {
+  const T = $(target); if (!T) return;
+  const d = dressOf(); const col = d ? DRESS_COL[d.id] : null;
+  const sleeve = col ? col[0] : "#2F6FA8";
+  const n = on.size; const mood = n >= 7 ? "wink" : n >= 3 ? "laugh" : "smile";
+  let s = "";
+  // backdrop
+  s += `<rect x="0" y="610" width="600" height="150" fill="#F6B9D1"/><ellipse cx="300" cy="670" rx="230" ry="22" fill="#00000014"/>`;
+  [[80, 110], [520, 150], [470, 60], [120, 300]].forEach(([x, y], k) => (s += `<path transform="translate(${x},${y}) scale(${0.7 + k * 0.15})" d="M0 -20 L5 -5 L20 0 L5 5 L0 20 L-5 5 L-20 0 L-5 -5 Z" fill="#fff" opacity=".8"/>`));
+  s += `<g transform="translate(300,665) scale(0.93)">`;
+  // hair back
+  if (has("wig")) s += `<path d="M-86 ${HY - 20} Q-110 ${HY + 140} -90 ${HY + 210} L90 ${HY + 210} Q110 ${HY + 140} 86 ${HY - 20} Q0 ${HY - 110} -86 ${HY - 20} Z" fill="#F2C230"/><path d="M-60 ${HY + 120} q10 40 0 80 M60 ${HY + 120} q-10 40 0 80" stroke="#D9A814" stroke-width="5" fill="none"/>`;
+  if (has("curls")) for (let k = 0; k < 14; k++) { const a = Math.PI * (0.95 + k * 0.08); s += `<circle cx="${Math.cos(a) * 88}" cy="${HY + Math.sin(a) * 78 + 10}" r="30" fill="#F07AAE"/>`; }
+  if (has("curls")) [[-92, HY + 30], [92, HY + 30], [-84, HY + 70], [84, HY + 70]].forEach(([x, y]) => (s += `<circle cx="${x}" cy="${y}" r="28" fill="#F07AAE"/>`));
+  // legs
+  const legH = 154; s += `<rect x="-58" y="-160" width="42" height="${legH}" rx="12" fill="#2B3A67"/><rect x="16" y="-160" width="42" height="${legH}" rx="12" fill="#2B3A67"/>`;
+  if (has("slippers")) s += `<path d="M-37 -10 L-50 -110 M-37 -10 L-24 -110 M37 -10 L24 -110 M37 -10 L50 -110" stroke="#F07AAE" stroke-width="5"/>`;
+  // shoes
+  if (has("heels")) s += `<path d="M-74 -4 Q-60 -22 -10 -8 L-10 4 L-70 4 Z M10 -8 Q60 -22 74 -4 L70 4 L10 4 Z" fill="#D23A3A"/><rect x="-16" y="0" width="7" height="22" fill="#D23A3A"/><rect x="9" y="0" width="7" height="22" fill="#D23A3A"/>`;
+  else if (has("slippers")) s += `<ellipse cx="-38" cy="0" rx="30" ry="12" fill="#F9B7D3"/><ellipse cx="38" cy="0" rx="30" ry="12" fill="#F9B7D3"/>`;
+  else if (has("boots")) s += `<path d="M-62 -70 h46 v66 h10 v10 h-70 v-12 Z M16 -70 h46 v64 h12 v12 h-70 v-10 Z" fill="#7A5AC8"/>` + [[-40, -50], [-28, -24], [36, -44], [48, -20], [-50, -30], [26, -60]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3" fill="#fff"/>`).join("");
+  else s += `<ellipse cx="-38" cy="0" rx="34" ry="12" fill="#333"/><ellipse cx="38" cy="0" rx="34" ry="12" fill="#333"/>`;
+  // arms (down)
+  const arm = (dir) => `<path d="M${dir * AX} ${SH} L${dir * (AX + 46)} ${SH + 140}" stroke="${sleeve}" stroke-width="38" stroke-linecap="round"/><circle cx="${dir * (AX + 46)}" cy="${SH + 140}" r="21" fill="${SKIN}"/>`;
+  s += arm(-1) + arm(1);
+  // body (shirt)
+  s += `<ellipse cx="0" cy="${BY}" rx="${RX}" ry="${BRY}" fill="#2F6FA8"/>`;
+  // dresses
+  if (d) {
+    const [c1, c2] = col;
+    if (d.id === "gown") s += `<ellipse cx="0" cy="${BY}" rx="${RX + 4}" ry="${BRY + 2}" fill="${c1}"/><path d="M-150 -200 Q-230 -40 -250 -14 Q0 30 250 -14 Q230 -40 150 -200 Z" fill="${c1}"/><path d="M-200 -40 Q0 -10 200 -40 M-170 -110 Q0 -80 170 -110" stroke="${c2}" stroke-width="10" fill="none"/><ellipse cx="0" cy="${BY - 90}" rx="70" ry="18" fill="${c2}"/>`;
+    if (d.id === "polka") { s += `<ellipse cx="0" cy="${BY}" rx="${RX + 4}" ry="${BRY + 2}" fill="${c1}"/><path d="M-148 -200 L-180 -80 Q0 -56 180 -80 L148 -200 Z" fill="${c1}"/>`;
+      [[-90, -320], [-20, -350], [60, -310], [110, -250], [-120, -240], [-40, -260], [30, -220], [90, -170], [-80, -160], [0, -150], [-140, -110], [140, -110], [60, -110], [-30, -100]].forEach(([x, y]) => (s += `<circle cx="${x}" cy="${y}" r="13" fill="${c2}"/>`)); }
+    if (d.id === "tutu") s += `<ellipse cx="0" cy="${BY}" rx="${RX + 4}" ry="${BRY + 2}" fill="${c1}"/>` + [0, 1, 2].map((k) => `<path d="M-${200 - k * 20} ${-170 + k * 16} ${Array.from({ length: 10 }, (_, i) => `q${(400 - k * 40) / 20} ${k % 2 ? 26 : 34} ${(400 - k * 40) / 10} 0`).join(" ")} Q0 ${-200 + k * 16} -${200 - k * 20} ${-170 + k * 16} Z" fill="${k === 1 ? "#F07AAE" : c2}" opacity=".95"/>`).join("");
+    if (d.id === "sundress") { s += `<ellipse cx="0" cy="${BY}" rx="${RX + 4}" ry="${BRY + 2}" fill="${c1}"/><path d="M-148 -190 L-200 -60 Q0 -34 200 -60 L148 -190 Z" fill="${c1}"/>`;
+      [[-70, -300], [50, -330], [100, -220], [-110, -180], [0, -200], [-40, -100], [120, -100], [-150, -90]].forEach(([x, y]) => (s += `<g transform="translate(${x},${y})">${[0, 72, 144, 216, 288].map((a) => `<ellipse cx="0" cy="-10" rx="7" ry="11" fill="#fff" transform="rotate(${a})"/>`).join("")}<circle r="6" fill="#E8833A"/></g>`)); }
+    s += `<path d="M-60 ${BY - BRY + 10} Q0 ${BY - BRY + 50} 60 ${BY - BRY + 10}" stroke="#00000022" stroke-width="6" fill="none"/>`;
+  } else s += `<circle cx="0" cy="${BY - 40}" r="6" fill="#ffffff90"/><circle cx="0" cy="${BY + 10}" r="6" fill="#ffffff90"/><circle cx="0" cy="${BY + 60}" r="6" fill="#ffffff90"/>`;
+  // necklace
+  if (has("pearls")) for (let k = 0; k <= 12; k++) { const a = Math.PI * (0.15 + k * 0.7 / 12); s += `<circle cx="${Math.cos(a) * 70}" cy="${HY + 70 + Math.sin(a) * 50}" r="9" fill="#FFF8EE" stroke="#E5D6C0" stroke-width="2"/>`; }
+  // head
+  if (face.src) {
+    const rx = HR + 12, ry = HR + 20, sz = ry * 2 * face.z;
+    s += `<defs><clipPath id="hc"><ellipse cx="0" cy="${HY}" rx="${rx}" ry="${ry}"/></clipPath></defs><ellipse cx="0" cy="${HY}" rx="${rx}" ry="${ry}" fill="${SKIN}"/><image id="photohead" data-who="daddy" data-s="0.93" href="${face.src}" x="${-sz / 2 + face.x}" y="${HY - sz / 2 + face.y}" width="${sz}" height="${sz}" clip-path="url(#hc)" preserveAspectRatio="xMidYMid slice" style="cursor:grab"/><ellipse cx="0" cy="${HY}" rx="${rx}" ry="${ry}" fill="none" stroke="#fff" stroke-width="4"/>`;
+  } else s += `<circle cx="${-HR}" cy="${HY}" r="13" fill="${SKIND}"/><circle cx="${HR}" cy="${HY}" r="13" fill="${SKIND}"/><circle cx="0" cy="${HY}" r="${HR}" fill="${SKIN}"/>`;
+  T.style.touchAction = face.src ? "none" : "";
+  if (has("earrings")) s += `<path d="M${-HR} ${HY + 10} v20 M${HR} ${HY + 10} v20" stroke="#C79A12" stroke-width="3"/><path d="M${-HR} ${HY + 30} l-9 14 l9 14 l9 -14 Z M${HR} ${HY + 30} l-9 14 l9 14 l9 -14 Z" fill="#7FD3F0" stroke="#fff" stroke-width="2"/>`;
+  // short dad hair (always, under wigs it's hidden by fringe)
+  if (!face.src && !has("wig") && !has("curls")) s += `<path d="M${-HR - 2} ${HY - 4} Q${-HR - 4} ${HY - HR - 20} 0 ${HY - HR - 14} Q${HR + 6} ${HY - HR - 16} ${HR + 2} ${HY - 10} Q${HR * 0.4} ${HY - HR * 0.7} ${-HR * 0.4} ${HY - HR * 0.62} Q${-HR * 0.8} ${HY - HR * 0.5} ${-HR - 2} ${HY - 4} Z" fill="${HAIR}"/>`;
+  if (has("wig")) s += `<path d="M${-HR - 4} ${HY - 4} Q${-HR} ${HY - HR - 24} 0 ${HY - HR - 18} Q${HR} ${HY - HR - 24} ${HR + 4} ${HY - 4} Q${HR * 0.6} ${HY - HR * 0.6} 0 ${HY - HR * 0.55} Q${-HR * 0.6} ${HY - HR * 0.6} ${-HR - 4} ${HY - 4} Z" fill="#F2C230"/>`;
+  if (has("curls")) for (let k = 0; k < 7; k++) s += `<circle cx="${-56 + k * 19}" cy="${HY - HR + 10 - Math.sin(k / 6 * Math.PI) * 14}" r="22" fill="#F07AAE"/>`;
+  // eyes
+  if (face.src) {} else if (mood === "wink") s += `<circle cx="-24" cy="${HY - 8}" r="7" fill="#222"/><path d="M14 ${HY - 8} Q24 ${HY - 16} 34 ${HY - 8}" stroke="#222" stroke-width="5" fill="none" stroke-linecap="round"/>`;
+  else s += `<circle cx="-24" cy="${HY - 8}" r="7" fill="#222"/><circle cx="24" cy="${HY - 8}" r="7" fill="#222"/><circle cx="-21" cy="${HY - 11}" r="2" fill="#fff"/><circle cx="27" cy="${HY - 11}" r="2" fill="#fff"/>`;
+  if (has("lashes") && !face.src) s += `<path d="M-34 ${HY - 14} l-8 -10 M-26 ${HY - 17} l-3 -12 M-17 ${HY - 16} l2 -12 M34 ${HY - 14} l8 -10 M26 ${HY - 17} l3 -12 M17 ${HY - 16} l-2 -12" stroke="#222" stroke-width="3" stroke-linecap="round"/>`;
+  if (has("hearts")) s += `<path d="M-24 ${HY + 6} C-52 ${HY - 12} -46 ${HY - 34} -24 ${HY - 22} C-2 ${HY - 34} 4 ${HY - 12} -24 ${HY + 6} Z M24 ${HY + 6} C-4 ${HY - 12} 2 ${HY - 34} 24 ${HY - 22} C46 ${HY - 34} 52 ${HY - 12} 24 ${HY + 6} Z" fill="#E8566A" opacity=".85" stroke="#B02A4A" stroke-width="3"/>`;
+  // cheeks
+  if (!face.src || has("blush")) s += `<circle cx="-38" cy="${HY + 14}" r="${has("blush") ? 16 : 9}" fill="#E8566A" opacity="${has("blush") ? 0.6 : 0.3}"/><circle cx="38" cy="${HY + 14}" r="${has("blush") ? 16 : 9}" fill="#E8566A" opacity="${has("blush") ? 0.6 : 0.3}"/>`;
+  // mouth
+  const lip = has("lipstick") ? "#D2143A" : "#7A2E2E";
+  if (face.src) { if (has("lipstick")) s += `<path d="M-22 ${HY + 34} Q-11 ${HY + 22} 0 ${HY + 30} Q11 ${HY + 22} 22 ${HY + 34} Q0 ${HY + 52} -22 ${HY + 34} Z" fill="#D2143A" opacity=".9"/>`; }
+  else if (mood === "smile") s += `<path d="M-24 ${HY + 20} Q0 ${HY + 40} 24 ${HY + 20}" stroke="${lip}" stroke-width="${has("lipstick") ? 10 : 6}" fill="none" stroke-linecap="round"/>`;
+  else s += `<path d="M-28 ${HY + 16} Q0 ${HY + 56} 28 ${HY + 16} Z" fill="#7A2E2E" stroke="${lip}" stroke-width="${has("lipstick") ? 9 : 0}" stroke-linejoin="round"/>`;
+  // front hair
+  if (has("pigtails")) s += `<path d="M-60 ${HY - 40} Q-120 ${HY - 30} -116 ${HY + 40} Q-90 ${HY + 10} -66 ${HY - 10} Z M60 ${HY - 40} Q120 ${HY - 30} 116 ${HY + 40} Q90 ${HY + 10} 66 ${HY - 10} Z" fill="${HAIR}"/><circle cx="-72" cy="${HY - 30}" r="10" fill="#F07AAE"/><circle cx="72" cy="${HY - 30}" r="10" fill="#F07AAE"/>`;
+  if (has("bun")) s += `<circle cx="0" cy="${HY - HR - 26}" r="34" fill="${HAIR}"/><path d="M-24 ${HY - HR - 46} q24 12 48 0" stroke="#5A4434" stroke-width="4" fill="none"/>`;
+  // hats
+  if (has("tiara")) s += `<path d="M-50 ${HY - HR + 6} L-40 ${HY - HR - 30} L-20 ${HY - HR - 8} L0 ${HY - HR - 46} L20 ${HY - HR - 8} L40 ${HY - HR - 30} L50 ${HY - HR + 6} Z" fill="#F2C230" stroke="#C79A12" stroke-width="3"/><circle cx="0" cy="${HY - HR - 22}" r="8" fill="#E8566A"/><circle cx="-38" cy="${HY - HR - 12}" r="5" fill="#7FD3F0"/><circle cx="38" cy="${HY - HR - 12}" r="5" fill="#7FD3F0"/>`;
+  if (has("flowers")) for (let k = 0; k < 7; k++) { const a = Math.PI * (1.1 + k * 0.8 / 6); const fx = Math.cos(a) * 70, fy = HY + Math.sin(a) * 62 - 6; s += `<g transform="translate(${fx},${fy})">${[0, 72, 144, 216, 288].map((r) => `<ellipse cx="0" cy="-9" rx="7" ry="10" fill="${["#F07AAE", "#fff", "#F2C230", "#B48CE8"][k % 4]}" transform="rotate(${r})"/>`).join("")}<circle r="5" fill="#E8833A"/></g>`; }
+  if (has("bigbow")) s += `<g transform="translate(46,${HY - HR - 4}) rotate(18)"><path d="M0 0 C-80 -70 -100 30 0 0 Z M0 0 C80 -70 100 30 0 0 Z" fill="#F07AAE" stroke="#C2347A" stroke-width="4"/><circle r="14" fill="#C2347A"/></g>`;
+  if (has("sunhat")) s += `<ellipse cx="0" cy="${HY - HR + 14}" rx="140" ry="26" fill="#F3D9A4"/><path d="M-62 ${HY - HR + 14} Q-60 ${HY - HR - 70} 0 ${HY - HR - 72} Q60 ${HY - HR - 70} 62 ${HY - HR + 14} Z" fill="#F3D9A4"/><path d="M-62 ${HY - HR} Q0 ${HY - HR + 14} 62 ${HY - HR}" stroke="#F07AAE" stroke-width="16" fill="none"/><circle cx="56" cy="${HY - HR}" r="14" fill="#F07AAE"/>`;
+  // hand items
+  if (has("bag")) { const hx = AX + 46, hy = SH + 140; s += `<path d="M${hx - 26} ${hy + 10} Q${hx} ${hy - 30} ${hx + 26} ${hy + 10}" stroke="#7A2E5A" stroke-width="6" fill="none"/><rect x="${hx - 40}" y="${hy + 8}" width="80" height="60" rx="14" fill="#C2347A"/><rect x="${hx - 12}" y="${hy + 24}" width="24" height="12" rx="4" fill="#F2C230"/>`; }
+  if (has("wand")) { const hx = -(AX + 46), hy = SH + 140; s += `<path d="M${hx} ${hy} L${hx - 50} ${hy - 110}" stroke="#7A5AC8" stroke-width="8" stroke-linecap="round"/><path transform="translate(${hx - 56},${hy - 124})" d="M0 -28 L8 -9 L28 -8 L12 5 L18 26 L0 14 L-18 26 L-12 5 L-28 -8 L-8 -9 Z" fill="#F2C230" stroke="#C79A12" stroke-width="3"/>`; }
+  s += `</g>`;
+  T.innerHTML = s;
+  const pct = Math.min(100, Math.round(n / 10 * 100));
+  if ($("#fill")) { $("#fill").style.width = pct + "%"; $("#pct").textContent = pct + "%"; }
+}
+
+
+const PHOTO = face;
+const NAMES = { daddy: "Daddy", jayden: "Jayden", michelle: "Michelle" };
+const FACES = { daddy: face, jayden: { src: null, z: 1, x: 0, y: 0 }, michelle: { src: null, z: 1, x: 0, y: 0 } };
+["jayden", "michelle"].forEach((w) => { try { Object.assign(FACES[w], JSON.parse(localStorage.getItem("md-face-" + w) || "{}")); } catch (e) {} });
+const $ = (q) => document.querySelector(q);
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+// ===== story scenes =====
+const kid = (x, y, s, o = {}) => person(x, y, s, Object.assign({ kid: true, who: "jayden", shirt: "#E8833A", pants: "#5E8C3A" }, o));
+const girl = (x, y, s, o = {}) => person(x, y, s, Object.assign({ kid: true, girl: true, who: "michelle", shirt: "#B48CE8", pants: "#F9B7D3", skirt: "#C2347A" }, o));
+const tag = (x, y, name, c) => `<g transform="translate(${x},${y})"><rect x="${-name.length * 13 - 18}" y="-26" width="${name.length * 26 + 36}" height="46" rx="23" fill="#fff" stroke="${c}" stroke-width="5"/><text y="9" text-anchor="middle" font-family="Fredoka, Arial" font-weight="700" font-size="28" fill="${c}">${name}</text></g>`;
+const clock615 = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s})"><circle cx="-46" cy="-62" r="20" fill="#D23A3A"/><circle cx="46" cy="-62" r="20" fill="#D23A3A"/><circle r="70" fill="#fff" stroke="#D23A3A" stroke-width="14"/><path d="M0 0 L42 0 M0 0 L-6 36" stroke="#222" stroke-width="8" stroke-linecap="round"/><circle r="8" fill="#222"/></g>`;
+const table = (x, y) => `<g transform="translate(${x},${y})"><rect x="-230" y="0" width="460" height="26" rx="8" fill="#B8814E"/><rect x="-210" y="26" width="22" height="120" fill="#9C6A3E"/><rect x="188" y="26" width="22" height="120" fill="#9C6A3E"/></g>`;
+const book = (x, y) => `<g transform="translate(${x},${y})"><path d="M-70 0 L0 10 L70 0 L70 -60 L0 -50 L-70 -60 Z" fill="#fff" stroke="#2F6FA8" stroke-width="6"/><path d="M0 10 V-50" stroke="#2F6FA8" stroke-width="4"/><path d="M-56 -36 h40 M-56 -22 h40 M16 -36 h40 M16 -22 h40" stroke="#B8C2D9" stroke-width="5"/></g>`;
+const bowl = (x, y) => `<g transform="translate(${x},${y})"><ellipse cx="0" cy="-30" rx="50" ry="16" fill="#F2C230"/><path d="M-56 -30 Q-50 20 0 20 Q50 20 56 -30 Z" fill="#E8566A"/><path d="M20 -40 L70 -110" stroke="#888" stroke-width="6" stroke-linecap="round"/></g>`;
+const noKick = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s})"><circle r="70" fill="#fff" stroke="#D23A3A" stroke-width="14"/><path d="M-30 20 Q-30 -20 0 -30 L20 -30 L20 10 Q40 14 40 30 L-30 30 Z" fill="#555"/><path d="M-50 -50 L50 50" stroke="#D23A3A" stroke-width="14"/></g>`;
+const board = (x, y, lines) => `<g transform="translate(${x},${y})"><rect x="-140" y="-20" width="280" height="${lines.length * 62 + 30}" rx="18" fill="#fff" stroke="#2B3A67" stroke-width="8"/>${lines.map((l, k) => `<text x="-118" y="${32 + k * 62}" font-family="Arial" font-weight="bold" font-size="32" fill="${["#E8833A", "#2F6FA8", "#5E8C3A", "#C2347A"][k]}">${l}</text>`).join("")}</g>`;
+const notes = `<text x="160" y="220" font-family="Arial" font-size="90" fill="#7A5AC8">\u266A</text><text x="820" y="170" font-family="Arial" font-size="110" fill="#E8833A">\u266B</text><text x="900" y="400" font-family="Arial" font-size="70" fill="#2F6FA8">\u266A</text>`;
+const SC = {
+  cover: () => frame(grass(700) + sun(940, 120) + person(330, 800, 1.1, { arms: "wave", drag: true }) + kid(640, 800, 0.78, { arms: "wave", laugh: true, drag: true }) + girl(870, 800, 0.95, { arms: "wave", laugh: true, drag: true }) + heart(130, 190, 1.6) + heart(210, 120, 1, "#F2C230") + tag(330, 845, "Daddy", "#2B3A67") + tag(640, 845, "Jayden", "#E8833A") + tag(870, 845, "Michelle", "#C2347A")),
+  intro: () => frame(grass(700) + sun(160, 140) + house(820, 700, 1.1) + person(420, 800, 1, { arms: "wave" }) + kid(640, 800, 1)),
+  strong: () => frame(floor(720) + person(540, 800, 1, { arms: "up", laugh: true }) + dumbbell(540, 300, 1.25) + bags(110, 790) + kid(900, 800, 0.95, { arms: "up", laugh: true }) + txt(860, 230, "WOW!", 80, "#E8833A")),
+  kind: () => frame(grass(700) + sun(940, 120) + bike(900, 760, 0.8) + person(330, 800, 1, { arms: "give" }) + heart(560, 500, 2.2) + kid(690, 800, 1) + plaster(705, 735, 0.7) + heart(150, 180, 1.2) + heart(240, 120, 0.8, "#F2C230")),
+  funny: () => frame(floor(720) + person(400, 800, 1, { arms: "give", tongue: true, silly: true }) + broccoli(600, 480, 1.3) + kid(800, 800, 1, { laugh: true, arms: "up" }) + txt(820, 200, "HA HA HA!", 70, "#E8833A") + txt(200, 170, "Hee hee!", 50, "#2F6FA8")),
+  handsome: () => frame(floor(740, "#3A4C80") + person(540, 820, 1.05, { wink: true, bow: true, shirt: "#5B8FD0" }) + sparkle(250, 230, 1.6) + sparkle(820, 190, 2) + sparkle(880, 420, 1.1) + sparkle(190, 470, 1.2, "#fff") + sparkle(720, 120, 0.8, "#fff"), "#2B3A67"),
+  disciplined: () => frame(floor(720) + clock(200, 240, 1.1) + txt(200, 400, "6:00", 64, "#2B3A67") + checklist(880, 340, 1.1) + person(520, 800, 1, { arms: "flex", shirt: "#5E8C3A" })),
+  fat: () => frame(floor(720) + person(480, 800, 1.1, { arms: "hug", laugh: true, hug: true, shirt: "#E8566A", belly: 1.35 }) + `<path d="M290 560 q20 -16 40 0 M630 560 q20 -16 40 0 M300 620 q20 -16 40 0 M620 620 q20 -16 40 0" stroke="#fff" stroke-width="6" fill="none"/>` + kid(240, 800, 0.7, { arms: "up", laugh: true }) + girl(740, 800, 0.84, { arms: "up", laugh: true }) + jelly(950, 800, 0.8) + heart(240, 220, 1.6) + heart(760, 180, 1.2) + heart(850, 330, 0.8, "#F2C230") + txt(900, 330, "wobble!", 50, "#E8566A")),
+  lift: () => frame(grass(700) + sun(160, 140) + person(460, 810, 1, { arms: "up", laugh: true }) + kid(460, 290, 0.5, { arms: "up", laugh: true }) + girl(850, 810, 0.95, { arms: "up", laugh: true }) + txt(860, 170, "WHEE!", 90, "#E8833A")),
+  strict: () => frame(floor(720) + person(330, 800, 1, { arms: "give" }) + kid(700, 800, 0.78) + girl(910, 800, 0.95) + `<circle cx="640" cy="230" r="70" fill="#E8833A"/>` + txt(640, 262, "1", 96, "#fff") + `<circle cx="830" cy="230" r="70" fill="#2F6FA8"/>` + txt(830, 262, "2", 96, "#fff") + heart(160, 180, 1.2)),
+  rule1: () => frame(floor(720) + clock615(900, 170, 0.8) + person(200, 800, 1, { arms: "down" }) + kid(560, 760, 0.78) + girl(790, 760, 0.92) + table(660, 600) + book(580, 590) + bowl(780, 600) + txt(560, 150, "Focus!", 72, "#2B3A67")),
+  rule2: () => frame(grass(700) + person(330, 800, 1, { arms: "hug", hug: true }) + kid(370, 800, 0.76, { arms: "hug", hug: true }) + girl(590, 800, 0.92, { arms: "hug", hug: true }) + noKick(850, 300, 1.1) + heart(620, 160, 1.6) + txt(860, 500, "Promise!", 64, "#C2347A")),
+  dance: () => frame(floor(720) + notes + person(300, 800, 1, { arms: "up", tongue: true, silly: true }) + kid(640, 800, 0.78, { arms: "wave", laugh: true }) + girl(880, 800, 0.95, { arms: "up", tongue: true }) + txt(560, 140, "Silly dance!", 60, "#C2347A")),
+  schedule: () => frame(floor(720) + clock615(160, 230, 1.0) + txt(160, 390, "6:15", 60, "#2B3A67") + board(800, 230, ["6:15 Wake up", "6:45 School", "7:30 Run"]) + person(440, 800, 1, { arms: "flex", shirt: "#5E8C3A" }) + kid(740, 800, 0.66, { arms: "up", laugh: true }) + girl(920, 800, 0.8, { arms: "up", laugh: true })),
+  checks: () => frame(floor(720) + checklist(900, 250, 0.95) + person(300, 800, 1, { arms: "give", laugh: true }) + kid(600, 800, 0.78, { laugh: true }) + girl(860, 800, 0.95, { laugh: true }) + book(500, 520) + txt(560, 150, "Well done!", 64, "#5E8C3A") + sparkle(760, 160, 1)),
+  pick: () => frame(grass(700) + person(440, 800, 1, { arms: "hug", hug: true }) + kid(470, 800, 0.76, { arms: "hug", hug: true }) + girl(690, 800, 0.92, { arms: "hug", hug: true }) + heart(200, 200, 2) + heart(880, 220, 2.4) + heart(900, 440, 1.2, "#F2C230") + tag(220, 520, "Daddy", "#2B3A67") + tag(470, 845, "Jayden", "#E8833A") + tag(720, 845, "Michelle", "#C2347A")),
+};
+
+// ===== book =====
+const PAGES = [
+  { t: "cover" },
+  { t: "story", scene: "lift", title: "Strong, handsome and funny", text: "My daddy is {strong}, {handsome} and {funny}. He can lift me up easily with his strong arms. Sometimes, he even carries me around {as if I weigh nothing at all}!", act: "Show me your muscles!" },
+  { t: "quiz", scene: "lift", title: "Think about it", q: "\u201CHe carries me around as if I weigh nothing at all.\u201D {What does this tell us?}", o: ["I am very heavy", "Daddy is very strong", "Daddy is very tired"], a: 1, ex: "Of course you weigh something! The writer is saying Daddy is SO strong that carrying you feels easy for him." },
+  { t: "story", scene: "strict", title: "Kind but strict", text: "Daddy is {kind and caring} most of the time, but he can be {strict} when I do not follow our {family rules}. He always reminds me of {two important lessons} in life.", act: "Can you guess the two lessons?" },
+  { t: "story", scene: "rule1", title: "Lesson 1: Take important things seriously", text: "First, I must {take important things seriously} and do them properly. For example, when I do my homework, I should {concentrate} and check my answers carefully instead of rushing through it. During mealtimes, I should eat properly without playing with my food. Daddy teaches me to put in my best effort and {never give up} easily when things get difficult.", act: "Sit up straight like you\u2019re doing homework!" },
+  { t: "quiz", scene: "rule1", title: "Word power", q: "\u201CI should concentrate and check my answers carefully.\u201D {Which word means the same as \u201Cconcentrate\u201D?}", o: ["Rush", "Focus", "Sleep"], a: 1, ex: "To concentrate means to focus all your attention on something, just like Daddy wants during homework time." },
+  { t: "story", scene: "rule2", title: "Lesson 2: Keep my promises", text: "Second, I must {keep my promises} and do what I say I will do. For example, if I promise to behave well, I must keep my word even when I feel angry or stressed. I should {never kick or hurt others} just because I am upset. Daddy teaches me to {control my emotions}, {think before I act} and treat others with kindness and respect.", act: "Make a pinky promise with Daddy!" },
+  { t: "quiz", scene: "rule2", title: "What would you do?", q: "You feel upset because you lost a game. {What should you do?}", o: ["Kick my sister", "Take a deep breath and talk about it", "Throw the game on the floor"], a: 1, ex: "That\u2019s controlling your emotions and thinking before you act, just as Daddy teaches!" },
+  { t: "story", scene: "dance", title: "Daddy is funny", text: "Although Daddy can be strict, he is also very {funny}! We sometimes play silly games, dance together and make funny faces at each other. We often {burst into laughter} when one of us makes a ridiculous face. These {precious moments} make me feel happy and bring us closer together.", act: "Make your most ridiculous face!" },
+  { t: "quiz", scene: "dance", title: "What does it mean?", q: "\u201CWe often burst into laughter.\u201D {What does \u201Cburst into laughter\u201D mean?}", o: ["Start laughing suddenly and loudly", "Cry quietly", "Stop laughing"], a: 0, ex: "\u201CBurst into\u201D means something starts suddenly, like a balloon bursting. Pop! Ha ha ha!" },
+  { t: "story", scene: "schedule", title: "Daddy is disciplined", text: "Daddy is also a very {disciplined} person. He wakes up at {6:15 a.m.} every morning and shares our {afternoon study plan} with us. At {6:45 a.m.}, he sends us to school. After that, he goes for a run at {7:30 a.m.} and runs for {about an hour}. I am amazed by how well he manages his time and follows his daily routine without giving up.", act: "Do 5 jumping jacks!" },
+  { t: "quiz", scene: "schedule", title: "Daddy\u2019s morning run", q: "Daddy starts his run at {7:30 a.m.} and runs for {about an hour}. At about what time does he finish?", o: ["8:00 a.m.", "8:30 a.m.", "9:30 a.m."], a: 1, ex: "7:30 plus one hour is 8:30. Count on: 7:30 \u2192 8:00 is 30 minutes, 8:00 \u2192 8:30 is another 30." },
+  { t: "story", scene: "checks", title: "Daddy is hardworking", text: "Besides being {hardworking}, Daddy also plans our daily activities and checks our work when he returns home from work. Even when he is tired after a long day, he still makes time to guide us and help us improve. He wants us to grow up to be {responsible, disciplined and independent} children. I know he does all these things because {he loves us} and wants us to have a bright future.", act: "Say \u201CThank you, Daddy!\u201D" },
+  { t: "quiz", scene: "checks", title: "Word power", q: "Daddy wants us to be {independent}. What does \u201Cindependent\u201D mean?", o: ["Able to do things by yourself", "Always needing help", "Very noisy"], a: 0, ex: "An independent child can do things on their own, like packing their own school bag!" },
+  { t: "story", scene: "fat", title: "A little bit fat!", text: "However, there is one funny thing about Daddy: he is {a little fat}! His round tummy sometimes makes me giggle, especially when we are playing together. Although he is trying to stay fit by running regularly, I still enjoy teasing him about his tummy. To me, he is {the best daddy in the world}!", act: "Pat Daddy\u2019s tummy!" },
+  { t: "quiz", scene: "fat", title: "Why does Daddy run?", q: "{Why does Daddy go running regularly?}", o: ["To catch the school bus", "To stay fit", "To buy breakfast"], a: 1, ex: "The story says he is \u201Ctrying to stay fit by running regularly\u201D. Keep going, Daddy!" },
+  { t: "story", scene: "pick", title: "I love my daddy", text: "I love my daddy very much because he is {strong, caring, funny and hardworking}. Although he can be strict sometimes, I understand that he only wants me to become a better person. He teaches me many important lessons through his words and actions. I hope that one day I can become as {disciplined, responsible and kind} as him. I am truly lucky to have such a wonderful daddy!", act: "Give Daddy a big hug!" },
+  { t: "boss", title: "The Daddy Quiz", max: 4 },
+  { t: "pick", scene: "pick", title: "Your Daddy", max: 1 },
+  { t: "dress", title: "Daddy\u2019s Fashion Show", max: 3 },
+  { t: "end" },
+];
+PAGES.forEach((p) => { if (p.t === "quiz") p.max = 2; });
+const MAXSTARS = PAGES.reduce((s, p) => s + (p.max || 0), 0);
+const BOSS = [
+  ["What time does Daddy wake up every morning?", ["6:45 a.m.", "6:15 a.m.", "7:30 a.m."], 1],
+  ["What is the first important lesson Daddy teaches?", ["Eat lots of sweets", "Watch TV every day", "Take important things seriously"], 2],
+  ["What should I never do when I am upset?", ["Kick or hurt others", "Take a deep breath", "Talk to Daddy"], 0],
+  ["Why does Daddy do all these things for us?", ["Because he is bored", "Because he loves us", "Because he is fat"], 1],
+];
+const TRAITS = [["Strong", "\uD83D\uDCAA"], ["Handsome", "\uD83D\uDE0E"], ["Funny", "\uD83E\uDD23"], ["Caring", "\uD83D\uDC96"], ["Strict", "\u261D\uFE0F"], ["Disciplined", "\u23F0"], ["Hardworking", "\uD83D\uDCBC"], ["Kind", "\uD83E\uDD17"], ["Fat", "\uD83D\uDE02"]];
+
+// ===== state =====
+const st = { i: 0, stars: 0, done: {}, pick: null };
+try { Object.assign(st, JSON.parse(localStorage.getItem("md-progress3") || "{}")); } catch (e) {}
+try { JSON.parse(localStorage.getItem("md-outfit") || "[]").forEach((id) => ITEMS.some((i) => i.id === id) && on.add(id)); } catch (e) {}
+const saveSt = () => { try { localStorage.setItem("md-progress3", JSON.stringify(st)); } catch (e) {} };
+const saveOutfit = () => { try { localStorage.setItem("md-outfit", JSON.stringify([...on])); } catch (e) {} };
+function saveFace(who = "daddy") { try { localStorage.setItem(who === "daddy" ? "md-face" : "md-face-" + who, JSON.stringify(FACES[who])); } catch (e) { say("That photo is too big to save, but you can still play!"); } }
+
+const stage = $("#stage"), panel = $("#panel");
+let cleanup = null, cat = "hair", suppressClick = false, bubbleT;
+
+let ac;
+function beep(f, d = 0.1, type = "sine", v = 0.12) { if ($("#mute").getAttribute("aria-pressed") === "true") return;
+  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(v, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d); o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + d); } catch (e) {} }
+const ding = () => { beep(660); setTimeout(() => beep(880, 0.15), 90); };
+const yay = () => { beep(523); setTimeout(() => beep(659), 110); setTimeout(() => beep(784, 0.25), 220); };
+const boo = () => beep(180, 0.25, "square", 0.08);
+function say(t) { const b = $("#bubble"); if (!b) return; b.textContent = t; b.classList.add("on"); clearTimeout(bubbleT); bubbleT = setTimeout(() => b.classList.remove("on"), 2600); }
+
+function award(n) { const key = "p" + st.i, prev = st.done[key] || 0; if (n <= prev) return;
+  st.done[key] = n; st.stars += n - prev; saveSt(); $("#starN").textContent = st.stars;
+  const el = $("#stars"); el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+const starsTxt = (n, m) => `<span class="earn">${"\u2605".repeat(n)}<i>${"\u2605".repeat(Math.max(0, m - n))}</i></span>`;
+const fmt = (t) => t.replace(/\{([^}]*)\}/g, "<mark>$1</mark>");
+const plain = (t) => t.replace(/[{}]/g, "");
+function speak(text) { if (!("speechSynthesis" in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(plain(text)); u.rate = 0.95;
+  const vs = speechSynthesis.getVoices(); const v = vs.find((v) => /en-GB/i.test(v.lang)) || vs.find((v) => /^en/i.test(v.lang)); if (v) u.voice = v; speechSynthesis.speak(u); }
+function btn(label, cls, fn) { const b = document.createElement("button"); b.className = "btn " + (cls || ""); b.innerHTML = label; b.onclick = fn; return b; }
+function setPanel(title, html) { panel.innerHTML = `<h2>${title}</h2><div class="txt">${html}</div><div class="act"></div>`; return panel.querySelector(".act"); }
+function scene(key) { stage.className = ""; stage.innerHTML = `<div class="art">${SC[key]()}</div><div id="bubble" aria-live="polite"></div>`; }
+function refresh() { const p = PAGES[st.i]; if (p.t === "dress" || p.t === "end") return draw(); const key = p.t === "cover" ? "cover" : p.scene; const art = stage.querySelector(".art"); if (art && SC[key]) art.innerHTML = SC[key](); }
+
+function go(n) {
+  if (cleanup) { cleanup(); cleanup = null; }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  st.i = Math.max(0, Math.min(PAGES.length - 1, n)); saveSt(); render();
+  $("#book").scrollIntoView({ block: "nearest" });
+}
+function render() {
+  const p = PAGES[st.i];
+  $("#dots").innerHTML = PAGES.map((q, k) => `<span class="${k === st.i ? "on" : ""} ${q.max ? "g" : ""} ${st.done["p" + k] ? "d" : ""}"></span>`).join("");
+  $("#starN").textContent = st.stars;
+  $("#back").disabled = st.i === 0; $("#next").hidden = p.t === "end";
+  $("#next").textContent = p.t === "cover" ? "Start the story" : p.t === "dress" ? "Finish" : "Next";
+  $("#read").hidden = !(p.text || p.q);
+  ({ cover: renderCover, story: renderStory, quiz: renderQuiz, boss: renderBoss, pick: renderPick, dress: renderDress, end: renderEnd })[p.t](p);
+}
+
+// ----- pages -----
+function renderCover() {
+  scene("cover");
+  setPanel("My Daddy", `A story about my daddy and the two important lessons he teaches me, with games along the way and a <b>fashion show</b> at the end! Earn up to <b>${MAXSTARS} stars</b>.`);
+  panel.insertAdjacentHTML("beforeend", `<h3>\uD83D\uDCF7 Put your family\u2019s real faces in the story</h3><p class="hint" id="hint"></p><div id="grid"></div>`);
+  renderFace();
+  if (st.stars) panel.append(btn("Start over", "ghost", () => { Object.assign(st, { i: 0, stars: 0, done: {}, pick: null }); saveSt(); render(); }));
+  setTimeout(() => say(face.src ? "That's me! Let's go!" : "Upload my photo, if you like!"), 300);
+}
+function renderStory(p) {
+  scene(p.scene);
+  setPanel(p.title, fmt(p.text));
+  panel.querySelector(".act").innerHTML = `${p.n ? `<span class="count">${p.n} of 6</span>` : ""}<span class="pill">\uD83D\uDC49 ${p.act}</span>`;
+}
+function renderQuiz(p) {
+  scene(p.scene); const a = setPanel(p.title, fmt(p.q)); let tries = 0;
+  p.o.forEach((o, k) => a.append(btn(o, "c" + k, (e) => {
+    if (k === p.a) { a.querySelectorAll("button").forEach((b) => (b.disabled = true)); e.target.disabled = false; e.target.classList.add("right");
+      const n = tries ? 1 : 2; award(n); n === 2 ? yay() : beep(523, 0.2);
+      a.insertAdjacentHTML("beforeend", `<div class="res">${starsTxt(n, 2)}<p>${tries ? "Got it! " : "Spot on! "}${p.ex}</p></div>`); }
+    else { boo(); tries++; e.target.disabled = true; e.target.classList.add("wrong"); }
+  })));
+}
+function renderBoss(p) {
+  scene("schedule"); let k = 0, score = 0;
+  const show = () => {
+    if (k >= BOSS.length) { award(score); score === BOSS.length ? yay() : beep(523, 0.2);
+      const a = setPanel("The Daddy Quiz", `You got <b>${score} out of ${BOSS.length}</b>!`);
+      a.insertAdjacentHTML("beforeend", `<div class="res">${starsTxt(score, BOSS.length)}<p>${score === BOSS.length ? "You're a Daddy Expert!" : "Great listening!"}</p></div>`);
+      if (score < BOSS.length) a.append(btn("Try again", "ghost", () => renderBoss(p))); return; }
+    const [q, o, ans] = BOSS[k]; stage.querySelector(".art").innerHTML = SC[["schedule", "rule1", "rule2", "pick"][k]]();
+    const a = setPanel(`Daddy Quiz: ${k + 1} of ${BOSS.length}`, q);
+    o.forEach((t, j) => a.append(btn(t, "c" + j, (e) => { a.querySelectorAll("button").forEach((b) => (b.disabled = true));
+      a.children[ans].classList.add("right"); if (j === ans) { score++; yay(); } else { boo(); e.target.classList.add("wrong"); }
+      setTimeout(() => { k++; show(); }, 1100); })));
+  };
+  show();
+}
+function renderPick(p) {
+  scene("pick");
+  const a = setPanel(p.title, "{Which word describes YOUR daddy best?} Tap one, then tell Daddy why!".replace(/\{([^}]*)\}/g, "<mark>$1</mark>"));
+  const grid = document.createElement("div"); grid.className = "traits";
+  TRAITS.forEach(([t, e]) => grid.append(btn(`<span class="e">${e}</span>${t}`, "trait" + (st.pick === t ? " right" : ""), (ev) => {
+    st.pick = t; saveSt(); award(1); yay(); grid.querySelectorAll("button").forEach((b) => b.classList.remove("right")); ev.currentTarget.classList.add("right");
+    say(`Aww, you think I'm ${t.toLowerCase()}?`);
+    const r = a.querySelector(".res") || a.appendChild(Object.assign(document.createElement("div"), { className: "res" }));
+    r.innerHTML = `<p>Say it out loud: \u201CMy daddy is <b>${t.toLowerCase()}</b> because \u2026\u201D</p><p class="small">Next: it\u2019s time for Daddy\u2019s fashion show!</p>`;
+  })));
+  a.append(grid);
+}
+
+// ----- dress up -----
+function renderDress() {
+  stage.className = "tall";
+  stage.innerHTML = `<svg id="dsvg" viewBox="0 0 600 760" role="img" aria-label="Daddy wearing the outfit you chose"></svg><div id="bubble" aria-live="polite"></div>
+    <div class="meter" aria-label="Silliness meter"><span>Silly-o-meter</span><div class="bar"><div id="fill"></div></div><span id="pct">0%</span></div><div id="flash"></div>`;
+  panel.innerHTML = `<h2>Daddy\u2019s Fashion Show</h2><p class="txt">Daddy was so brave in the story. Now it\u2019s your turn to dress him up! Tap clothes to put them on. Tap again to take them off.</p>
+    <div class="tabs" role="tablist" id="tabs"></div><p class="hint" id="hint"></p><div class="grid" id="grid"></div>
+    <div class="actions"><button class="btn alt" id="rand">\uD83C\uDFB2 Surprise me</button><button class="btn" id="photo">\uD83D\uDCF8 Photo time!</button><button class="btn ghost" id="reset">\u21BA Take it all off</button></div>
+    <div id="card" hidden aria-live="polite"></div>`;
+  if (cat === "face" && !CATS.some((c) => c.id === "face")) cat = "hair";
+  renderTabs(); renderGrid(); draw();
+  $("#dsvg").onclick = () => { if (suppressClick) { suppressClick = false; return; } say(TAP[Math.floor(Math.random() * TAP.length)]); beep(700 + Math.random() * 300, 0.08); };
+  $("#rand").onclick = () => { on.clear();
+    CATS.filter((c) => !c.custom).forEach((c) => { const list = ITEMS.filter((i) => i.cat === c.id);
+      if (c.multi) list.forEach((i) => Math.random() < 0.5 && on.add(i.id)); else on.add(list[Math.floor(Math.random() * list.length)].id); });
+    [523, 659, 784, 1046].forEach((f, k) => setTimeout(() => beep(f, 0.1), k * 70)); say("Ta-da! A brand-new Daddy!"); $("#card").hidden = true; draw(); renderGrid(); saveOutfit(); };
+  $("#reset").onclick = () => { on.clear(); say("Back to boring old Daddy!"); $("#card").hidden = true; draw(); renderGrid(); saveOutfit(); beep(250, 0.2, "triangle"); };
+  $("#photo").onclick = photoTime;
+  setTimeout(() => say(on.size ? "Welcome back, fashion designer!" : "Uh oh\u2026 what are you going to put on me?"), 300);
+}
+function renderTabs() {
+  $("#tabs").innerHTML = "";
+  CATS.forEach((c) => { const t = document.createElement("button"); t.className = "tab"; t.setAttribute("role", "tab"); t.textContent = c.label; t.setAttribute("aria-selected", c.id === cat);
+    t.onclick = () => { cat = c.id; renderTabs(); renderGrid(); beep(500, 0.05); }; $("#tabs").append(t); });
+}
+function renderGrid() {
+  const c = CATS.find((x) => x.id === cat);
+  if (c.custom) return renderFace();
+  $("#hint").textContent = c.hint + " Tap again to take it off."; $("#grid").innerHTML = "";
+  ITEMS.filter((i) => i.cat === cat).forEach((it) => { const b = document.createElement("button"); b.className = "item"; b.setAttribute("aria-pressed", has(it.id));
+    b.innerHTML = `<span class="e" aria-hidden="true">${it.e}</span>${it.name}`; b.onclick = () => toggle(it); $("#grid").append(b); });
+}
+function toggle(it) {
+  const c = CATS.find((x) => x.id === it.cat);
+  if (has(it.id)) { on.delete(it.id); beep(300, 0.1, "triangle"); say("Phew!"); }
+  else { if (!c.multi) ITEMS.filter((i) => i.cat === it.cat).forEach((i) => on.delete(i.id)); on.add(it.id); ding(); say(LINES[it.id]); }
+  $("#card").hidden = true; draw(); renderGrid(); saveOutfit();
+}
+function outfitSentence() { const worn = ITEMS.filter((i) => on.has(i.id)).map((i) => i.adj); return worn.length === 1 ? worn[0] : worn.slice(0, -1).join(", ") + " and " + worn[worn.length - 1]; }
+function photoTime() {
+  const f = $("#flash"); f.classList.remove("go"); void f.offsetWidth; f.classList.add("go");
+  beep(1200, 0.05, "square", 0.08); setTimeout(() => beep(900, 0.08, "square", 0.06), 60);
+  const card = $("#card"); card.hidden = false;
+  if (!on.size) { card.innerHTML = `<h2>Hmm\u2026</h2><p>Daddy is just wearing his normal clothes! Dress him up first.</p>`; return; }
+  const score = Math.min(10, on.size + (has("heels") ? 1 : 0) + (has("curls") ? 1 : 0));
+  const judge = score >= 9 ? "The judges are rolling on the floor laughing!" : score >= 6 ? "Absolutely fabulous, darling!" : score >= 3 ? "Very stylish! Add more for extra giggles." : "A good start! Keep going!";
+  const s5 = Math.max(1, Math.round(score / 2)); award(score >= 6 ? 3 : score >= 3 ? 2 : 1);
+  card.innerHTML = `<h2>\uD83D\uDCF8 Daddy\u2019s New Look</h2><div class="stars" aria-label="${s5} out of 5">${"\u2605".repeat(s5)}<i>${"\u2605".repeat(5 - s5)}</i></div>
+    <p>Daddy is wearing <mark>${outfitSentence()}</mark>.</p><p><b>Silliness score: ${score}/10.</b> ${judge}</p>
+    <p class="small">Your turn: describe Daddy\u2019s outfit out loud using adjectives, like the sentence above!</p>`;
+  say(score >= 6 ? "I'm a superstar!" : "Cheese!");
+}
+
+// ----- face upload (cover and dress page) -----
+function loadPhoto(file, who) {
+  const F = FACES[who], r = new FileReader();
+  r.onload = () => { const img = new Image();
+    img.onload = () => { const S = 420, c = document.createElement("canvas"); c.width = c.height = S; const k = Math.min(img.width, img.height);
+      c.getContext("2d").drawImage(img, (img.width - k) / 2, (img.height - k) / 2, k, k, 0, 0, S, S);
+      Object.assign(F, { src: c.toDataURL("image/jpeg", 0.85), z: 1, x: 0, y: 0 }); saveFace(who); refresh(); renderFace(); ding();
+      say(who === "daddy" ? "Is that ME?! Ha ha ha!" : `Hello, ${NAMES[who]}!`); };
+    img.onerror = () => say("Hmm, I couldn't open that picture."); img.src = r.result; };
+  r.readAsDataURL(file);
+}
+let faceWho = "daddy";
+function renderFace() {
+  const g = $("#grid"); if (!g) return;
+  const F = FACES[faceWho], nm = NAMES[faceWho];
+  $("#hint").textContent = F.src ? "Use the sliders, or drag the face on the picture, so it fits nicely." : `Upload a photo of ${nm}\u2019s face and it will appear in every picture. A big smile works best! (Optional.)`;
+  g.innerHTML = ""; const box = document.createElement("div"); box.className = "facebox";
+  box.innerHTML = `<div class="who" role="tablist">${Object.keys(FACES).map((w) => `<button class="whob" data-w="${w}" role="tab" aria-selected="${w === faceWho}">${FACES[w].src ? "\u2705" : "\uD83D\uDC64"} ${NAMES[w]}</button>`).join("")}</div>
+    <label class="btn up">\uD83D\uDCF7 ${F.src ? "Change" : "Upload"} ${nm}\u2019s photo<input type="file" accept="image/*" id="file" hidden></label>` +
+    (F.src ? `<label class="sl">Zoom <input type="range" id="fz" min="0.6" max="2.5" step="0.05" value="${F.z}"></label>
+    <label class="sl">Left / right <input type="range" id="fx" min="-90" max="90" step="1" value="${F.x}"></label>
+    <label class="sl">Up / down <input type="range" id="fy" min="-90" max="90" step="1" value="${F.y}"></label>
+    <button class="btn ghost" id="frm">Use cartoon face</button>` : "") +
+    `<p class="small">\uD83D\uDD12 Photos stay on this device. They aren\u2019t sent anywhere.</p>`;
+  g.append(box);
+  box.querySelectorAll(".whob").forEach((b) => (b.onclick = () => { faceWho = b.dataset.w; renderFace(); beep(500, 0.05); }));
+  $("#file").onchange = (e) => { const f = e.target.files[0]; if (f) loadPhoto(f, faceWho); };
+  if (F.src) { [["fz", "z"], ["fx", "x"], ["fy", "y"]].forEach(([id, k]) => ($("#" + id).oninput = (e) => { F[k] = +e.target.value; refresh(); }));
+    box.querySelectorAll("input[type=range]").forEach((i) => (i.onchange = () => saveFace(faceWho)));
+    $("#frm").onclick = () => { F.src = null; saveFace(faceWho); refresh(); renderFace(); say("Cartoon face is back!"); }; }
+}
+let drag = null;
+stage.addEventListener("pointerdown", (e) => { const im = e.target.closest("image[data-who]"); if (!im) return; e.preventDefault();
+  const w = im.dataset.who, F = FACES[w]; drag = { w, s: +im.dataset.s || 1, x: e.clientX, y: e.clientY, fx: F.x, fy: F.y, moved: false };
+  if (faceWho !== w) { faceWho = w; renderFace(); } });
+addEventListener("pointermove", (e) => { if (!drag) return; const svg = stage.querySelector("svg"); const r = svg.getBoundingClientRect();
+  const k = svg.viewBox.baseVal.width / r.width / drag.s, F = FACES[drag.w];
+  const dx = (e.clientX - drag.x) * k, dy = (e.clientY - drag.y) * k; if (Math.abs(dx) + Math.abs(dy) > 4) drag.moved = true;
+  F.x = Math.max(-90, Math.min(90, drag.fx + dx)); F.y = Math.max(-90, Math.min(90, drag.fy + dy)); refresh(); });
+addEventListener("pointerup", () => { if (drag && drag.moved) { suppressClick = true; saveFace(drag.w); renderFace(); } drag = null; });
+
+// ----- end -----
+function renderEnd() {
+  stage.className = "tall";
+  stage.innerHTML = `<svg id="dsvg" viewBox="0 0 600 760" role="img" aria-label="Daddy in his fashion show outfit"></svg><div class="cert"><svg class="medal" viewBox="-12 -12 24 24" aria-hidden="true"><path d="M0 -10 L2.9 -3.1 L9.5 -3.1 L4.2 1.2 L6.2 8 L0 4 L-6.2 8 L-4.2 1.2 L-9.5 -3.1 L-2.9 -3.1 Z" fill="#F2C230" stroke="#C79A12" stroke-width="1"/></svg><div><small>Daddy is</small><strong>${st.pick ? esc(st.pick) : "the Best"}!</strong></div></div>`;
+  draw();
+  const pct = st.stars / MAXSTARS;
+  const a = setPanel("I Love My Daddy!", `Strong, caring, funny, hardworking and a little bit fat \uD83D\uDE02. I am truly lucky to have such a wonderful daddy!<br><br>You earned <b>${st.stars} of ${MAXSTARS} stars</b>. ${pct >= 0.8 ? "You're a <b>Daddy Expert</b>!" : "Go back and replay any game for more stars."}${on.size ? `<br><br>At the fashion show, Daddy wore <mark>${outfitSentence()}</mark>.` : ""}`);
+  const list = document.createElement("div"); list.className = "score";
+  PAGES.forEach((q, k) => { if (q.max) list.append(btn(`<span>${q.title}</span>${starsTxt(st.done["p" + k] || 0, q.max)}`, "row", () => go(k))); });
+  a.append(list, btn("\uD83E\uDD17 Now give Daddy a big hug!", "big", () => yay()), btn("Read it again", "ghost", () => go(0)));
+  if (pct >= 0.5) yay();
+}
+
+// ===== wiring =====
+$("#back").onclick = () => go(st.i - 1);
+$("#next").onclick = () => go(st.i + 1);
+$("#read").onclick = () => { const t = panel.querySelector(".txt"); if (t) speak(t.textContent); };
+$("#mute").onclick = (e) => { const b = e.currentTarget; b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true"); };
+addEventListener("keydown", (e) => { if (e.target.tagName === "INPUT") return; if (e.key === "PageDown") go(st.i + 1); if (e.key === "PageUp") go(st.i - 1); });
+if (!("speechSynthesis" in window)) $("#read").remove();
+render();
+
+</script>
+</body>
+</html>

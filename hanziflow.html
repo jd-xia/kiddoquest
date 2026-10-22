@@ -2,182 +2,353 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>汉字笔顺 · 拼音 · 朗读</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>汉字魔法城 · 笔顺练习</title>
 <script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.7/dist/hanzi-writer.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pinyin-pro/3.29.3/index.min.js"></script>
 <style>
   :root{
     --pink:#ff8fab; --peach:#ffd6a5; --sky:#a0e7e5; --mint:#b4f8c8;
-    --purple:#c9b6ff; --ink:#3c3c50; --paper:#fffaf3;
+    --purple:#c9b6ff; --ink:#3c3c50; --paper:#fffaf3; --soft:#7a7a90;
   }
-  *{box-sizing:border-box;}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{ height:100%; margin:0; }
   body{
-    margin:0; min-height:100vh;
     font-family:"PingFang SC","Microsoft YaHei","Heiti SC",sans-serif;
     background:linear-gradient(160deg,#fff0e5 0%,#eaf6ff 50%,#f3ecff 100%);
     color:var(--ink);
-    display:flex; flex-direction:column; align-items:center;
-    padding:24px 12px 60px;
+    height:100dvh; max-height:100dvh;
+    overflow:hidden;
+    display:flex; flex-direction:column;
+    padding:8px 10px calc(8px + env(safe-area-inset-bottom,0px));
   }
-  h1{ font-size:26px; margin:6px 0 2px; text-align:center;}
-  .sub{ color:#7a7a90; margin-bottom:16px; font-size:14px; text-align:center;}
 
-  .card{
-    background:var(--paper); border-radius:20px; box-shadow:0 6px 18px rgba(0,0,0,0.08);
-    max-width:720px; width:100%; padding:18px 20px; margin-top:14px;
+  .chrome{
+    flex:0 0 auto;
+    display:flex; align-items:center; gap:8px;
+    max-width:900px; width:100%; margin:0 auto 6px;
   }
-  .input-card textarea{
-    width:100%; min-height:90px; border-radius:14px; border:2px solid var(--mint);
-    padding:10px 12px; font-size:15px; font-family:inherit; resize:vertical;
-    outline:none;
+  .home{
+    text-decoration:none; color:#fff; font-weight:700; font-size:12px;
+    background:rgba(0,0,0,.22); border:2px solid rgba(255,255,255,.35);
+    border-radius:999px; padding:7px 12px; white-space:nowrap;
   }
-  .input-row{ display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; }
-
-  .passage{ font-size:20px; line-height:2.3; letter-spacing:1px; }
-  .passage p{ margin:0 0 10px; }
-  .ruby-word{ display:inline-flex; flex-direction:column; align-items:center; margin:0 1px; vertical-align:bottom;}
-  .py{ font-size:11px; color:#8a6fd8; line-height:1; height:14px; }
-  .hz{ transition:all .15s ease; border-radius:6px; padding:1px 3px;}
-  .hz.active{ background:var(--pink); color:#fff; box-shadow:0 2px 8px rgba(255,143,171,.6);}
-  .punct{ color:#b7b7c8; }
-
-  .mode-tabs{ display:flex; gap:10px; margin-top:16px; }
+  h1{ font-size:clamp(16px,4vw,22px); margin:0; flex:1; text-align:center;}
+  .progress{
+    font-size:12px; font-weight:800; color:#8a6fd8;
+    background:#f3ecff; border-radius:999px; padding:5px 10px; white-space:nowrap;
+  }
+  .mode-tabs{
+    flex:0 0 auto;
+    display:flex; gap:6px; max-width:900px; width:100%; margin:0 auto 6px;
+  }
   .mode-tabs button{
-    border:none; border-radius:999px; padding:10px 20px; font-size:14px; font-weight:700;
-    background:#fff; color:#9a9ab0; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,0.06);
+    flex:1; border:none; border-radius:12px; padding:9px 8px; font-size:14px; font-weight:800;
+    background:#fff; color:#9a9ab0; cursor:pointer; box-shadow:0 2px 0 rgba(0,0,0,0.06);
   }
   .mode-tabs button.on{ background:var(--purple); color:#fff; }
 
-  .player{
-    display:flex; flex-direction:column; align-items:center; gap:8px;
+  .screen{
+    flex:1 1 auto; min-height:0;
+    max-width:900px; width:100%; margin:0 auto;
+    display:flex; flex-direction:column; gap:6px;
+  }
+
+  .stage-card{
+    flex:1 1 auto; min-height:0;
+    background:var(--paper); border-radius:18px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.08);
+    padding:8px 10px;
+    display:flex; flex-direction:column; gap:6px;
+  }
+
+  .stage-top{
+    flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center; gap:10px;
+  }
+  .pinyin-big{ font-size:clamp(18px,4vw,26px); color:#8a6fd8; font-weight:800; min-height:28px;}
+  .char-hint{
+    flex:0 0 auto;
+    font-size:12px; color:var(--soft); text-align:center;
+    min-height:16px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+
+  .stage-row{
+    flex:1 1 auto; min-height:0;
+    display:flex; align-items:stretch; justify-content:center; gap:10px;
+  }
+  .writer-wrap{
+    flex:1 1 auto; min-width:0; min-height:0;
+    display:flex; align-items:center; justify-content:center;
   }
   #target{
-    width:220px; height:220px; background:
-      repeating-linear-gradient(0deg,transparent,transparent 27px,#eee 27px,#eee 28px),
-      repeating-linear-gradient(90deg,transparent,transparent 27px,#eee 27px,#eee 28px), #fff;
-    border:3px dashed var(--purple); border-radius:16px;
-  }
-  .pinyin-big{ font-size:22px; color:#8a6fd8; font-weight:600; height:30px;}
-  .controls{ display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:6px;}
-  button{
-    border:none; border-radius:999px; padding:9px 18px; font-size:14px;
-    background:var(--sky); color:#12505a; cursor:pointer; font-weight:600;
-    box-shadow:0 3px 0 rgba(0,0,0,0.1); transition:transform .1s;
-  }
-  button:active{ transform:translateY(2px); box-shadow:none; }
-  button.primary{ background:var(--pink); color:#fff; }
-  select, input[type=range]{
-    border-radius:999px; padding:8px 14px; border:2px solid var(--mint);
-    background:#fff; font-size:14px; font-weight:600; color:var(--ink);
+    background:
+      repeating-linear-gradient(0deg,transparent,transparent 28px,#eee 28px,#eee 29px),
+      repeating-linear-gradient(90deg,transparent,transparent 28px,#eee 28px,#eee 29px), #fff;
+    border:3px solid var(--purple); border-radius:16px;
+    touch-action:none;
   }
 
-  .filmstrip-wrap{ margin-top:18px; width:100%; }
-  .filmstrip-label{ font-size:13px; color:#8a8aa0; margin:0 0 6px 4px;}
-  .filmstrip{
-    display:flex; gap:8px; overflow-x:auto; scroll-behavior:smooth;
-    background:#fff8ef; border-radius:16px; padding:12px;
-    box-shadow:inset 0 2px 6px rgba(0,0,0,0.06);
+  .stroke-panel{
+    flex:0 0 clamp(88px, 22vw, 120px);
+    min-height:0;
+    background:linear-gradient(180deg,#f7f2ff,#fff8ef);
+    border:2px solid #e0d4ff; border-radius:14px;
+    padding:8px 6px; display:flex; flex-direction:column; align-items:center; gap:6px;
   }
-  .filmstrip::-webkit-scrollbar{ height:6px;}
-  .filmstrip::-webkit-scrollbar-thumb{ background:var(--purple); border-radius:6px;}
-  .cell{
-    flex:0 0 auto; min-width:38px; height:44px; display:flex; align-items:center;
-    justify-content:center; border-radius:10px; font-size:20px; color:#9a9ab0;
-    background:#fff; transition:all .2s ease;
+  .stroke-panel .sp-title{ font-size:12px; font-weight:800; color:#7a4fd6;}
+  .stroke-panel .sp-count{
+    font-size:16px; font-weight:900; color:#3c3c50;
+    font-variant-numeric:tabular-nums;
   }
-  .cell.punct{ color:#cfcfe0; font-size:16px; min-width:20px;}
-  .cell.now{
-    background:var(--peach); color:#a04000; font-weight:700;
-    transform:scale(1.15); box-shadow:0 4px 10px rgba(255,180,100,.5);
+  .stroke-panel .sp-count b{ color:#ff8fab; font-size:20px;}
+  .stroke-list{
+    width:100%; flex:1 1 auto; min-height:0;
+    display:flex; flex-direction:column; gap:5px;
+    overflow-y:auto; padding:2px;
   }
+  .stroke-item{
+    display:flex; align-items:center; justify-content:center;
+    min-height:30px; border-radius:10px; font-size:12px; font-weight:800;
+    background:#fff; color:#9a9ab0; border:2px solid #eee;
+    flex:0 0 auto;
+  }
+  .stroke-item.done{ background:#e8fcec; color:#1a7a3a; border-color:#b4f8c8;}
+  .stroke-item.now{
+    background:#ff8fab; color:#fff; border-color:#ff8fab;
+    box-shadow:0 2px 8px rgba(255,143,171,.4);
+  }
+  .stroke-item.miss{ background:#ffe0d8; color:#a6382a; border-color:#f39a8d;}
 
-  .reading-panel{ display:flex; flex-direction:column; align-items:center; gap:10px;}
-  .reading-panel .controls{ margin-top:0;}
-  .rate-row{ display:flex; align-items:center; gap:8px; font-size:13px; color:#8a8aa0;}
-  .pace-row{ display:flex; align-items:center; gap:10px; margin-top:4px; font-size:14px; }
-  .pace-row input[type=range]{ width:180px; padding:0; }
-  .pace-label{ font-size:13px; color:#8a8aa0; }
-  .read-status{ font-size:13px; color:#8a8aa0; min-height:20px; text-align:center;}
+  .toolbar{
+    flex:0 0 auto;
+    display:flex; flex-direction:column; gap:6px;
+  }
+  .big-row, .nav-row, .speed-row{
+    display:flex; gap:6px; width:100%; justify-content:center; align-items:center; flex-wrap:nowrap;
+  }
+  .big-btn{
+    flex:1; min-height:42px; border:none; border-radius:12px;
+    font-size:14px; font-weight:800; cursor:pointer;
+    box-shadow:0 3px 0 rgba(0,0,0,.1);
+  }
+  .big-btn:active{ transform:translateY(2px); box-shadow:0 1px 0 rgba(0,0,0,.1);}
+  .big-btn.pink{ background:var(--pink); color:#fff;}
+  .big-btn.sky{ background:var(--sky); color:#12505a;}
+  .big-btn.mint{ background:var(--mint); color:#1a5c3a;}
+  .big-btn.peach{ background:var(--peach); color:#8a3d00;}
+  .big-btn.on{ outline:3px solid #7a4fd6; outline-offset:1px;}
+  .speed-row .chip, .chip{
+    border:none; border-radius:999px; padding:8px 12px; font-size:12px; font-weight:800;
+    background:#fff; color:#7a7a90; cursor:pointer; box-shadow:0 2px 0 rgba(0,0,0,.08);
+    white-space:nowrap;
+  }
+  .speed-row .chip.on{ background:#7a4fd6; color:#fff;}
+
+  .passage-dock{
+    flex:0 0 auto;
+    height:min(118px, 22vh);
+    background:var(--paper); border-radius:16px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.08);
+    padding:6px 10px 8px;
+    display:flex; flex-direction:column; min-height:0;
+  }
+  .passage-dock .dock-bar{
+    flex:0 0 auto;
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    margin-bottom:4px;
+  }
+  .passage-dock .tip{ font-size:11px; color:var(--soft); margin:0; font-weight:700;}
+  .passage-dock .linkish{
+    border:none; background:#eef; color:#5c5c72; font-size:12px; font-weight:800;
+    border-radius:999px; padding:5px 10px; cursor:pointer;
+  }
+  .passage{
+    flex:1 1 auto; min-height:0; overflow:auto;
+    font-size:clamp(16px, 3.8vw, 20px); line-height:2.1; letter-spacing:1px;
+    -webkit-overflow-scrolling:touch;
+  }
+  .passage p{ margin:0 0 6px; }
+  .ruby-word{
+    display:inline-flex; flex-direction:column; align-items:center;
+    margin:0 1px; vertical-align:bottom; cursor:pointer;
+  }
+  .py{ font-size:10px; color:#8a6fd8; line-height:1; height:12px; }
+  .hz{
+    transition:all .15s ease; border-radius:6px; padding:1px 3px;
+    border:2px solid transparent;
+  }
+  .hz.active{ background:var(--pink); color:#fff; box-shadow:0 2px 8px rgba(255,143,171,.55);}
+  .hz.done{ border-color:#b4f8c8; background:#f0fff5;}
+  .punct{ color:#b7b7c8; cursor:default;}
+
+  /* reading screen */
+  .read-card{
+    flex:0 0 auto;
+    background:var(--paper); border-radius:16px; padding:10px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.08);
+    display:flex; flex-direction:column; align-items:center; gap:8px;
+  }
+  .rate-row{ display:flex; align-items:center; gap:8px; font-size:12px; color:var(--soft);}
+  .read-status{ font-size:12px; color:var(--soft); min-height:16px; text-align:center;}
   .read-status.warn{ color:#c45c26; font-weight:700;}
+  .controls{ display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
+  .controls button{
+    border:none; border-radius:999px; padding:10px 16px; font-size:14px; font-weight:800;
+    background:var(--sky); color:#12505a; cursor:pointer; box-shadow:0 3px 0 rgba(0,0,0,.1);
+  }
+  .controls button.primary{ background:var(--pink); color:#fff;}
 
-  footer{ margin-top:22px; font-size:12px; color:#b0b0c5; text-align:center;}
+  /* article modal */
+  .modal{
+    position:fixed; inset:0; z-index:40;
+    background:rgba(40,30,50,.45);
+    display:flex; align-items:flex-end; justify-content:center;
+    padding:12px;
+  }
+  .modal-card{
+    width:min(560px, 100%);
+    background:var(--paper); border-radius:18px; padding:14px;
+    box-shadow:0 10px 40px rgba(0,0,0,.25);
+    max-height:min(70dvh, 520px); overflow:auto;
+  }
+  .modal-card h3{ margin:0 0 8px; font-size:16px;}
+  .modal-card textarea{
+    width:100%; min-height:90px; border-radius:12px; border:2px solid var(--mint);
+    padding:10px; font-size:14px; font-family:inherit; resize:vertical;
+  }
+  .input-row{ display:flex; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .input-row button, .preset-row button{
+    border:none; border-radius:999px; padding:9px 14px; font-size:13px; font-weight:700;
+    cursor:pointer; box-shadow:0 2px 0 rgba(0,0,0,.1);
+  }
+  button.primary{ background:var(--pink); color:#fff;}
+  button.ghost{ background:#fff; color:#5c5c72;}
+  .preset-row{ display:flex; gap:6px; flex-wrap:wrap; margin:6px 0;}
+  .preset-row button{ background:var(--sky); color:#12505a;}
+
   .hidden{ display:none !important; }
+
+  @media (max-height:700px){
+    .big-btn{ min-height:38px; font-size:13px;}
+    .passage-dock{ height:min(100px, 20vh);}
+  }
 </style>
 </head>
 <body>
 
-<h1>🧱 汉字笔顺 · 拼音 · 朗读 🏰</h1>
-<div class="sub">输入任意一篇文章，自动生成拼音、笔顺练习和整篇朗读</div>
-
-<div class="card input-card">
-  <textarea id="articleInput" placeholder="在这里粘贴或输入一篇新的文章…">星期六下午，我和妹妹在家里玩积木。我们一起搭了一座漂亮的城堡。
-
-玩了一会儿，妹妹想拿走我最喜欢的积木，我不愿意给她，我们就吵了起来。妈妈看见后，对我们说："好东西要和别人分享。"
-
-我听了妈妈的话，觉得很有道理。于是，我把积木分给妹妹，我们一起把城堡搭得更漂亮。
-
-从这件事中，我学会了分享，也觉得和家人一起玩很开心。</textarea>
-  <div class="input-row">
-    <button class="primary" id="genBtn">✨ 生成</button>
-    <button id="clearBtn">🗑 清空</button>
-  </div>
-</div>
-
-<div class="card">
-  <div class="passage" id="passage"></div>
+<div class="chrome">
+  <a class="home" href="index.html">← 乐园</a>
+  <h1>🏰 汉字魔法城</h1>
+  <div class="progress" id="progressLabel">准备好啦</div>
 </div>
 
 <div class="mode-tabs">
-  <button id="tabPractice" class="on">✏️ 笔顺练习</button>
-  <button id="tabRead">📖 整篇阅读</button>
+  <button id="tabPractice" class="on">✏️ 练字</button>
+  <button id="tabRead">📖 听故事</button>
+  <button type="button" id="btnOpenArticle" class="chip" style="flex:0 0 auto;box-shadow:none;background:#fff8ef;">📝 换文</button>
 </div>
 
-<div class="card player" id="practicePanel">
-  <div id="target"></div>
-  <div class="pinyin-big" id="pinyinBig"></div>
-  <div class="controls">
-    <button class="primary" id="playBtn">⏸ 暂停</button>
-    <button id="restartBtn">🔁 从头开始</button>
+<!-- PRACTICE: single screen -->
+<section class="screen" id="practicePanel">
+  <div class="stage-card">
+    <div class="stage-top">
+      <div class="pinyin-big" id="pinyinBig"></div>
+    </div>
+    <div class="stage-row">
+      <div class="writer-wrap" id="writerWrap">
+        <div id="target"></div>
+      </div>
+      <aside class="stroke-panel" aria-live="polite">
+        <div class="sp-title">笔画</div>
+        <div class="sp-count" id="strokeCount"><b>0</b> / 0</div>
+        <div class="stroke-list" id="strokeList"></div>
+      </aside>
+    </div>
+    <div class="char-hint" id="charHint">点下面的字开始练</div>
+
+    <div class="toolbar">
+      <div class="big-row" id="modeRow">
+        <button type="button" class="big-btn peach on" id="btnWatch">👀 看笔顺</button>
+        <button type="button" class="big-btn mint" id="btnWrite">✍️ 我来写</button>
+      </div>
+      <div class="nav-row">
+        <button type="button" class="big-btn sky" id="btnPrev">◀ 上一个</button>
+        <button type="button" class="big-btn pink" id="btnReplay">🔁 再来</button>
+        <button type="button" class="big-btn sky" id="btnNext">下一个 ▶</button>
+      </div>
+      <div class="speed-row" id="speedRow">
+        <button type="button" class="chip" data-speed="1.6">慢</button>
+        <button type="button" class="chip on" data-speed="0.9">中</button>
+        <button type="button" class="chip" data-speed="0.45">快</button>
+        <button type="button" class="chip" id="btnSpeak">🔊 读</button>
+      </div>
+    </div>
   </div>
-  <div class="pace-row">
-    <span>⚡ 快</span>
-    <input type="range" id="paceRange" min="0.2" max="4" step="0.2" value="0.8">
-    <span>🐢 慢</span>
+
+</section>
+
+<!-- READING: compact controls (shares passage dock below) -->
+<section class="screen hidden" id="readPanel">
+  <div class="read-card" style="flex:1 1 auto;">
+    <div style="font-size:36px;margin-top:8px;">📖</div>
+    <div class="controls">
+      <button class="primary" id="readBtn">▶️ 开始朗读</button>
+      <button id="stopReadBtn">⏹ 停止</button>
+    </div>
+    <div class="rate-row">
+      语速
+      <input type="range" id="rateRange" min="0.5" max="1.5" step="0.1" value="0.9">
+      <span id="rateLabel">0.9×</span>
+    </div>
+    <div class="read-status" id="readStatus">点开始听故事</div>
   </div>
-  <div id="paceLabel" class="pace-label">每一笔 0.8 秒</div>
-  <div class="filmstrip-wrap">
-    <div class="filmstrip-label">📜 逐字滚动</div>
-    <div class="filmstrip" id="filmstrip"></div>
+</section>
+
+<!-- shared passage: always on screen -->
+<div class="passage-dock" id="passageCard" style="max-width:900px;width:100%;margin:0 auto;">
+  <div class="dock-bar">
+    <p class="tip" id="passageTip">点汉字练习笔顺</p>
   </div>
+  <div class="passage" id="passage"></div>
 </div>
 
-<div class="card reading-panel hidden" id="readPanel">
-  <div style="font-size:40px;">📖</div>
-  <div class="controls">
-    <button class="primary" id="readBtn">▶️ 开始朗读</button>
-    <button id="stopReadBtn">⏹ 停止</button>
+<div class="modal hidden" id="articleModal">
+  <div class="modal-card">
+    <h3>📝 换一篇练习</h3>
+    <div class="preset-row">
+      <button type="button" data-preset="short">短句练习</button>
+      <button type="button" data-preset="share">分享小故事</button>
+      <button type="button" data-preset="animals">动物字</button>
+    </div>
+    <textarea id="articleInput" placeholder="粘贴或输入一篇文章…"></textarea>
+    <div class="input-row">
+      <button class="primary" id="genBtn">✨ 开始练</button>
+      <button class="ghost" id="clearBtn">清空</button>
+      <button class="ghost" id="closeModalBtn">关闭</button>
+    </div>
   </div>
-  <div class="rate-row">
-    朗读语速
-    <input type="range" id="rateRange" min="0.5" max="1.5" step="0.1" value="0.9">
-    <span id="rateLabel">0.9×</span>
-  </div>
-  <div class="read-status" id="readStatus">点击开始，听整篇文章朗读</div>
 </div>
-
-<footer>点击"逐字滚动"里的任意字，可以单独查看该字的笔顺 👆　朗读功能依赖浏览器自带的语音朗读，效果因浏览器而异</footer>
 
 <script>
 const isHanzi = ch => /[\u4e00-\u9fff]/.test(ch);
 
-let sequence = [];      // {char, py, wordEl, cellEl}
-let idx = -1;
-let playing = true;
-let secondsPerStroke = 0.8; // 0.2 (fastest) .. 4.0 (slowest) seconds PER STROKE
-let timer = null;
-let mode = 'practice';  // 'practice' | 'reading'
+const PRESETS = {
+  short: '春天来了，花儿开了。小鸟在树上唱歌。我喜欢和小朋友一起玩。',
+  share: '星期六下午，我和妹妹在家里玩积木。妈妈说："好东西要和别人分享。"我把积木分给妹妹，我们一起把城堡搭得更漂亮。',
+  animals: '猫狗鸟鱼马牛羊鸡鸭兔龙虎熊狮象'
+};
+
+let sequence = []; // {char, py, wordEl, isHanzi}
+let hanziIndexes = []; // indices into sequence that are hanzi
+let curHanziPos = 0;   // position within hanziIndexes
+let practiceMode = 'watch'; // watch | write
+let secondsPerStroke = 0.9;
+let mode = 'practice';
 let writer = null;
+let playToken = 0;
+let doneSet = new Set();
+
 let reading = false;
 let pausedReading = false;
 let chineseVoice = null;
@@ -188,13 +359,22 @@ let sentenceQueue = [];
 let sentencePos = 0;
 
 const passageEl = document.getElementById('passage');
-const filmstripEl = document.getElementById('filmstrip');
 const pinyinBigEl = document.getElementById('pinyinBig');
-const playBtn = document.getElementById('playBtn');
+const charHintEl = document.getElementById('charHint');
+const progressLabel = document.getElementById('progressLabel');
+const targetEl = document.getElementById('target');
+const strokeCountEl = document.getElementById('strokeCount');
+const strokeListEl = document.getElementById('strokeList');
 const readBtn = document.getElementById('readBtn');
 const readStatus = document.getElementById('readStatus');
 const rateRange = document.getElementById('rateRange');
 const rateLabel = document.getElementById('rateLabel');
+const btnWatch = document.getElementById('btnWatch');
+const btnWrite = document.getElementById('btnWrite');
+const speedRow = document.getElementById('speedRow');
+
+let strokeTotal = 0;
+let strokeDone = 0; // completed strokes (0..total)
 
 function setReadStatus(text, warn){
   readStatus.textContent = text;
@@ -204,32 +384,35 @@ function setReadStatus(text, warn){
 function pickChineseVoice(){
   if (!('speechSynthesis' in window)) { chineseVoice = null; return null; }
   const voices = speechSynthesis.getVoices() || [];
-  const preferred = voices.find(v => /zh-CN/i.test(v.lang) && /female|xiaoxiao|tingting|huihui|yaoyao|google/i.test(v.name))
-    || voices.find(v => /zh-CN/i.test(v.lang))
-    || voices.find(v => /^zh/i.test(v.lang) || /chinese|中文|普通话|国语/i.test(v.name));
-  chineseVoice = preferred || null;
+  chineseVoice = voices.find(v => /zh-CN/i.test(v.lang))
+    || voices.find(v => /^zh/i.test(v.lang) || /chinese|中文|普通话/i.test(v.name))
+    || null;
   return chineseVoice;
 }
-
-function ensureVoices(){
-  if (!('speechSynthesis' in window)) return;
+if ('speechSynthesis' in window) {
   pickChineseVoice();
   speechSynthesis.onvoiceschanged = () => pickChineseVoice();
 }
-ensureVoices();
+
+function speakChar(ch){
+  if (!('speechSynthesis' in window) || !ch) return;
+  pickChineseVoice();
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(ch);
+  u.lang = 'zh-CN';
+  u.rate = 0.85;
+  if (chineseVoice) u.voice = chineseVoice;
+  setTimeout(() => speechSynthesis.speak(u), 40);
+}
 
 function stopSpeechKeepAlive(){
   if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
 }
 function startSpeechKeepAlive(){
-  // Chrome often stops long utterances unless speechSynthesis is nudged.
   stopSpeechKeepAlive();
   keepAliveTimer = setInterval(() => {
     if (!reading || pausedReading) return;
-    try {
-      speechSynthesis.pause();
-      speechSynthesis.resume();
-    } catch (e) {}
+    try { speechSynthesis.pause(); speechSynthesis.resume(); } catch (e) {}
   }, 8000);
 }
 
@@ -246,188 +429,374 @@ function stopReading(resetButton){
   clearActive();
 }
 
+function clearActive(){
+  sequence.forEach(s => s.wordEl.classList.remove('active'));
+}
+
+function setActiveSeq(i){
+  clearActive();
+  const item = sequence[i];
+  if (!item) return;
+  item.wordEl.classList.add('active');
+}
+
+function updateProgress(){
+  const total = hanziIndexes.length;
+  if (!total) {
+    progressLabel.textContent = '还没有汉字';
+    return;
+  }
+  const n = curHanziPos + 1;
+  const done = doneSet.size;
+  progressLabel.textContent = `第 ${n} / ${total} 个字 · 已练 ${done} 个`;
+}
+
+function currentItem(){
+  if (!hanziIndexes.length) return null;
+  const seqI = hanziIndexes[curHanziPos];
+  return sequence[seqI] || null;
+}
+
+const BASE_STROKE_MS = 400;
+function paceParams(secPerStroke){
+  const totalPerStrokeMs = secPerStroke * 1000;
+  const drawMs = Math.max(totalPerStrokeMs * 0.55, 40);
+  const delay = Math.max(totalPerStrokeMs - drawMs, 40);
+  const speed = Math.max(0.08, BASE_STROKE_MS / drawMs);
+  return { speed, delay };
+}
+
+function resetStrokePanel(total){
+  strokeTotal = total || 0;
+  strokeDone = 0;
+  renderStrokePanel(0, 'now');
+}
+
+function renderStrokePanel(doneCount, currentState){
+  // doneCount = number of fully completed strokes
+  // currentState: 'now' | 'miss' | null for the next stroke slot
+  strokeDone = doneCount;
+  const showCur = Math.min(doneCount + 1, strokeTotal || 0);
+  strokeCountEl.innerHTML = strokeTotal
+    ? `<b>${Math.min(showCur, strokeTotal)}</b> / ${strokeTotal}`
+    : `<b>0</b> / 0`;
+
+  if (!strokeTotal) {
+    strokeListEl.innerHTML = '<div class="stroke-item">—</div>';
+    return;
+  }
+
+  let html = '';
+  for (let i = 0; i < strokeTotal; i++) {
+    let cls = 'stroke-item';
+    if (i < doneCount) cls += ' done';
+    else if (i === doneCount && currentState === 'now') cls += ' now';
+    else if (i === doneCount && currentState === 'miss') cls += ' miss';
+    html += `<div class="${cls}" data-i="${i}">第 ${i + 1} 笔</div>`;
+  }
+  strokeListEl.innerHTML = html;
+
+  const nowEl = strokeListEl.querySelector('.now, .miss');
+  if (nowEl) {
+    const top = nowEl.offsetTop - strokeListEl.clientHeight / 2 + nowEl.clientHeight / 2;
+    strokeListEl.scrollTop = Math.max(0, top);
+  }
+}
+
+function writerSize(){
+  const wrap = document.getElementById('writerWrap');
+  if (!wrap) return 200;
+  const side = Math.min(wrap.clientWidth, wrap.clientHeight);
+  return Math.max(140, Math.floor(side - 4));
+}
+
+function createWriter(char, speed, delay, forQuiz){
+  targetEl.innerHTML = '';
+  const size = writerSize();
+  targetEl.style.width = size + 'px';
+  targetEl.style.height = size + 'px';
+  return HanziWriter.create(targetEl, char, {
+    width: size, height: size, padding: 10,
+    strokeAnimationSpeed: speed,
+    delayBetweenStrokes: delay,
+    strokeColor: '#7a4fd6',
+    radicalColor: '#ff8fab',
+    outlineColor: '#e5ddff',
+    drawingColor: '#3c3c50',
+    showOutline: true,
+    showHintAfterMisses: forQuiz ? 1 : false,
+    highlightOnComplete: true,
+    leniency: 1.15
+  });
+}
+
+function markDone(seqIndex){
+  doneSet.add(seqIndex);
+  const item = sequence[seqIndex];
+  if (item) item.wordEl.classList.add('done');
+  updateProgress();
+}
+
+function runWatch(){
+  const item = currentItem();
+  if (!item) return;
+  const myToken = ++playToken;
+  const { speed, delay } = paceParams(secondsPerStroke);
+  writer = createWriter(item.char, speed, delay, false);
+  pinyinBigEl.textContent = item.py || '';
+  charHintEl.textContent = '看好右边笔画：现在写到第几笔';
+  setActiveSeq(hanziIndexes[curHanziPos]);
+  resetStrokePanel(0);
+
+  writer.getCharacterData().then(data => {
+    if (myToken !== playToken) return;
+    const total = (data && data.strokes) ? data.strokes.length : 0;
+    resetStrokePanel(total);
+    if (!total) {
+      charHintEl.textContent = '这个字暂时没有笔顺数据';
+      return;
+    }
+
+    // Animate stroke-by-stroke so the right panel can update live
+    let i = 0;
+    const nextStroke = () => {
+      if (myToken !== playToken) return;
+      if (i >= total) {
+        renderStrokePanel(total, null);
+        markDone(hanziIndexes[curHanziPos]);
+        charHintEl.textContent = '看完啦！可以点「我来写」，或「下一个」';
+        return;
+      }
+      renderStrokePanel(i, 'now');
+      charHintEl.textContent = `正在写第 ${i + 1} 笔（共 ${total} 笔）`;
+      writer.animateStroke(i, {
+        onComplete: () => {
+          if (myToken !== playToken) return;
+          i += 1;
+          renderStrokePanel(i, i < total ? 'now' : null);
+          setTimeout(() => {
+            if (myToken !== playToken) return;
+            nextStroke();
+          }, delay);
+        }
+      });
+    };
+    nextStroke();
+  }).catch(() => {
+    if (myToken !== playToken) return;
+    charHintEl.textContent = '笔顺加载失败，换一个字试试';
+  });
+}
+
+function runWrite(){
+  const item = currentItem();
+  if (!item) return;
+  const myToken = ++playToken;
+  const { speed, delay } = paceParams(secondsPerStroke);
+  writer = createWriter(item.char, speed, delay, true);
+  pinyinBigEl.textContent = item.py || '';
+  charHintEl.textContent = '用手指写；右边会显示写到第几笔';
+  setActiveSeq(hanziIndexes[curHanziPos]);
+  resetStrokePanel(0);
+
+  writer.getCharacterData().then(data => {
+    if (myToken !== playToken) return;
+    const total = (data && data.strokes) ? data.strokes.length : 0;
+    resetStrokePanel(total);
+    renderStrokePanel(0, 'now');
+
+    writer.quiz({
+      onCorrectStroke: (strokeData) => {
+        if (myToken !== playToken) return;
+        // strokeNum is 0-based index of the stroke just completed
+        const done = (strokeData && typeof strokeData.strokeNum === 'number')
+          ? strokeData.strokeNum + 1
+          : strokeDone + 1;
+        const next = done < total ? 'now' : null;
+        renderStrokePanel(done, next);
+        charHintEl.textContent = done < total
+          ? `写对啦！接着写第 ${done + 1} 笔`
+          : '最后一笔写对啦！';
+      },
+      onMistake: (strokeData) => {
+        if (myToken !== playToken) return;
+        const cur = (strokeData && typeof strokeData.strokeNum === 'number')
+          ? strokeData.strokeNum
+          : strokeDone;
+        renderStrokePanel(cur, 'miss');
+        charHintEl.textContent = `第 ${cur + 1} 笔再试试～`;
+      },
+      onComplete: () => {
+        if (myToken !== playToken) return;
+        renderStrokePanel(total, null);
+        markDone(hanziIndexes[curHanziPos]);
+        charHintEl.textContent = '写对啦！真棒 🌟 可以练下一个';
+        speakChar('真棒');
+      }
+    });
+  }).catch(() => {
+    if (myToken !== playToken) return;
+    charHintEl.textContent = '笔顺加载失败，换一个字试试';
+  });
+}
+
+function showCurrent(opts){
+  const item = currentItem();
+  if (!item) {
+    targetEl.innerHTML = '';
+    pinyinBigEl.textContent = '';
+    charHintEl.textContent = '请先生成一篇有汉字的文章';
+    resetStrokePanel(0);
+    updateProgress();
+    return;
+  }
+  updateProgress();
+  setActiveSeq(hanziIndexes[curHanziPos]);
+  if (opts && opts.speak) speakChar(item.char);
+  if (practiceMode === 'write') runWrite();
+  else runWatch();
+}
+
+function goHanzi(delta){
+  if (!hanziIndexes.length) return;
+  curHanziPos = (curHanziPos + delta + hanziIndexes.length) % hanziIndexes.length;
+  showCurrent({ speak: true });
+}
+
+function jumpToSeq(seqIndex){
+  if (mode !== 'practice') return;
+  const pos = hanziIndexes.indexOf(seqIndex);
+  if (pos < 0) return;
+  curHanziPos = pos;
+  showCurrent({ speak: true });
+}
+
 function buildFromText(rawText){
-  clearTimeout(timer);
   stopReading();
-  setReadStatus('点击开始，听整篇文章朗读');
-
+  playToken++;
+  doneSet.clear();
   passageEl.innerHTML = '';
-  filmstripEl.innerHTML = '';
   sequence = [];
+  hanziIndexes = [];
+  curHanziPos = 0;
 
-  const paragraphs = rawText.split(/\n\s*\n/).filter(p => p.length);
+  const paragraphs = rawText.split(/\n+/).filter(p => p.trim().length);
   const flatChars = [];
   paragraphs.forEach(p => { for (const ch of p) if (ch.trim()) flatChars.push(ch); });
 
-  // batch pinyin conversion (context-aware for polyphonic characters)
   let pyArray = [];
   try {
     pyArray = pinyinPro.pinyin(flatChars.join(''), { type: 'array', toneType: 'symbol' });
-  } catch(e){ pyArray = flatChars.map(() => ''); }
+  } catch (e) {
+    pyArray = flatChars.map(() => '');
+  }
 
   let flatI = 0;
   paragraphs.forEach(para => {
     const p = document.createElement('p');
     for (const ch of para) {
-      if (!ch.trim()) continue; // skip stray whitespace inside a paragraph
-      const py = isHanzi(ch) ? (pyArray[flatI] || '') : '';
+      if (!ch.trim()) continue;
+      const hanzi = isHanzi(ch);
+      const py = hanzi ? (pyArray[flatI] || '') : '';
       const wrap = document.createElement('span');
-      wrap.className = 'ruby-word';
+      wrap.className = 'ruby-word' + (hanzi ? ' hanzi' : '');
       const pySpan = document.createElement('span');
       pySpan.className = 'py';
       pySpan.textContent = py;
       const hzSpan = document.createElement('span');
       hzSpan.textContent = ch;
-      hzSpan.className = isHanzi(ch) ? 'hz' : 'hz punct';
+      hzSpan.className = hanzi ? 'hz' : 'hz punct';
       wrap.appendChild(pySpan);
       wrap.appendChild(hzSpan);
       p.appendChild(wrap);
 
-      const cell = document.createElement('div');
-      cell.textContent = ch;
-      cell.className = 'cell' + (isHanzi(ch) ? '' : ' punct');
       const seqIndex = sequence.length;
-      cell.addEventListener('click', () => jumpTo(seqIndex));
-      filmstripEl.appendChild(cell);
-
-      sequence.push({ char: ch, py, wordEl: hzSpan, cellEl: cell });
+      if (hanzi) {
+        wrap.addEventListener('click', () => jumpToSeq(seqIndex));
+        hanziIndexes.push(seqIndex);
+      }
+      sequence.push({ char: ch, py, wordEl: hzSpan, isHanzi: hanzi });
       flatI++;
     }
     passageEl.appendChild(p);
   });
 
-  idx = -1;
-  playing = true;
-  playBtn.textContent = '⏸ 暂停';
-  if (mode === 'practice') next();
-}
-
-function clearActive(){
-  sequence.forEach(s => { s.wordEl.classList.remove('active'); s.cellEl.classList.remove('now'); });
-}
-
-function setActive(i){
-  const item = sequence[i];
-  if (!item) return;
-  item.wordEl.classList.add('active');
-  item.cellEl.classList.add('now');
-  // Only nudge the filmstrip sideways — never scroll the page
-  const cell = item.cellEl;
-  const left = cell.offsetLeft - (filmstripEl.clientWidth - cell.offsetWidth) / 2;
-  filmstripEl.scrollTo({ left: Math.max(0, left), behavior: 'smooth' });
-}
-
-// HanziWriter draws each stroke over ~400ms at strokeAnimationSpeed = 1.
-// We derive strokeAnimationSpeed / delayBetweenStrokes so that the total time
-// PER STROKE (draw + gap before the next one) matches the chosen seconds/stroke.
-const BASE_STROKE_MS = 400;
-function paceParams(secPerStroke){
-  const totalPerStrokeMs = secPerStroke * 1000;
-  const drawMs = Math.max(totalPerStrokeMs * 0.5, 30);
-  const delay = Math.max(totalPerStrokeMs - drawMs, 10);
-  const speed = Math.max(0.05, BASE_STROKE_MS / drawMs);
-  return { speed, delay };
-}
-
-// HanziWriter has no method to change strokeAnimationSpeed / delayBetweenStrokes
-// on an existing instance, so we create a fresh instance per character instead.
-function createWriterFor(char, speed, delay){
-  const targetEl = document.getElementById('target');
-  targetEl.innerHTML = '';
-  return HanziWriter.create(targetEl, char, {
-    width: 220, height: 220, padding: 10,
-    strokeAnimationSpeed: speed, delayBetweenStrokes: delay,
-    strokeColor: '#7a4fd6', radicalColor: '#ff8fab',
-    showOutline: true, outlineColor: '#e5ddff'
-  });
-}
-
-let playToken = 0; // invalidates stale animateCharacter callbacks after a jump/speed-change/restart
-
-function next(){
-  if (mode !== 'practice' || !playing || !sequence.length) return;
-  clearActive();
-  idx++;
-  if (idx >= sequence.length) idx = 0;
-  const item = sequence[idx];
-  setActive(idx);
-  const strokePauseMs = secondsPerStroke * 1000;
-  const myToken = ++playToken; // this character "owns" this token
-
-  if (isHanzi(item.char)){
-    pinyinBigEl.textContent = item.py || '';
-    const { speed, delay } = paceParams(secondsPerStroke);
-    writer = createWriterFor(item.char, speed, delay);
-    writer.animateCharacter({
-      onComplete: () => {
-        if (myToken !== playToken) return; // a newer character has since taken over — ignore this stale callback
-        timer = setTimeout(() => {
-          if (myToken !== playToken) return;
-          next();
-        }, Math.max(strokePauseMs, 250));
-      }
-    });
+  updateProgress();
+  if (hanziIndexes.length && mode === 'practice') {
+    showCurrent({ speak: false });
+    charHintEl.textContent = practiceMode === 'write'
+      ? '用手指在格子里写这个字'
+      : '点「看笔顺」或文章里的字开始练';
   } else {
+    targetEl.innerHTML = '';
     pinyinBigEl.textContent = '';
-    timer = setTimeout(() => {
-      if (myToken !== playToken) return;
-      next();
-    }, strokePauseMs);
   }
 }
 
-function jumpTo(i){
-  if (mode !== 'practice') return;
-  clearTimeout(timer);
-  clearActive();
-  idx = i - 1;
-  playing = true;
-  playBtn.textContent = '⏸ 暂停';
-  next();
-}
-
-playBtn.addEventListener('click', (e) => {
-  playing = !playing;
-  e.target.textContent = playing ? '⏸ 暂停' : '▶️ 继续';
-  if (playing) next(); else clearTimeout(timer);
+// ---- UI bindings ----
+btnWatch.addEventListener('click', () => {
+  practiceMode = 'watch';
+  btnWatch.classList.add('on');
+  btnWrite.classList.remove('on');
+  speedRow.classList.remove('hidden');
+  showCurrent({ speak: true });
+});
+btnWrite.addEventListener('click', () => {
+  practiceMode = 'write';
+  btnWrite.classList.add('on');
+  btnWatch.classList.remove('on');
+  showCurrent({ speak: true });
 });
 
-document.getElementById('restartBtn').addEventListener('click', () => {
-  clearTimeout(timer);
-  clearActive();
-  idx = -1;
-  playing = true;
-  playBtn.textContent = '⏸ 暂停';
-  next();
+document.getElementById('btnPrev').addEventListener('click', () => goHanzi(-1));
+document.getElementById('btnNext').addEventListener('click', () => goHanzi(1));
+document.getElementById('btnReplay').addEventListener('click', () => showCurrent({ speak: true }));
+
+speedRow.querySelectorAll('[data-speed]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    speedRow.querySelectorAll('[data-speed]').forEach(b => b.classList.remove('on'));
+    btn.classList.add('on');
+    secondsPerStroke = parseFloat(btn.dataset.speed);
+    if (practiceMode === 'watch') showCurrent({ speak: false });
+  });
+});
+document.getElementById('btnSpeak').addEventListener('click', () => {
+  const item = currentItem();
+  if (item) speakChar(item.char);
 });
 
-const paceRange = document.getElementById('paceRange');
-const paceLabel = document.getElementById('paceLabel');
-secondsPerStroke = parseFloat(paceRange.value);
-function updatePaceLabel(){
-  const v = secondsPerStroke.toFixed(1).replace(/\.0$/, '');
-  if (secondsPerStroke <= 0.2) paceLabel.textContent = '每一笔 ' + v + ' 秒（最快）';
-  else if (secondsPerStroke >= 4) paceLabel.textContent = '每一笔 ' + v + ' 秒（最慢）';
-  else paceLabel.textContent = '每一笔 ' + v + ' 秒';
-}
-updatePaceLabel();
-paceRange.addEventListener('input', () => {
-  secondsPerStroke = parseFloat(paceRange.value);
-  updatePaceLabel();
+const articleModal = document.getElementById('articleModal');
+function openArticleModal(){ articleModal.classList.remove('hidden'); }
+function closeArticleModal(){ articleModal.classList.add('hidden'); }
+
+document.getElementById('btnOpenArticle').addEventListener('click', openArticleModal);
+document.getElementById('closeModalBtn').addEventListener('click', closeArticleModal);
+articleModal.addEventListener('click', (e) => {
+  if (e.target === articleModal) closeArticleModal();
 });
 
-// ---- article input ----
 document.getElementById('genBtn').addEventListener('click', () => {
   const text = document.getElementById('articleInput').value.trim();
-  if (!text) { alert('请先输入一篇文章～'); return; }
+  if (!text) { alert('请先输入或选择一篇练习～'); return; }
   buildFromText(text);
+  closeArticleModal();
+  // resize writer after layout settles
+  requestAnimationFrame(() => { if (mode === 'practice') showCurrent({ speak: false }); });
 });
 document.getElementById('clearBtn').addEventListener('click', () => {
   document.getElementById('articleInput').value = '';
   document.getElementById('articleInput').focus();
 });
+document.querySelectorAll('[data-preset]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.preset;
+    document.getElementById('articleInput').value = PRESETS[key] || '';
+    buildFromText(PRESETS[key]);
+    closeArticleModal();
+    requestAnimationFrame(() => { if (mode === 'practice') showCurrent({ speak: false }); });
+  });
+});
 
-// ---- mode tabs ----
 const tabPractice = document.getElementById('tabPractice');
 const tabRead = document.getElementById('tabRead');
 const practicePanel = document.getElementById('practicePanel');
@@ -437,38 +806,38 @@ tabPractice.addEventListener('click', () => {
   if (mode === 'practice') return;
   mode = 'practice';
   tabPractice.classList.add('on'); tabRead.classList.remove('on');
-  practicePanel.classList.remove('hidden'); readPanel.classList.add('hidden');
+  practicePanel.classList.remove('hidden');
+  readPanel.classList.add('hidden');
+  document.getElementById('passageTip').textContent = '点汉字练习笔顺';
   stopReading();
-  setReadStatus('点击开始，听整篇文章朗读');
-  clearActive();
-  playing = true; playBtn.textContent = '⏸ 暂停';
-  next();
+  requestAnimationFrame(() => showCurrent({ speak: false }));
 });
 
 tabRead.addEventListener('click', () => {
   if (mode === 'reading') return;
   mode = 'reading';
   tabRead.classList.add('on'); tabPractice.classList.remove('on');
-  readPanel.classList.remove('hidden'); practicePanel.classList.add('hidden');
-  clearTimeout(timer);
-  playToken++; // stop practice animation callbacks
+  readPanel.classList.remove('hidden');
+  practicePanel.classList.add('hidden');
+  document.getElementById('passageTip').textContent = '朗读时会高亮当前字';
+  playToken++;
   clearActive();
   pickChineseVoice();
-  if (!('speechSynthesis' in window)) {
-    setReadStatus('当前浏览器不支持语音朗读，请换 Chrome / Edge 试试', true);
-  } else if (!chineseVoice) {
-    setReadStatus('未检测到中文语音，仍可尝试朗读（效果可能不佳）', true);
-  } else {
-    setReadStatus('将使用：' + chineseVoice.name);
+  if (!('speechSynthesis' in window)) setReadStatus('当前浏览器不支持语音朗读', true);
+  else if (!chineseVoice) setReadStatus('未检测到中文语音，仍可尝试', true);
+  else setReadStatus('将使用：' + chineseVoice.name);
+});
+
+window.addEventListener('resize', () => {
+  if (mode === 'practice' && currentItem()) {
+    // keep current char, rebuild canvas to new size
+    showCurrent({ speak: false });
   }
 });
 
-// ---- whole-article reading (Web Speech API) ----
 function splitIntoSentences(items){
-  // Build sentence chunks with their start index in `sequence`
   const chunks = [];
-  let buf = '';
-  let start = 0;
+  let buf = '', start = 0;
   for (let i = 0; i < items.length; i++) {
     buf += items[i].char;
     if (/[。！？；.!?;]/.test(items[i].char) || i === items.length - 1) {
@@ -486,19 +855,15 @@ function splitIntoSentences(items){
 
 function highlightRangeProgress(start, end, rate, token){
   clearTimeout(highlightTimer);
-  const count = Math.max(1, end - start + 1);
-  // ~280ms per Chinese char at rate 1.0; punctuation a bit faster
   let i = start;
   const tick = () => {
     if (token !== speakToken || !reading || pausedReading) return;
     if (i > end) return;
-    clearActive();
-    setActive(i);
+    setActiveSeq(i);
     const ch = sequence[i] ? sequence[i].char : '';
     const base = isHanzi(ch) ? 280 : 120;
-    const delay = Math.max(60, base / rate);
     i++;
-    highlightTimer = setTimeout(tick, delay);
+    highlightTimer = setTimeout(tick, Math.max(60, base / rate));
   };
   tick();
 }
@@ -510,44 +875,30 @@ function speakSentenceAt(pos, token){
     setReadStatus('朗读完成 ✓');
     return;
   }
-
   sentencePos = pos;
   const chunk = sentenceQueue[pos];
   const rate = parseFloat(rateRange.value) || 0.9;
   const utt = new SpeechSynthesisUtterance(chunk.text);
   utt.lang = 'zh-CN';
   utt.rate = rate;
-  utt.pitch = 1;
   if (chineseVoice) utt.voice = chineseVoice;
-
-  // Fallback highlighter (Chinese engines often skip onboundary)
   highlightRangeProgress(chunk.start, chunk.end, rate, token);
-
   utt.onboundary = (e) => {
     if (token !== speakToken || typeof e.charIndex !== 'number') return;
-    // Map utterance-local index to sequence index
-    const seqIndex = Math.min(chunk.start + e.charIndex, chunk.end);
-    clearTimeout(highlightTimer); // boundary is more accurate when available
-    clearActive();
-    setActive(seqIndex);
+    clearTimeout(highlightTimer);
+    setActiveSeq(Math.min(chunk.start + e.charIndex, chunk.end));
   };
-
   utt.onend = () => {
     if (token !== speakToken) return;
     clearTimeout(highlightTimer);
-    // small gap between sentences feels more natural
     setTimeout(() => speakSentenceAt(pos + 1, token), 180);
   };
-
   utt.onerror = (e) => {
     if (token !== speakToken) return;
-    // 'interrupted' / 'canceled' are expected when stopping
     if (e.error === 'interrupted' || e.error === 'canceled') return;
     stopReading();
-    setReadStatus('朗读出错：' + (e.error || 'unknown') + '。请再试一次，或换 Chrome / Edge。', true);
+    setReadStatus('朗读出错，请再试一次', true);
   };
-
-  // Chrome: cancel() then immediate speak() often fails silently — delay slightly
   setTimeout(() => {
     if (token !== speakToken || !reading || pausedReading) return;
     speechSynthesis.speak(utt);
@@ -556,27 +907,19 @@ function speakSentenceAt(pos, token){
 
 function startReading(){
   if (!('speechSynthesis' in window)) {
-    setReadStatus('您的浏览器不支持语音朗读功能', true);
-    alert('您的浏览器不支持语音朗读功能，请使用 Chrome 或 Edge');
+    setReadStatus('浏览器不支持语音朗读', true);
     return;
   }
-  if (!sequence.length) {
-    setReadStatus('请先生成文章内容', true);
-    return;
-  }
-
+  if (!sequence.length) { setReadStatus('请先生成文章', true); return; }
   pickChineseVoice();
   stopReading(false);
   const token = ++speakToken;
   sentenceQueue = splitIntoSentences(sequence);
-  sentencePos = 0;
   reading = true;
   pausedReading = false;
   readBtn.textContent = '⏸ 暂停';
-  setReadStatus(chineseVoice ? ('朗读中…（' + chineseVoice.name + '）') : '朗读中…');
+  setReadStatus('朗读中…');
   startSpeechKeepAlive();
-
-  // Prime synthesis engine (helps some browsers after cancel)
   speechSynthesis.cancel();
   setTimeout(() => speakSentenceAt(0, token), 80);
 }
@@ -595,40 +938,31 @@ function resumeReading(){
   if (!reading || !pausedReading) return;
   pausedReading = false;
   readBtn.textContent = '⏸ 暂停';
-  setReadStatus(chineseVoice ? ('朗读中…（' + chineseVoice.name + '）') : '朗读中…');
+  setReadStatus('朗读中…');
   startSpeechKeepAlive();
   try {
-    // If pause left the queue empty (Chrome quirk), restart from current sentence
-    if (speechSynthesis.paused) {
-      speechSynthesis.resume();
-    } else if (!speechSynthesis.speaking) {
-      const token = speakToken;
-      speakSentenceAt(sentencePos, token);
-    }
+    if (speechSynthesis.paused) speechSynthesis.resume();
+    else if (!speechSynthesis.speaking) speakSentenceAt(sentencePos, speakToken);
   } catch (e) {
-    const token = speakToken;
-    speakSentenceAt(sentencePos, token);
+    speakSentenceAt(sentencePos, speakToken);
   }
 }
 
 rateLabel.textContent = rateRange.value + '×';
-rateRange.addEventListener('input', () => {
-  rateLabel.textContent = rateRange.value + '×';
-});
-
+rateRange.addEventListener('input', () => { rateLabel.textContent = rateRange.value + '×'; });
 readBtn.addEventListener('click', () => {
   if (!reading) startReading();
   else if (pausedReading) resumeReading();
   else pauseReading();
 });
-
 document.getElementById('stopReadBtn').addEventListener('click', () => {
   stopReading();
   setReadStatus('已停止');
 });
 
-// ---- init ----
-buildFromText(document.getElementById('articleInput').value);
+// init with short kid-friendly text (wait a frame so writer area has real size)
+document.getElementById('articleInput').value = PRESETS.short;
+requestAnimationFrame(() => buildFromText(PRESETS.short));
 </script>
 </body>
 </html>
