@@ -6,6 +6,8 @@
 <title>Daddy Story Time: My Daddy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="../js/cloud-config.js"></script>
+<script src="../js/cloud-save.js"></script>
 <style>
 :root{
   --bg:#EEF4FB; --surface:#FFFFFF; --ink:#22304F; --ink2:#5A6785; --brand:#2B3A67; --accent:#E8833A; --pink:#C2347A; --line:#D5E0EF; --chip:#E6EEF9; --mark:#FCE3CF; --sun:#F2C230; --green:#5E8C3A; --blue:#2F6FA8;
@@ -407,13 +409,57 @@ const BOSS = [
 ];
 const TRAITS = [["Strong", "\uD83D\uDCAA"], ["Handsome", "\uD83D\uDE0E"], ["Funny", "\uD83E\uDD23"], ["Caring", "\uD83D\uDC96"], ["Strict", "\u261D\uFE0F"], ["Disciplined", "\u23F0"], ["Hardworking", "\uD83D\uDCBC"], ["Kind", "\uD83E\uDD17"], ["Fat", "\uD83D\uDE02"]];
 
-// ===== state =====
+// ===== state (+ cloud sync) =====
+const CLOUD_GAME = "myDaddy";
+let cloudTimer = null;
 const st = { i: 0, stars: 0, done: {}, pick: null };
 try { Object.assign(st, JSON.parse(localStorage.getItem("md-progress3") || "{}")); } catch (e) {}
 try { JSON.parse(localStorage.getItem("md-outfit") || "[]").forEach((id) => ITEMS.some((i) => i.id === id) && on.add(id)); } catch (e) {}
-const saveSt = () => { try { localStorage.setItem("md-progress3", JSON.stringify(st)); } catch (e) {} };
-const saveOutfit = () => { try { localStorage.setItem("md-outfit", JSON.stringify([...on])); } catch (e) {} };
-function saveFace(who = "daddy") { try { localStorage.setItem(who === "daddy" ? "md-face" : "md-face-" + who, JSON.stringify(FACES[who])); } catch (e) { say("That photo is too big to save, but you can still play!"); } }
+function cloudBundle() {
+  return {
+    progress: st,
+    outfit: [...on],
+    face: FACES.daddy,
+    faceJayden: FACES.jayden,
+    faceMichelle: FACES.michelle
+  };
+}
+function applyCloudBundle(b) {
+  if (!b || typeof b !== "object") return;
+  if (b.progress) Object.assign(st, b.progress);
+  if (Array.isArray(b.outfit)) {
+    on.clear();
+    b.outfit.forEach((id) => ITEMS.some((i) => i.id === id) && on.add(id));
+  }
+  if (b.face) Object.assign(FACES.daddy, b.face);
+  if (b.faceJayden) Object.assign(FACES.jayden, b.faceJayden);
+  if (b.faceMichelle) Object.assign(FACES.michelle, b.faceMichelle);
+  try {
+    localStorage.setItem("md-progress3", JSON.stringify(st));
+    localStorage.setItem("md-outfit", JSON.stringify([...on]));
+    localStorage.setItem("md-face", JSON.stringify(FACES.daddy));
+    localStorage.setItem("md-face-jayden", JSON.stringify(FACES.jayden));
+    localStorage.setItem("md-face-michelle", JSON.stringify(FACES.michelle));
+  } catch (e) {}
+}
+function syncCloudSoon() {
+  if (!window.CloudSave || !CloudSave.current()) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => CloudSave.saveGame(CLOUD_GAME, cloudBundle()), 500);
+}
+const saveSt = () => { try { localStorage.setItem("md-progress3", JSON.stringify(st)); } catch (e) {} syncCloudSoon(); };
+const saveOutfit = () => { try { localStorage.setItem("md-outfit", JSON.stringify([...on])); } catch (e) {} syncCloudSoon(); };
+function saveFace(who = "daddy") {
+  try {
+    localStorage.setItem(who === "daddy" ? "md-face" : "md-face-" + who, JSON.stringify(FACES[who]));
+    syncCloudSoon();
+  } catch (e) { say("That photo is too big to save, but you can still play!"); }
+}
+if (window.CloudSave && CloudSave.current()) {
+  CloudSave.pullGame(CLOUD_GAME, null).then((remote) => {
+    if (remote) { applyCloudBundle(remote); if (typeof go === "function") go(st.i || 0); }
+  }).catch(() => {});
+}
 
 const stage = $("#stage"), panel = $("#panel");
 let cleanup = null, cat = "hair", suppressClick = false, bubbleT;

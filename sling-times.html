@@ -46,7 +46,7 @@ body{
   height:100%;margin:0;overflow:hidden;background:var(--sky-top);color:var(--ink);
   font-family:"Baloo 2","Arial Rounded MT Bold","Trebuchet MS",system-ui,sans-serif;
   -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;
-  touch-action:none;-webkit-touch-callout:none;
+  -webkit-touch-callout:none;
 }
 #app{position:relative;width:100%;height:100%;overflow:hidden}
 #game{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
@@ -81,12 +81,12 @@ p{margin:.3em 0;font-size:1.1rem;line-height:1.35}
 .screen{
   position:absolute;inset:0;display:grid;place-items:center;background:var(--scrim);
   padding:14px max(14px,env(safe-area-inset-right,0px)) 14px max(14px,env(safe-area-inset-left,0px));
-  z-index:20
+  z-index:20;overflow:auto;touch-action:pan-y;-webkit-overflow-scrolling:touch
 }
 .screen[hidden]{display:none}
 .title-screen{background:transparent;place-items:center start;padding-left:max(4vw,env(safe-area-inset-left,0px))}
 .title-wrap{max-width:560px}
-.logo{margin:0;line-height:.82;font-weight:800;font-size:clamp(4rem,13vw,9.5rem);letter-spacing:-.04em;color:var(--panel);
+.logo{margin:0;line-height:.82;font-weight:800;font-size:clamp(2.6rem,min(13vw,19vh),9.5rem);letter-spacing:-.04em;color:var(--panel);
   -webkit-text-stroke:4px var(--ink);paint-order:stroke fill;text-shadow:6px 7px 0 var(--ink)}
 .logo span{display:block}
 .logo span + span{margin-left:.5em;color:var(--accent)}
@@ -192,7 +192,12 @@ p{margin:.3em 0;font-size:1.1rem;line-height:1.35}
 
 #rotate{display:none;position:absolute;inset:0;z-index:50;background:var(--scrim);place-items:center;padding:20px}
 @media (orientation:portrait) and (max-width:620px){#rotate{display:grid}}
-@media (max-height:430px){
+@media (max-height:500px){
+  .logo{-webkit-text-stroke:3px var(--ink);text-shadow:4px 5px 0 var(--ink)}
+  .cn{margin:.25em 0 0;font-size:1.2rem}
+  .lede{display:none}
+  .title-wrap .row{margin-top:10px}
+  .btn.big{font-size:1.3rem;padding:.4em 1.4em}
   .round{width:42px;height:42px}
   .pill{font-size:1.1rem}
   .tray-btn{font-size:.9rem}
@@ -253,7 +258,7 @@ p{margin:.3em 0;font-size:1.1rem;line-height:1.35}
         <input id="newName" maxlength="14" placeholder="New player’s name" aria-label="New player’s name">
         <button class="btn" type="submit">Add</button>
       </form>
-      <p class="note">Each player keeps their own stars and tricky facts on this device.</p>
+      <p class="note" id="playerNote">These names stay on this device until you log in on the home page.</p>
       <div class="row"><button class="btn secondary" id="btnPlayersDone">Done</button></div>
     </div>
   </section>
@@ -313,6 +318,8 @@ p{margin:.3em 0;font-size:1.1rem;line-height:1.35}
   <div id="rotate"><div class="card narrow"><h2>Turn sideways</h2><p>Rotate your phone to landscape to play.</p></div></div>
 </div>
 
+<script src="js/cloud-config.js"></script>
+<script src="js/cloud-save.js"></script>
 <script>
 (() => {
 'use strict';
@@ -361,17 +368,112 @@ let profiles = store.get('st.profiles', []);
 if (!Array.isArray(profiles)) profiles = [];
 let current = null;
 let save = defaultSave();
+let cloudReady = false;
+let cloudTimer = null;
 function defaultSave(){ return { stars:{}, best:{}, facts:{}, sound:true, voice:true, tutDone:false }; }
+function normName(n){ return String(n || '').trim().toLowerCase(); }
 function loadSave(id){ save = Object.assign(defaultSave(), store.get('st.save.' + id, {})); }
-function persist(){ if (current) store.set('st.save.' + current.id, save); }
+function slingBundle(){
+  const saves = {};
+  profiles.forEach(p => { saves[p.id] = store.get('st.save.' + p.id, defaultSave()); });
+  return { profiles, saves, last: current ? current.id : store.get('st.last', null), updatedAt: Date.now() };
+}
+function mergeSave(a, b){
+  const stars = Object.assign({}, (a && a.stars) || {}, (b && b.stars) || {});
+  Object.keys(stars).forEach(k => {
+    stars[k] = Math.max(Number(a && a.stars && a.stars[k]) || 0, Number(b && b.stars && b.stars[k]) || 0);
+  });
+  const best = Object.assign({}, (a && a.best) || {}, (b && b.best) || {});
+  Object.keys(best).forEach(k => {
+    best[k] = Math.max(Number(a && a.best && a.best[k]) || 0, Number(b && b.best && b.best[k]) || 0);
+  });
+  const facts = Object.assign({}, (a && a.facts) || {});
+  Object.entries((b && b.facts) || {}).forEach(([k, v]) => {
+    const prev = facts[k] || { right:0, wrong:0 };
+    facts[k] = { right: Math.max(prev.right || 0, v.right || 0), wrong: Math.max(prev.wrong || 0, v.wrong || 0) };
+  });
+  return Object.assign(defaultSave(), a || {}, b || {}, {
+    stars, best, facts,
+    sound: b && b.sound != null ? b.sound : (a && a.sound != null ? a.sound : true),
+    voice: b && b.voice != null ? b.voice : (a && a.voice != null ? a.voice : true),
+    tutDone: !!((a && a.tutDone) || (b && b.tutDone))
+  });
+}
+function mergeRemote(remote){
+  const remoteProfiles = Array.isArray(remote.profiles) ? remote.profiles : [];
+  const remoteSaves = remote.saves || {};
+  const localSaves = {};
+  profiles.forEach(p => { localSaves[p.id] = store.get('st.save.' + p.id, {}); });
+  const next = remoteProfiles.map(p => ({ id: p.id, name: p.name, color: p.color || PCOLORS[0] }));
+  const saves = {};
+  next.forEach(p => { saves[p.id] = remoteSaves[p.id] || defaultSave(); });
+  profiles.forEach(p => {
+    const byId = next.find(x => x.id === p.id);
+    const byName = next.find(x => normName(x.name) === normName(p.name));
+    const hit = byId || byName;
+    if (hit) saves[hit.id] = mergeSave(saves[hit.id], localSaves[p.id]);
+    else {
+      next.push({ id: p.id, name: p.name, color: p.color || PCOLORS[next.length % PCOLORS.length] });
+      saves[p.id] = localSaves[p.id] || defaultSave();
+    }
+  });
+  profiles = next;
+  store.set('st.profiles', profiles);
+  profiles.forEach(p => store.set('st.save.' + p.id, saves[p.id] || defaultSave()));
+  const last = remote.last && profiles.some(p => p.id === remote.last) ? remote.last : store.get('st.last', null);
+  if (last && profiles.some(p => p.id === last)) selectProfile(last);
+}
+function syncSlingCloud(){
+  if (!cloudReady || !window.CloudSave || !CloudSave.current()) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => CloudSave.saveGame('slingTimes', slingBundle()), 400);
+}
+function paintPlayerNote(){
+  const el = $('playerNote');
+  if (!el) return;
+  const who = window.CloudSave && CloudSave.current();
+  if (!who) {
+    el.textContent = 'These names stay on this device. Log in on the home page with a name and 4-digit code to continue on another phone.';
+    return;
+  }
+  if (!CloudSave.mode || CloudSave.mode() === 'local') {
+    el.textContent = who.name + ' is saved on this device. Add a Firebase address in js/cloud-config.js so these names and stars come back on another phone.';
+    return;
+  }
+  el.textContent = who.name + ' can continue on another phone: open the home page there and log in with the same name and 4-digit code.';
+}
+function persist(){ if (current) store.set('st.save.' + current.id, save); syncSlingCloud(); }
 function selectProfile(id){
   current = profiles.find(p => p.id === id) || null;
   if (current) { store.set('st.last', id); loadSave(id); }
   refreshPlayerButton();
+  syncSlingCloud();
 }
 function addProfile(name){
+  const existing = profiles.find(p => normName(p.name) === normName(name));
+  if (existing) { selectProfile(existing.id); return existing; }
   const p = { id:'p' + Date.now().toString(36) + rint(0, 9999), name, color: PCOLORS[profiles.length % PCOLORS.length] };
   profiles.push(p); store.set('st.profiles', profiles); selectProfile(p.id);
+  return p;
+}
+function ensureCloudMember(){
+  const who = window.CloudSave && CloudSave.current();
+  if (!who || !who.name) return;
+  addProfile(who.name);
+}
+async function hydrateSlingCloud(){
+  paintPlayerNote();
+  if (!window.CloudSave || !CloudSave.current()) { cloudReady = true; return; }
+  try {
+    const remote = await CloudSave.pullGame('slingTimes', null);
+    if (remote && Array.isArray(remote.profiles)) mergeRemote(remote);
+  } catch (e) {}
+  ensureCloudMember();
+  cloudReady = true;
+  syncSlingCloud();
+  paintPlayerNote();
+  if (state.screen === 'players') renderPlayers();
+  if (state.screen === 'levels') renderLevels();
 }
 const totalStars = () => LEVELS.reduce((s, L) => s + (save.stars[L.id] || 0), 0);
 function trickyFacts(){
@@ -1271,6 +1373,9 @@ resize();
 const lastId = store.get('st.last', null);
 if (lastId && profiles.find(p => p.id === lastId)) selectProfile(lastId); else refreshPlayerButton();
 showScreen('title');
+paintPlayerNote();
+if (window.CloudSave) CloudSave.onChange(paintPlayerNote);
+hydrateSlingCloud();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => {});
 requestAnimationFrame(frame);
 
