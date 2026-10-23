@@ -117,6 +117,18 @@ p{margin:.3em 0;font-size:1.1rem;line-height:1.35}
 .lvl-lock{font-size:.82rem;color:var(--muted);text-align:center;line-height:1.1;max-width:110px}
 
 .roster{display:flex;flex-wrap:wrap;gap:10px}
+.diff{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.diff-btn{font-weight:800;font-size:1.2rem;border:3px solid var(--ink);border-radius:999px;padding:.35em 1.1em;cursor:pointer;
+  background:var(--panel-2);color:var(--ink);box-shadow:0 4px 0 var(--ink);transition:transform .07s}
+.diff-btn:active{transform:translateY(4px);box-shadow:none}
+.diff-btn[aria-pressed="true"]{color:#2B2340;transform:translateY(-2px)}
+.diff-btn[aria-pressed="true"].d-easy,.diff-tag.d-easy{background:#9BE15D}
+.diff-btn[aria-pressed="true"].d-medium,.diff-tag.d-medium{background:#FFC94D}
+.diff-btn[aria-pressed="true"].d-hard,.diff-tag.d-hard{background:#FF8A6B}
+.diff-btn[aria-pressed="true"].d-extra,.diff-tag.d-extra{background:#C49BFF}
+#diffTip{margin-top:8px}
+.diff-tag{font-weight:800;font-size:.95rem;color:#2B2340;border:3px solid var(--ink);border-radius:999px;padding:0 .6em;white-space:nowrap}
+.timer.warn{background:#FF8A6B;color:#2B2340}
 .bird-chip{display:flex;align-items:center;gap:10px;border:3px solid var(--ink);border-radius:999px;padding:4px 14px 4px 5px;background:var(--panel-2)}
 .bird-chip.locked{opacity:.55}
 .bird-dot{width:34px;height:34px;border-radius:50%;border:3px solid var(--ink);flex:none;position:relative}
@@ -226,9 +238,11 @@ p{margin:.3em 0;font-size:1.1rem;line-height:1.35}
           <svg width="18" height="20" viewBox="0 0 18 20" aria-hidden="true"><rect x="1" y="1" width="5" height="18" rx="2" fill="currentColor"/><rect x="12" y="1" width="5" height="18" rx="2" fill="currentColor"/></svg>
         </button>
         <div id="progress" class="progress" aria-label="Question progress"></div>
+        <span id="diffTag" class="diff-tag"></span>
       </div>
       <div id="question" aria-live="polite"></div>
       <div class="hud-right">
+        <div id="timer" class="pill timer" aria-label="Seconds left" hidden></div>
         <div id="score" class="pill" aria-label="Score">0</div>
         <button class="btn secondary small" id="btnHint">Hint</button>
       </div>
@@ -258,7 +272,7 @@ p{margin:.3em 0;font-size:1.1rem;line-height:1.35}
         <input id="newName" maxlength="14" placeholder="New player’s name" aria-label="New player’s name">
         <button class="btn" type="submit">Add</button>
       </form>
-      <p class="note" id="playerNote">These names stay on this device until you log in on the home page.</p>
+      <p class="note">Each player keeps their own stars and tricky facts on this device.</p>
       <div class="row"><button class="btn secondary" id="btnPlayersDone">Done</button></div>
     </div>
   </section>
@@ -270,6 +284,8 @@ p{margin:.3em 0;font-size:1.1rem;line-height:1.35}
         <h2 id="levelsTitle">Pick a times table</h2>
         <div class="starcount" aria-label="Total stars">★ <span id="totalStars">0</span></div>
       </div>
+      <div id="diffRow" class="diff" role="group" aria-label="Difficulty"></div>
+      <p id="diffTip" class="note"></p>
       <div id="levelGrid" class="level-grid"></div>
       <h3>Your birds</h3>
       <div id="roster" class="roster"></div>
@@ -318,8 +334,6 @@ p{margin:.3em 0;font-size:1.1rem;line-height:1.35}
   <div id="rotate"><div class="card narrow"><h2>Turn sideways</h2><p>Rotate your phone to landscape to play.</p></div></div>
 </div>
 
-<script src="js/cloud-config.js"></script>
-<script src="js/cloud-save.js"></script>
 <script>
 (() => {
 'use strict';
@@ -331,10 +345,10 @@ const W = 1600, H = 900, GROUND = 820;
 const SLING = { x: 240, y: 630 };
 const MAX_PULL = 145, POWER = 0.152, STEP = 1000 / 60;
 const BIRDS = {
-  pip:  { name:'Pip',  color:'#FFD23F', belly:'#FFF3BF', r:23, density:0.0045, heavy:1.35, unlock:0,  tip:'Strong and steady' },
-  fizz: { name:'Fizz', color:'#38C6B0', belly:'#C9F4EC', r:23, density:0.003,  heavy:1.1,  unlock:4,  tip:'Tap mid-air to burst' },
-  trio: { name:'Trio', color:'#FF7EB6', belly:'#FFD9EA', r:18, density:0.0035, heavy:1.1,  unlock:9,  tip:'Tap mid-air to split in three' },
-  dart: { name:'Dart', color:'#9BE15D', belly:'#E2F8CC', r:20, density:0.006,  heavy:1.7,  unlock:15, tip:'Tap mid-air to zoom' }
+  pip:  { name:'Pip',  color:'#FFD23F', belly:'#FFF3BF', r:31, density:0.0035, heavy:1.35, unlock:0, tip:'Strong and steady' },
+  fizz: { name:'Fizz', color:'#38C6B0', belly:'#C9F4EC', r:31, density:0.0024, heavy:1.1,  unlock:0, tip:'Tap mid-air to burst' },
+  trio: { name:'Trio', color:'#FF7EB6', belly:'#FFD9EA', r:25, density:0.0028, heavy:1.1,  unlock:0, tip:'Tap mid-air to split in three' },
+  dart: { name:'Dart', color:'#9BE15D', belly:'#E2F8CC', r:28, density:0.0045, heavy:1.7,  unlock:0, tip:'Tap mid-air to zoom' }
 };
 const BIRD_ORDER = ['pip','fizz','trio','dart'];
 const MAT = {
@@ -346,7 +360,14 @@ const LEVELS = [];
 for (let t = 1; t <= 9; t++) LEVELS.push({ id:'t'+t, label:'×'+t, name:'×'+t+' table', table:t, monsters: t <= 3 ? 3 : 4 });
 LEVELS.push({ id:'mix', label:'Mix', name:'Mixed facts', mix:true, monsters:4 });
 LEVELS.push({ id:'tricky', label:'Tricky', name:'Tricky facts', tricky:true, monsters:4 });
-const QUESTIONS_PER_LEVEL = 5, BIRDS_PER_Q = 3;
+const QUESTIONS_PER_LEVEL = 5;
+const DIFFS = {
+  easy:   { name:'Easy',       birds:4, monsters:3, arc:130, near:false, pats:['tower', 'arch', 'tower'], towerMax:2, timer:0,     mult:1,   tip:'4 birds, 3 gremlins, long aiming path' },
+  medium: { name:'Medium',     birds:3, monsters:0, arc:70,  near:true,  pats:['tower', 'arch', 'shelter', 'pedestal'], towerMax:3, timer:0, mult:1.5, tip:'3 birds, look-alike answers' },
+  hard:   { name:'Hard',       birds:3, monsters:4, arc:30,  near:true,  pats:['shelter', 'pedestal', 'arch', 'tower'], towerMax:3, timer:0, mult:2,   tip:'4 gremlins, short aiming path, tougher forts' },
+  extra:  { name:'Extra hard', birds:2, monsters:5, arc:10,  near:true,  pats:['shelter', 'pedestal', 'shelter', 'arch', 'tower'], towerMax:3, timer:25000, mult:3, tip:'2 birds, 5 gremlins, 25-second timer' }
+};
+const DIFF_ORDER = ['easy', 'medium', 'hard', 'extra'];
 const PCOLORS = ['#FF7EB6','#38C6B0','#FFB627','#6C8CFF','#9BE15D','#FF8A4C'];
 
 /* ================= helpers ================= */
@@ -368,114 +389,21 @@ let profiles = store.get('st.profiles', []);
 if (!Array.isArray(profiles)) profiles = [];
 let current = null;
 let save = defaultSave();
-let cloudReady = false;
-let cloudTimer = null;
-function defaultSave(){ return { stars:{}, best:{}, facts:{}, sound:true, voice:true, tutDone:false }; }
-function normName(n){ return String(n || '').trim().toLowerCase(); }
+function defaultSave(){ return { stars:{}, best:{}, facts:{}, sound:true, voice:true, tutDone:false, diff:'medium' }; }
+const D = () => DIFFS[save.diff] || DIFFS.medium;
+const skey = L => save.diff === 'medium' || !DIFFS[save.diff] ? L.id : L.id + ':' + save.diff;
 function loadSave(id){ save = Object.assign(defaultSave(), store.get('st.save.' + id, {})); }
-function slingBundle(){
-  const saves = {};
-  profiles.forEach(p => { saves[p.id] = store.get('st.save.' + p.id, defaultSave()); });
-  return { profiles, saves, last: current ? current.id : store.get('st.last', null), updatedAt: Date.now() };
-}
-function mergeSave(a, b){
-  const stars = Object.assign({}, (a && a.stars) || {}, (b && b.stars) || {});
-  Object.keys(stars).forEach(k => {
-    stars[k] = Math.max(Number(a && a.stars && a.stars[k]) || 0, Number(b && b.stars && b.stars[k]) || 0);
-  });
-  const best = Object.assign({}, (a && a.best) || {}, (b && b.best) || {});
-  Object.keys(best).forEach(k => {
-    best[k] = Math.max(Number(a && a.best && a.best[k]) || 0, Number(b && b.best && b.best[k]) || 0);
-  });
-  const facts = Object.assign({}, (a && a.facts) || {});
-  Object.entries((b && b.facts) || {}).forEach(([k, v]) => {
-    const prev = facts[k] || { right:0, wrong:0 };
-    facts[k] = { right: Math.max(prev.right || 0, v.right || 0), wrong: Math.max(prev.wrong || 0, v.wrong || 0) };
-  });
-  return Object.assign(defaultSave(), a || {}, b || {}, {
-    stars, best, facts,
-    sound: b && b.sound != null ? b.sound : (a && a.sound != null ? a.sound : true),
-    voice: b && b.voice != null ? b.voice : (a && a.voice != null ? a.voice : true),
-    tutDone: !!((a && a.tutDone) || (b && b.tutDone))
-  });
-}
-function mergeRemote(remote){
-  const remoteProfiles = Array.isArray(remote.profiles) ? remote.profiles : [];
-  const remoteSaves = remote.saves || {};
-  const localSaves = {};
-  profiles.forEach(p => { localSaves[p.id] = store.get('st.save.' + p.id, {}); });
-  const next = remoteProfiles.map(p => ({ id: p.id, name: p.name, color: p.color || PCOLORS[0] }));
-  const saves = {};
-  next.forEach(p => { saves[p.id] = remoteSaves[p.id] || defaultSave(); });
-  profiles.forEach(p => {
-    const byId = next.find(x => x.id === p.id);
-    const byName = next.find(x => normName(x.name) === normName(p.name));
-    const hit = byId || byName;
-    if (hit) saves[hit.id] = mergeSave(saves[hit.id], localSaves[p.id]);
-    else {
-      next.push({ id: p.id, name: p.name, color: p.color || PCOLORS[next.length % PCOLORS.length] });
-      saves[p.id] = localSaves[p.id] || defaultSave();
-    }
-  });
-  profiles = next;
-  store.set('st.profiles', profiles);
-  profiles.forEach(p => store.set('st.save.' + p.id, saves[p.id] || defaultSave()));
-  const last = remote.last && profiles.some(p => p.id === remote.last) ? remote.last : store.get('st.last', null);
-  if (last && profiles.some(p => p.id === last)) selectProfile(last);
-}
-function syncSlingCloud(){
-  if (!cloudReady || !window.CloudSave || !CloudSave.current()) return;
-  clearTimeout(cloudTimer);
-  cloudTimer = setTimeout(() => CloudSave.saveGame('slingTimes', slingBundle()), 400);
-}
-function paintPlayerNote(){
-  const el = $('playerNote');
-  if (!el) return;
-  const who = window.CloudSave && CloudSave.current();
-  if (!who) {
-    el.textContent = 'These names stay on this device. Log in on the home page with a name and 4-digit code to continue on another phone.';
-    return;
-  }
-  if (!CloudSave.mode || CloudSave.mode() === 'local') {
-    el.textContent = who.name + ' is saved on this device. Add a Firebase address in js/cloud-config.js so these names and stars come back on another phone.';
-    return;
-  }
-  el.textContent = who.name + ' can continue on another phone: open the home page there and log in with the same name and 4-digit code.';
-}
-function persist(){ if (current) store.set('st.save.' + current.id, save); syncSlingCloud(); }
+function persist(){ if (current) store.set('st.save.' + current.id, save); }
 function selectProfile(id){
   current = profiles.find(p => p.id === id) || null;
   if (current) { store.set('st.last', id); loadSave(id); }
   refreshPlayerButton();
-  syncSlingCloud();
 }
 function addProfile(name){
-  const existing = profiles.find(p => normName(p.name) === normName(name));
-  if (existing) { selectProfile(existing.id); return existing; }
   const p = { id:'p' + Date.now().toString(36) + rint(0, 9999), name, color: PCOLORS[profiles.length % PCOLORS.length] };
   profiles.push(p); store.set('st.profiles', profiles); selectProfile(p.id);
-  return p;
 }
-function ensureCloudMember(){
-  const who = window.CloudSave && CloudSave.current();
-  if (!who || !who.name) return;
-  addProfile(who.name);
-}
-async function hydrateSlingCloud(){
-  paintPlayerNote();
-  if (!window.CloudSave || !CloudSave.current()) { cloudReady = true; return; }
-  try {
-    const remote = await CloudSave.pullGame('slingTimes', null);
-    if (remote && Array.isArray(remote.profiles)) mergeRemote(remote);
-  } catch (e) {}
-  ensureCloudMember();
-  cloudReady = true;
-  syncSlingCloud();
-  paintPlayerNote();
-  if (state.screen === 'players') renderPlayers();
-  if (state.screen === 'levels') renderLevels();
-}
-const totalStars = () => LEVELS.reduce((s, L) => s + (save.stars[L.id] || 0), 0);
+const totalStars = () => Object.values(save.stars || {}).reduce((s, v) => s + (+v || 0), 0);
 function trickyFacts(){
   return Object.entries(save.facts)
     .filter(([, v]) => v.wrong > 0 && v.wrong >= v.right * 0.5)
@@ -488,6 +416,7 @@ function recordFact(a, b, ok){
   save.facts[k] = f;
 }
 function isUnlocked(i){
+  return !!LEVELS[i];
   const L = LEVELS[i];
   if (L.table) return L.table <= 2 || (save.stars['t' + (L.table - 1)] || 0) > 0;
   if (L.mix) return LEVELS.filter(l => l.table && (save.stars[l.id] || 0) > 0).length >= 5;
@@ -499,7 +428,7 @@ function lockText(L){
   if (L.mix) return 'Star any 5 tables';
   return 'Opens when you have 3 facts to practise';
 }
-const birdUnlocked = t => totalStars() >= BIRDS[t].unlock;
+const birdUnlocked = t => !!BIRDS[t];
 
 /* ================= audio ================= */
 let actx = null;
@@ -570,7 +499,7 @@ function monster(x, y, value, correct){
 function buildSlot(x, value, correct, pat){
   const g = GROUND, p = [];
   if (pat === 'tower') {
-    const n = rint(1, 3); let y = g;
+    const n = rint(1, D().towerMax); let y = g;
     for (let i = 0; i < n; i++) { const mat = i === 0 && n > 1 ? 'stone' : pick(['wood', 'wood', 'ice']); p.push(block(x, y - 30, 60, 60, mat)); y -= 60; }
     p.push(monster(x, y - 33, value, correct));
   } else if (pat === 'arch') {
@@ -582,7 +511,7 @@ function buildSlot(x, value, correct, pat){
     p.push(monster(x, g - 33, value, correct));
     p.push(block(x - 52, g - 55, 20, 110, 'ice'), block(x + 52, g - 55, 20, 110, 'ice'));
     p.push(block(x, g - 120, 146, 20, 'wood'));
-    if (Math.random() < 0.6) p.push(block(x, g - 130 - 25, 50, 50, pick(['stone', 'wood'])));
+    if (save.diff === 'extra' || Math.random() < 0.6) p.push(block(x, g - 130 - 25, 50, 50, save.diff === 'extra' ? 'stone' : pick(['stone', 'wood'])));
   } else { // pedestal
     p.push(block(x, g - 20, 110, 40, 'stone'));
     p.push(block(x - 30, g - 40 - 50, 20, 100, 'wood'), block(x + 30, g - 40 - 50, 20, 100, 'wood'));
@@ -593,6 +522,12 @@ function buildSlot(x, value, correct, pat){
 }
 function distractors(a, b, n){
   const c = a * b;
+  if (!D().near) {
+    const out = []; let guard = 0;
+    while (out.length < n && guard++ < 800) { const v = rint(1, Math.min(99, Math.max(25, c + 35))); if (Math.abs(v - c) >= 6 && !out.includes(v)) out.push(v); }
+    while (out.length < n) out.push(c + 10 * (out.length + 1));
+    return out;
+  }
   const near = shuffle([a * (b + 1), a * (b - 1), (a + 1) * b, (a - 1) * b]);
   const far = [c + 1, c - 1, c + 10, c - 10, a + b];
   if (c >= 10) far.push(Number(String(c).split('').reverse().join('')));
@@ -607,8 +542,8 @@ function buildScene(a, b, count){
   M.Composite.add(world, ground);
   const c = a * b;
   const vals = shuffle([c].concat(distractors(a, b, count - 1)));
-  const xs = count === 3 ? [1000, 1230, 1450] : [890, 1080, 1270, 1460];
-  const pats = shuffle(['tower', 'arch', 'shelter', 'pedestal', pick(['tower', 'arch', 'shelter', 'pedestal'])]);
+  const xs = count === 3 ? [1000, 1230, 1450] : count === 4 ? [890, 1080, 1270, 1460] : [840, 995, 1150, 1305, 1460];
+  const base = D().pats, pats = shuffle(base.concat(base)).slice(0, count);
   xs.forEach((x, i) => M.Composite.add(world, buildSlot(x, vals[i], vals[i] === c, pats[i])));
   state.settling = true;
   for (let i = 0; i < 90; i++) M.Engine.update(engine, STEP);
@@ -621,7 +556,7 @@ function buildScene(a, b, count){
 const state = {
   screen:'title', paused:false, time:0, phase:'idle',
   level:null, levelIdx:0, questions:[], qi:0, q:null, score:0, streak:0, results:[],
-  birdsLeft:BIRDS_PER_Q, birdType:'pip', flying:[], specialUsed:false,
+  birdsLeft:3, birdType:'pip', flying:[], specialUsed:false,
   pull:null, dragging:false, dragStart:null, kAim:{ ang:-0.72, pow:0.75 }, kbActive:false,
   wrongThisQ:0, hintUsed:false, settleT:0, timers:[],
   particles:[], texts:[], trail:[], clouds:[], shake:0, popQ:[], breakQ:[], settling:false
@@ -770,7 +705,7 @@ function checkShot(){
 function resolveShot(){
   for (const b of state.flying) removeBird(b, true);
   state.flying = [];
-  if (state.birdsLeft > 0) { state.phase = 'aim'; updateTray(); }
+  if (state.birdsLeft > 0 && !state.expired) { state.phase = 'aim'; updateTray(); }
   else questionFailed();
 }
 
@@ -782,7 +717,7 @@ function makeQuestions(L){
   } else {
     const seen = new Set();
     if (L.tricky) for (const f of trickyFacts().slice(0, QUESTIONS_PER_LEVEL)) { seen.add(f.join('x')); qs.push(f); }
-    while (qs.length < QUESTIONS_PER_LEVEL) { const a = rint(2, 9), b = rint(2, 9), k = a + 'x' + b; if (!seen.has(k)) { seen.add(k); qs.push([a, b]); } }
+    while (qs.length < QUESTIONS_PER_LEVEL) { const a = L.tricky ? rint(6, 9) : rint(2, 9), b = rint(2, 9), k = a + 'x' + b; if (!seen.has(k)) { seen.add(k); qs.push([a, b]); } }
     shuffle(qs);
   }
   return qs;
@@ -795,6 +730,7 @@ function startLevel(i){
   state.birdType = 'pip'; state.paused = false;
   showScreen('game');
   updateScore(); buildTray();
+  $('diffTag').textContent = D().name; $('diffTag').className = 'diff-tag d-' + save.diff;
   nextQuestion();
 }
 function nextQuestion(){
@@ -803,8 +739,9 @@ function nextQuestion(){
   if (state.qi >= state.questions.length) return finishLevel();
   state.q = state.questions[state.qi];
   const [a, b] = state.q;
-  buildScene(a, b, state.level.monsters);
-  state.birdsLeft = BIRDS_PER_Q; state.wrongThisQ = 0; state.hintUsed = false;
+  buildScene(a, b, D().monsters || state.level.monsters);
+  state.qTime = D().timer; state.expired = false; updateTimer();
+  state.birdsLeft = D().birds; state.wrongThisQ = 0; state.hintUsed = false;
   state.kbActive = false; state.pull = null;
   state.phase = 'intro';
   $('question').innerHTML = a + ' × ' + b + ' = <span class="qm">?</span>';
@@ -814,11 +751,11 @@ function nextQuestion(){
   after(500, () => { if (state.phase === 'intro') state.phase = 'aim'; });
 }
 function questionSolved(){
-  const [a, b] = state.q, used = BIRDS_PER_Q - state.birdsLeft;
-  let pts = [300, 200, 100][clamp(used, 1, 3) - 1];
+  const [a, b] = state.q, used = D().birds - state.birdsLeft;
+  let pts = Math.round([300, 200, 100, 60][clamp(used, 1, 4) - 1] * D().mult);
   if (state.hintUsed) pts = Math.round(pts / 2);
   state.streak++;
-  const bonus = (state.streak - 1) * 50; pts += bonus; state.score += pts;
+  const bonus = Math.round((state.streak - 1) * 50 * D().mult); pts += bonus; state.score += pts;
   const clean = used === 1 && state.wrongThisQ === 0 && !state.hintUsed;
   recordFact(a, b, clean); persist();
   state.results.push({ a, b, ok:true, clean });
@@ -844,19 +781,20 @@ function finishLevel(){
   const stars = ok === QUESTIONS_PER_LEVEL && clean >= 4 ? 3 : ok >= 4 ? 2 : ok >= 3 ? 1 : 0;
   const before = totalStars();
   const unlockedBefore = LEVELS.map((_, i) => isUnlocked(i));
-  save.stars[L.id] = Math.max(save.stars[L.id] || 0, stars);
-  const newBest = state.score > (save.best[L.id] || 0);
-  if (newBest) save.best[L.id] = state.score;
+  const sk = skey(L);
+  save.stars[sk] = Math.max(save.stars[sk] || 0, stars);
+  const newBest = state.score > (save.best[sk] || 0);
+  if (newBest) save.best[sk] = state.score;
   persist();
   const after_ = totalStars();
   const newBirds = BIRD_ORDER.filter(t => BIRDS[t].unlock > before && BIRDS[t].unlock <= after_);
   const newLevels = LEVELS.filter((l, i) => !unlockedBefore[i] && isUnlocked(i));
 
-  $('resTitle').textContent = stars > 0 ? L.name + ' cleared!' : 'Try the ' + L.name + ' again';
+  $('resTitle').textContent = stars > 0 ? L.name + ' cleared on ' + D().name + '!' : 'Try the ' + L.name + ' again';
   const sEl = $('resStars'); sEl.innerHTML = '';
   for (let i = 0; i < 3; i++) { const s = document.createElement('span'); s.textContent = '★'; s.className = i < stars ? 'star-on' : 'star-off'; sEl.appendChild(s); }
   sEl.setAttribute('aria-label', stars + ' of 3 stars');
-  $('resScore').textContent = 'Score ' + state.score + (newBest && state.score > 0 ? ', a new best!' : '  (best ' + (save.best[L.id] || 0) + ')');
+  $('resScore').textContent = 'Score ' + state.score + (newBest && state.score > 0 ? ', a new best!' : '  (best ' + (save.best[sk] || 0) + ')');
   $('resFacts').innerHTML = state.results.map(r => '<span class="fact ' + (r.ok ? 'ok' : 'miss') + '">' + r.a + '×' + r.b + '=' + (r.a * r.b) + '</span>').join('');
   const msgs = [];
   newBirds.forEach(t => msgs.push('New bird: ' + BIRDS[t].name + '! ' + BIRDS[t].tip + '.'));
@@ -910,6 +848,14 @@ function stepGame(){
     const due = state.timers.filter(t => t.t <= state.time);
     state.timers = state.timers.filter(t => t.t > state.time);
     due.forEach(t => t.fn());
+  }
+  if (D().timer && state.screen === 'game' && state.qTime > 0 && ['intro', 'aim', 'flying', 'settle'].includes(state.phase)) {
+    state.qTime -= STEP;
+    if (Math.ceil(state.qTime / 1000) !== state.timerShown) updateTimer();
+    if (state.qTime <= 0) {
+      state.qTime = 0; updateTimer(); floatText(W / 2, 330, 'Time’s up!', '#D63C41', 1.6);
+      if (state.phase === 'aim' || state.phase === 'intro') { state.birdsLeft = 0; questionFailed(); } else state.expired = true;
+    }
   }
   M.Engine.update(engine, STEP);
   processQueues();
@@ -1093,33 +1039,33 @@ function drawSlingBack(){
 function drawSlingFront(){
   const bp = loadedBirdPos();
   ctx.lineCap = 'round';
-  if (showLoaded()) { ctx.strokeStyle = '#3A1F0C'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(PRONG_FRONT.x, PRONG_FRONT.y); ctx.lineTo(bp.x - 6, bp.y + 4); ctx.stroke(); ctx.fillStyle = '#4A2A12'; ctx.beginPath(); ctx.ellipse(bp.x - 10, bp.y + 2, 8, 14, 0, 0, 7); ctx.fill(); }
+  if (showLoaded()) { ctx.strokeStyle = '#3A1F0C'; ctx.lineWidth = 7; ctx.beginPath(); ctx.moveTo(PRONG_FRONT.x, PRONG_FRONT.y); ctx.lineTo(bp.x - 6, bp.y + 4); ctx.stroke(); ctx.fillStyle = '#4A2A12'; ctx.beginPath(); ctx.ellipse(bp.x - 14, bp.y + 2, 10, 19, 0, 0, 7); ctx.fill(); }
   ctx.strokeStyle = '#7E4A1F'; ctx.lineWidth = 17;
   ctx.beginPath(); ctx.moveTo(SLING.x, SLING.y + 64); ctx.quadraticCurveTo(SLING.x - 6, SLING.y + 24, PRONG_FRONT.x, PRONG_FRONT.y); ctx.stroke();
 }
 function drawWaiting(){
   if (state.screen !== 'game') return;
   const waiting = state.birdsLeft - (showLoaded() ? 1 : 0);
-  for (let i = 0; i < waiting; i++) drawBird(170 - i * 46, GROUND - 20, state.birdType, 0, 0, 0.85);
+  for (let i = 0; i < waiting; i++) drawBird(165 - i * 50, GROUND - 22, state.birdType, 0, 0, 0.72);
 }
-function previewPts(pull){
+function previewPts(pull, steps){
   const pts = []; let x = SLING.x + pull.x, y = SLING.y + pull.y, vx = -pull.x * POWER, vy = -pull.y * POWER;
   const g = engine.gravity.y * engine.gravity.scale * STEP * STEP;
-  for (let i = 0; i < 62; i++) { vx *= 0.997; vy *= 0.997; vy += g; x += vx; y += vy; if (i % 4 === 3) pts.push([x, y, i]); if (y > GROUND) break; }
+  for (let i = 0; i < steps; i++) { vx *= 0.997; vy *= 0.997; vy += g; x += vx; y += vy; if (i % 4 === 3) pts.push([x, y, i]); if (y > GROUND) break; }
   return pts;
 }
 function drawPreview(){
   if (state.phase !== 'aim') return;
   const p = state.pull || (state.kbActive ? kPull() : null);
   if (!p || Math.hypot(p.x, p.y) < 20) return;
-  ctx.fillStyle = colors.night ? 'rgba(255,255,255,.85)' : 'rgba(255,255,255,.95)';
-  ctx.strokeStyle = 'rgba(43,35,64,.5)'; ctx.lineWidth = 1.5;
-  for (const [x, y, i] of previewPts(p)) { ctx.globalAlpha = 1 - i / 75; ctx.beginPath(); ctx.arc(x, y, 6 - i / 18, 0, 7); ctx.fill(); ctx.stroke(); }
+  const steps = D().arc;
+  ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = '#2B2340'; ctx.lineWidth = 3;
+  for (const [x, y, i] of previewPts(p, steps)) { ctx.globalAlpha = clamp(1 - i / (steps + 25), 0.25, 1); ctx.beginPath(); ctx.arc(x, y, 11 - (i / steps) * 4, 0, 7); ctx.fill(); ctx.stroke(); }
   ctx.globalAlpha = 1;
 }
 function drawTrail(){
-  ctx.fillStyle = 'rgba(255,255,255,.75)';
-  for (const t of state.trail) { ctx.beginPath(); ctx.arc(t.x, t.y, t.r, 0, 7); ctx.fill(); }
+  ctx.fillStyle = 'rgba(255,255,255,.85)'; ctx.strokeStyle = 'rgba(43,35,64,.35)'; ctx.lineWidth = 2;
+  for (const t of state.trail) { ctx.beginPath(); ctx.arc(t.x, t.y, t.r * 1.4, 0, 7); ctx.fill(); ctx.stroke(); }
 }
 function drawParticles(){
   for (const p of state.particles) {
@@ -1240,7 +1186,7 @@ function renderPlayers(){
   for (const p of profiles) {
     const b = document.createElement('button'); b.className = 'player-btn'; b.type = 'button';
     b.setAttribute('aria-pressed', current && current.id === p.id ? 'true' : 'false');
-    const st = LEVELS.reduce((s, L) => s + ((store.get('st.save.' + p.id, {}).stars || {})[L.id] || 0), 0);
+    const st = Object.values(store.get('st.save.' + p.id, {}).stars || {}).reduce((s, v) => s + (+v || 0), 0);
     b.innerHTML = '<span class="pdot" style="background:' + p.color + '"></span><span></span><small>★ ' + st + '</small>';
     b.children[1].textContent = p.name;
     b.onclick = () => { sfx.click(); selectProfile(p.id); showScreen('levels'); };
@@ -1252,7 +1198,7 @@ function renderLevels(){
   $('totalStars').textContent = totalStars();
   const grid = $('levelGrid'); grid.innerHTML = '';
   LEVELS.forEach((L, i) => {
-    const st = save.stars[L.id] || 0, open = isUnlocked(i);
+    const st = save.stars[skey(L)] || 0, open = isUnlocked(i);
     const b = document.createElement('button');
     b.className = 'lvl' + (open ? '' : ' locked') + (L.table ? '' : ' special');
     b.type = 'button'; b.disabled = !open;
@@ -1263,6 +1209,9 @@ function renderLevels(){
     b.onclick = () => { sfx.click(); startLevel(i); };
     grid.appendChild(b);
   });
+  $('diffRow').innerHTML = DIFF_ORDER.map(k => '<button type="button" class="diff-btn d-' + k + '" data-d="' + k + '" aria-pressed="' + (save.diff === k) + '">' + DIFFS[k].name + '</button>').join('');
+  for (const b of $('diffRow').children) b.onclick = () => { save.diff = b.dataset.d; persist(); sfx.click(); renderLevels(); };
+  $('diffTip').textContent = D().tip + (D().mult > 1 ? ', ×' + D().mult + ' points.' : '.');
   const ts = totalStars();
   $('roster').innerHTML = BIRD_ORDER.map(t => {
     const d = BIRDS[t], ok = ts >= d.unlock;
@@ -1290,6 +1239,12 @@ function updateTray(){
   }
 }
 function updateScore(){ $('score').textContent = state.score; }
+function updateTimer(){
+  const el = $('timer'), on = !!D().timer && state.screen === 'game';
+  el.hidden = !on; if (!on) return;
+  const s = Math.ceil((state.qTime || 0) / 1000); state.timerShown = s;
+  el.textContent = '⏱ ' + s; el.classList.toggle('warn', s <= 5);
+}
 function updateProgress(){
   const el = $('progress'); el.innerHTML = '';
   for (let i = 0; i < state.questions.length; i++) {
@@ -1363,6 +1318,8 @@ $('optSound').onchange = e => { save.sound = e.target.checked; persist(); };
 $('optVoice').onchange = e => { save.voice = e.target.checked; persist(); if (!save.voice && 'speechSynthesis' in window) speechSynthesis.cancel(); };
 document.addEventListener('visibilitychange', () => { if (document.hidden && state.screen === 'game' && !state.paused && $('sHint').hidden) togglePause(true); });
 
+try { localStorage.removeItem('st.cloud'); } catch (e) {}
+
 /* ================= boot ================= */
 for (let i = 0; i < 7; i++) state.clouds.push({ x: rnd(-200, 1800), y: rnd(70, 330), w: rnd(110, 220), v: rnd(0.08, 0.3) });
 readColors();
@@ -1373,9 +1330,6 @@ resize();
 const lastId = store.get('st.last', null);
 if (lastId && profiles.find(p => p.id === lastId)) selectProfile(lastId); else refreshPlayerButton();
 showScreen('title');
-paintPlayerNote();
-if (window.CloudSave) CloudSave.onChange(paintPlayerNote);
-hydrateSlingCloud();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => {});
 requestAnimationFrame(frame);
 
