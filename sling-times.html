@@ -198,7 +198,8 @@ p{margin:.3em 0;font-size:1.1rem;line-height:1.35}
   border-radius:22px;box-shadow:4px 5px 0 var(--ink);padding:0 .55em;white-space:nowrap;pointer-events:none}
 #question .qm{color:var(--accent-ink);background:var(--accent);border-radius:12px;padding:0 .25em;margin-left:.1em}
 .pill{font-weight:800;font-size:1.35rem;background:var(--panel);border:3px solid var(--ink);border-radius:999px;padding:0 .7em;min-width:3.2em;text-align:center}
-.mic-wrap{position:absolute;left:50%;top:84px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;max-width:min(560px,92vw)}
+.mic-wrap{position:absolute;right:max(12px,env(safe-area-inset-right,0px));top:70px;display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:none;max-width:min(380px,55vw)}
+.mic-wrap .heard{text-align:right}
 .mic{pointer-events:auto;display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.15rem;color:#fff;background:#E5484D;border:3px solid var(--ink);
   border-radius:999px;padding:.3em 1em .3em .8em;box-shadow:0 4px 0 var(--ink);cursor:pointer}
 .mic:active{transform:translateY(4px);box-shadow:none}
@@ -1709,7 +1710,7 @@ function micUI(){
 }
 function placeMic(){
   micUI();
-  const q = $('question'), app = $('app');
+  const q = $('btnHint'), app = $('app');
   if (!q || $('hud').hidden) return;
   const top = q.getBoundingClientRect().bottom - app.getBoundingClientRect().top + 10;
   $('micWrap').style.top = Math.round(top) + 'px';
