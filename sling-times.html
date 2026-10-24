@@ -198,6 +198,29 @@ p{margin:.3em 0;font-size:1.1rem;line-height:1.35}
   border-radius:22px;box-shadow:4px 5px 0 var(--ink);padding:0 .55em;white-space:nowrap;pointer-events:none}
 #question .qm{color:var(--accent-ink);background:var(--accent);border-radius:12px;padding:0 .25em;margin-left:.1em}
 .pill{font-weight:800;font-size:1.35rem;background:var(--panel);border:3px solid var(--ink);border-radius:999px;padding:0 .7em;min-width:3.2em;text-align:center}
+.mic-wrap{position:absolute;left:50%;top:84px;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;max-width:min(560px,92vw)}
+.mic{pointer-events:auto;display:flex;align-items:center;gap:8px;font-weight:800;font-size:1.15rem;color:#fff;background:#E5484D;border:3px solid var(--ink);
+  border-radius:999px;padding:.3em 1em .3em .8em;box-shadow:0 4px 0 var(--ink);cursor:pointer}
+.mic:active{transform:translateY(4px);box-shadow:none}
+.mic.on{background:#2E8B3E;animation:micPulse 1s ease-in-out infinite}
+.mic.on.wait{background:#E8871E;animation:none}
+@keyframes micPulse{50%{box-shadow:0 4px 0 var(--ink),0 0 0 10px rgba(46,139,62,.25)}}
+.heard{pointer-events:none;font-weight:800;font-size:1.05rem;line-height:1.25;text-align:center;background:var(--panel);border:3px solid var(--ink);border-radius:16px;padding:.25em .8em}
+.heard[hidden]{display:none}
+.heard.err{background:#FFE3E3;color:#5A0D10}
+.heard.ok{background:#DDF6D2;color:#1D4D12}
+.meter{position:relative;width:min(260px,60vw);height:16px;border:3px solid var(--ink);border-radius:999px;background:var(--panel);overflow:hidden}
+.meter[hidden]{display:none}
+.meter i{position:absolute;left:0;top:0;bottom:0;width:0;background:#FFC94D;transition:width .05s linear}
+.meter i.loud{background:#2E8B3E}
+.meter b{position:absolute;top:-2px;bottom:-2px;width:4px;margin-left:-2px;background:var(--ink)}
+.meter.shake{animation:shake .4s}
+@keyframes shake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.mic-debug{font:600 13px/1.3 ui-monospace,Menlo,monospace;color:var(--ink);background:var(--panel);border:2px dashed var(--ink);border-radius:10px;padding:2px 8px;max-width:100%;overflow-wrap:anywhere}
+.mic-debug[hidden]{display:none}
+.vl-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:1.15rem;font-weight:700}
+.vl-row .btn[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
+@media (prefers-reduced-motion:reduce){.mic.on{animation:none}}
 .tray{position:absolute;top:76px;left:max(12px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;align-items:flex-start;gap:8px;pointer-events:auto}
 .tray[hidden]{display:none}
 .tray-btn{display:flex;align-items:center;gap:6px;border:3px solid var(--ink);border-radius:999px;background:var(--panel);
@@ -260,6 +283,15 @@ p{margin:.3em 0;font-size:1.1rem;line-height:1.35}
         <div id="score" class="pill" aria-label="Score">0</div>
         <button class="btn secondary small" id="btnHint">Hint</button>
       </div>
+    </div>
+    <div id="micWrap" class="mic-wrap">
+      <button class="mic" id="btnMic" type="button" aria-label="Say the answer out loud">
+        <svg width="22" height="26" viewBox="0 0 22 26" aria-hidden="true"><rect x="6" y="1" width="10" height="16" rx="5" fill="currentColor"/><path d="M2 12a9 9 0 0 0 18 0M11 21v4M6 25h10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+        <span>Say it</span>
+      </button>
+      <div id="meter" class="meter" hidden aria-hidden="true"><i id="meterFill"></i><b id="meterMark"></b></div>
+      <div id="heard" class="heard" hidden aria-live="polite"></div>
+      <div id="micDebug" class="mic-debug" hidden></div>
     </div>
     <div id="tray" class="tray" aria-label="Choose a bird"></div>
   </div>
@@ -338,6 +370,17 @@ p{margin:.3em 0;font-size:1.1rem;line-height:1.35}
         <button class="btn secondary" id="btnQuit">All tables</button>
         <label class="toggle"><input type="checkbox" id="optSound"> Sound effects</label>
         <label class="toggle"><input type="checkbox" id="optVoice"> Read questions aloud</label>
+        <div class="vl-row"><span>Voice answers:</span>
+          <button type="button" class="btn small secondary" data-vl="en">English</button>
+          <button type="button" class="btn small secondary" data-vl="zh">中文</button>
+        </div>
+        <label class="toggle"><input type="checkbox" id="optVoiceDebug"> Show what the microphone hears (for checking)</label>
+        <label class="toggle"><input type="checkbox" id="optSentence"> Also require the whole sentence, like “2 times 2 equals 4” (off: the answer is enough)</label>
+        <div class="vl-row"><span>How loud:</span>
+          <button type="button" class="btn small secondary" data-loud="off">Any</button>
+          <button type="button" class="btn small secondary" data-loud="loud">Loud</button>
+          <button type="button" class="btn small secondary" data-loud="very">Very loud</button>
+        </div>
       </div>
     </div>
   </section>
@@ -441,7 +484,7 @@ let profiles = store.get('st.profiles', []);
 if (!Array.isArray(profiles)) profiles = [];
 let current = null;
 let save = defaultSave();
-function defaultSave(){ return { stars:{}, best:{}, facts:{}, sound:true, voice:true, tutDone:false, diff:'medium' }; }
+function defaultSave(){ return { stars:{}, best:{}, facts:{}, sound:true, voice:true, tutDone:false, diff:'medium', voiceLang:'en', micOn:false, needSentence:false, loud:'loud' }; }
 const D = () => DIFFS[save.diff] || DIFFS.medium;
 const skey = L => save.diff === 'medium' || !DIFFS[save.diff] ? L.id : L.id + ':' + save.diff;
 function loadSave(id){ save = Object.assign(defaultSave(), store.get('st.save.' + id, {})); }
@@ -538,6 +581,7 @@ const sfx = {
 };
 function speak(text){
   if (!save.voice || !('speechSynthesis' in window)) return;
+  if (typeof micOn !== 'undefined' && micOn && state.screen === 'game') return; // don't talk over the microphone
   try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); u.rate = 0.92; u.pitch = 1.1; u.lang = 'en-GB'; speechSynthesis.speak(u); } catch (e) {}
 }
 
@@ -842,10 +886,12 @@ function startLevel(i){
   state.questions = makeQuestions(state.level);
   state.qi = -1; state.score = 0; state.streak = 0; state.results = []; state.timers = [];
   state.birdType = 'pip'; state.paused = false;
+  micOn = !!save.micOn && !!SR; hardErr = 0;
   showScreen('game');
   updateScore(); buildTray();
   $('diffTag').textContent = D().name; $('diffTag').className = 'diff-tag d-' + save.diff;
   nextQuestion();
+  if (micOn) { startRec(); startMeter(); }
 }
 function nextQuestion(){
   hide($('sHint'));
@@ -856,7 +902,8 @@ function nextQuestion(){
   buildScene(a, b, D().monsters || state.level.monsters);
   state.qTime = D().timer; state.expired = false; updateTimer();
   state.birdsLeft = D().birds; state.wrongThisQ = 0; state.hintUsed = false;
-  state.kbActive = false; state.pull = null;
+  state.kbActive = false; state.pull = null; state.auto = null;
+  if (typeof heard === 'function') { $('heard').hidden = true; if (micOn) after(700, voicePrompt); }
   state.phase = 'intro';
   $('question').innerHTML = a + ' × ' + b + ' = <span class="qm">?</span>';
   $('btnHint').disabled = false;
@@ -985,6 +1032,11 @@ function stepGame(){
   }
   M.Engine.update(engine, STEP);
   processQueues();
+  if (state.phase === 'autoaim' && state.auto) {
+    const k = clamp((state.time - state.auto.t0) / state.auto.dur, 0, 1), e = 1 - Math.pow(1 - k, 3);
+    state.pull = { x:state.auto.to.x * e, y:state.auto.to.y * e };
+    if (k >= 1) { const to = state.auto.to; state.auto = null; state.phase = 'aim'; launch(to); }
+  }
   if (state.phase === 'flying') checkShot();
   else if (state.phase === 'settle') {
     state.settleT += STEP;
@@ -1019,6 +1071,7 @@ function resize(){
   view.s = Math.min(r.width / W, r.height / H);
   view.ox = (r.width - W * view.s) / 2;
   view.oy = r.height - H * view.s;
+  if (typeof placeMic === 'function') placeMic();
   view.xl = -view.ox / view.s; view.xr = (r.width - view.ox) / view.s; view.yt = -view.oy / view.s;
 }
 function rr(x, y, w, h, r){
@@ -1244,7 +1297,7 @@ function loadedBirdPos(){
   const p = state.pull || (state.kbActive && state.phase === 'aim' ? kPull() : null);
   return p ? { x:SLING.x + p.x, y:SLING.y + p.y } : { x:SLING.x, y:SLING.y };
 }
-function showLoaded(){ return state.phase === 'aim' || state.phase === 'intro'; }
+function showLoaded(){ return state.phase === 'aim' || state.phase === 'intro' || state.phase === 'autoaim'; }
 function drawSlingBack(){
   ctx.lineCap = 'round';
   ctx.strokeStyle = '#6B3B18'; ctx.lineWidth = 24;
@@ -1276,7 +1329,7 @@ function previewPts(pull, steps){
   return pts;
 }
 function drawPreview(){
-  if (state.phase !== 'aim') return;
+  if (state.phase !== 'aim' && state.phase !== 'autoaim') return;
   const p = state.pull || (state.kbActive ? kPull() : null);
   if (!p || Math.hypot(p.x, p.y) < 20) return;
   const steps = D().arc;
@@ -1371,6 +1424,7 @@ addEventListener('keydown', e => {
   const n = '1234'.indexOf(e.key);
   if (n >= 0) { const t = BIRD_ORDER[n]; if (t && birdUnlocked(t)) selectBird(t); return; }
   if (e.key === 'h' || e.key === 'H') { openHint(false); return; }
+  if (e.key === 'm' || e.key === 'M') { toggleMic(); return; }
   if (state.phase === 'aim') {
     const k = state.kAim; let used = true;
     switch (e.key) {
@@ -1394,7 +1448,8 @@ function showScreen(name){
   for (const [k, id] of Object.entries(screens)) $(id).hidden = k !== name;
   $('hud').hidden = name !== 'game';
   $('sPause').hidden = true; $('sHint').hidden = true;
-  if (name !== 'game') { $('banner').hidden = true; state.timers = []; state.paused = false; }
+  if (name !== 'game') { $('banner').hidden = true; state.timers = []; state.paused = false; if (typeof stopMic === 'function') stopMic(); }
+  else setTimeout(() => { if (typeof placeMic === 'function') placeMic(); }, 0);
   if (name === 'levels') renderLevels();
   if (name === 'players') renderPlayers();
   if (name === 'title' || name === 'levels' || name === 'players') attract();
@@ -1496,13 +1551,15 @@ function togglePause(force){
   if (state.screen !== 'game') return;
   state.paused = force != null ? force : !state.paused;
   $('sPause').hidden = !state.paused;
-  if (state.paused) { $('optSound').checked = save.sound; $('optVoice').checked = save.voice; state.dragging = false; state.pull = null; $('btnResume').focus({ preventScroll:true }); }
+  if (!state.paused) resumeMic();
+  if (state.paused) { stopMic(); renderVoiceLang(); $('optSound').checked = save.sound; $('optVoice').checked = save.voice; state.dragging = false; state.pull = null; $('btnResume').focus({ preventScroll:true }); }
 }
 function openHint(reveal){
   if (!reveal && state.phase !== 'aim') return;
   const [a, b] = state.q;
   if (!reveal && !state.hintUsed) { state.hintUsed = true; }
   state.paused = !reveal; // reveal keeps time running but input is blocked by phase
+  stopMic();
   const dots = $('dots'); const ds = Math.round(clamp(Math.min((innerHeight * 0.34) / a - 6, (Math.min(innerWidth, 780) - 90) / b - 6), 9, 22));
   dots.style.setProperty('--dot', ds + 'px'); dots.style.gap = Math.max(3, Math.round(ds / 4)) + 'px';
   dots.style.gridTemplateColumns = 'repeat(' + b + ', ' + ds + 'px)';
@@ -1521,6 +1578,7 @@ function closeHint(){
   const reveal = $('btnHintClose').dataset.reveal === '1';
   $('sHint').hidden = true;
   if (reveal) nextQuestion(); else state.paused = false;
+  resumeMic();
 }
 function attract(){
   if (state.screen === 'game') return;
@@ -1571,6 +1629,376 @@ $('optVoice').onchange = e => { save.voice = e.target.checked; persist(); if (!s
 document.addEventListener('visibilitychange', () => { if (document.hidden && state.screen === 'game' && !state.paused && $('sHint').hidden) togglePause(true); });
 
 try { localStorage.removeItem('st.cloud'); } catch (e) {}
+
+/* ================= voice answers ================= */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, listening = false, heardTimer = 0;
+const CN_D = { '零':0, '〇':0, '一':1, '幺':1, '二':2, '两':2, '俩':2, '三':3, '四':4, '五':5, '六':6, '七':7, '八':8, '九':9 };
+const EN_N = { zero:0, one:1, won:1, two:2, three:3, tree:3, four:4, five:5, six:6, seven:7, eight:8, ate:8, nine:9, ten:10, eleven:11, twelve:12,
+  thirteen:13, fourteen:14, fifteen:15, sixteen:16, seventeen:17, eighteen:18, nineteen:19 };
+const EN_T = { twenty:20, thirty:30, forty:40, fourty:40, fifty:50, sixty:60, seventy:70, eighty:80, ninety:90 };
+const EQ_WORDS = new Set(['=', 'equals', 'equal', 'is', 'makes', 'are', 'gives']);
+const OP_WORDS = new Set(['times', 'time', 'x', 'multiplied', 'by', 'multiply', '×']);
+function cnRun(run){
+  const one = s => {
+    if (s.length === 1 && CN_D[s] != null) return CN_D[s];
+    const m = s.match(/^([一二两三四五六七八九])?十([一二三四五六七八九])?$/);
+    if (m) return (m[1] ? CN_D[m[1]] : 1) * 10 + (m[2] ? CN_D[m[2]] : 0);
+    if (s === '一百' || s === '百') return 100;
+    return null;
+  };
+  if (!/[十百]/.test(run)) return [...run].map(ch => CN_D[ch]).filter(v => v != null);
+  for (let k = 0; k < run.length; k++) {
+    const v = one(run.slice(k));
+    if (v != null) return [...run.slice(0, k)].map(ch => CN_D[ch]).filter(x => x != null).concat([v]);
+  }
+  return [];
+}
+function extractNumbers(text){
+  const s = String(text).toLowerCase().replace(/[×✕✖*]/g, ' × ').replace(/-/g, ' ');
+  const toks = s.match(/\d+|[a-z]+|[零〇一幺二两俩三四五六七八九十百]+|等于|等於|得|是|乘以|乘|=|×/g) || [];
+  const nums = []; let eqAt = -1;
+  for (let i = 0; i < toks.length; i++) {
+    const t = toks[i], prev = toks[i - 1], next = toks[i + 1];
+    if (EQ_WORDS.has(t) || t === '等于' || t === '等於' || t === '得' || t === '是') { eqAt = i; continue; }
+    if (/^\d+$/.test(t)) { nums.push({ v:+t, pos:i }); continue; }
+    if (/^[零〇一幺二两俩三四五六七八九十百]+$/.test(t)) { for (const v of cnRun(t)) nums.push({ v, pos:i }); continue; }
+    if (EN_T[t] != null) {
+      let v = EN_T[t];
+      if (next && EN_N[next] != null && EN_N[next] < 10) { v += EN_N[next]; i++; }
+      nums.push({ v, pos:i }); continue;
+    }
+    if (t === 'hundred') { nums.push({ v:100, pos:i }); continue; }
+    if (EN_N[t] != null) { nums.push({ v:EN_N[t], pos:i }); continue; }
+    const nearOp = w => w && (EQ_WORDS.has(w) || OP_WORDS.has(w) || w === '×');
+    if ((t === 'to' || t === 'too') && (nearOp(prev) || nearOp(next))) { nums.push({ v:2, pos:i }); continue; }
+    if ((t === 'for' || t === 'fore') && (nearOp(prev) || nearOp(next))) { nums.push({ v:4, pos:i }); continue; }
+  }
+  return { nums, eqAt };
+}
+function parseAnswer(text){
+  const { nums, eqAt } = extractNumbers(text);
+  if (!nums.length) return null;
+  if (eqAt >= 0) { const after = nums.filter(n => n.pos > eqAt); if (after.length) return after[0].v; }
+  if (nums.length === 1) return nums[0].v;
+  if (nums.length >= 3) return nums[nums.length - 1].v;
+  const [a, b] = state.q || [0, 0];
+  if ((nums[0].v === a && nums[1].v === b) || (nums[0].v === b && nums[1].v === a)) return 'factors';
+  return nums[nums.length - 1].v;
+}
+const zh = () => save.voiceLang === 'zh';
+let micOn = false, restartTimer = 0, hardErr = 0;
+const FILLER = new Set(['equals', 'equal', 'is', 'its', "it's", 'it', 'the', 'answer', 'times', 'time', 'x', 'by', 'multiplied', 'multiply', 'makes', 'are',
+  'um', 'uh', 'er', 'erm', 'oh', 'and', 'so', 'i', 'think', 'say', 'a', 'to', 'too', 'for', 'fore', 'hmm', 'ok', 'okay', 'yes']);
+const CN_OK = '零〇一幺二两俩三四五六七八九十百乘以等于於得是答案嗯呃啊哦';
+function isNoise(t){
+  const s = String(t).toLowerCase();
+  const words = s.match(/[a-z']+/g) || [];
+  let other = 0;
+  for (const w of words) if (!(EN_N[w] != null || EN_T[w] != null || w === 'hundred' || FILLER.has(w))) other++;
+  const cn = (s.match(/[\u4e00-\u9fff]/g) || []).filter(ch => !CN_OK.includes(ch)).length;
+  return other > 2 || cn > 2 || words.length > 10;
+}
+function heard(msg, cls, keep){
+  const el = $('heard'); el.textContent = msg; el.className = 'heard' + (cls ? ' ' + cls : ''); el.hidden = false;
+  clearTimeout(heardTimer); if (!keep) heardTimer = setTimeout(() => { el.hidden = true; }, 3500);
+}
+function micUI(){
+  const b = $('btnMic'); b.classList.toggle('on', micOn); b.setAttribute('aria-pressed', String(micOn));
+  b.querySelector('span').textContent = micOn ? (zh() ? '在听，点一下关闭' : 'Listening, tap to stop') : (zh() ? '打开语音答题' : 'Turn on voice');
+}
+function placeMic(){
+  micUI();
+  const q = $('question'), app = $('app');
+  if (!q || $('hud').hidden) return;
+  const top = q.getBoundingClientRect().bottom - app.getBoundingClientRect().top + 10;
+  $('micWrap').style.top = Math.round(top) + 'px';
+}
+const micWanted = () => micOn && state.screen === 'game' && !state.paused && $('sHint').hidden;
+const IS_IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+let needTap = false, stuckCount = 0, settleTimer = 0;
+function setNeedTap(on){
+  needTap = on;
+  $('btnMic').classList.toggle('wait', on);
+  if (on) heard(zh() ? '点一下屏幕任意位置，继续听答案' : 'Tap anywhere to keep listening', 'err', true);
+  else if ($('heard').textContent.indexOf(zh() ? '点一下屏幕' : 'Tap anywhere') === 0) $('heard').hidden = true;
+}
+function stopRec(){
+  clearTimeout(restartTimer); clearTimeout(settleTimer);
+  const r = rec; rec = null; listening = false;
+  if (r) { r.onend = null; r.onresult = null; r.onerror = null; r.onstart = null; try { r.abort(); } catch (e) {} }
+}
+function startRec(){
+  clearTimeout(restartTimer);
+  if (!micWanted() || rec) return;
+  const r = new SR(); rec = r; r._t0 = performance.now();
+  r.lang = zh() ? 'zh-CN' : 'en-US';
+  r.continuous = true; r.interimResults = true; r.maxAlternatives = 5;
+  let consumed = '';
+  dbg('Starting microphone…');
+  r.onstart = () => { listening = true; stuckCount = 0; meter.sessionStart = performance.now(); setNeedTap(false); dbg('Listening (' + r.lang + ')'); };
+  r.onresult = e => {
+    if (rec !== r) return;
+    listening = true; meter.sessionStart = meter.sessionStart || performance.now();
+    try { dbg('Heard: “' + e.results[e.results.length - 1][0].transcript.trim() + '”'); } catch (err) {}
+    let full = '';
+    for (let i = 0; i < e.results.length; i++) full += e.results[i][0].transcript + ' ';
+    const latest = e.results[e.results.length - 1];
+    const fresh = full.indexOf(consumed) === 0 ? full.slice(consumed.length) : latest[0].transcript;
+    if (!fresh.trim()) return;
+    clearTimeout(settleTimer);
+    const altTexts = []; for (let j = 1; j < latest.length; j++) if (latest[j] && latest[j].transcript) altTexts.push(latest[j].transcript);
+    const go = () => { if (rec !== r) return; consumed = full; handleSpoken([fresh].concat(altTexts)); meter.sessionStart = performance.now(); };
+    // wait longer while the child may still be mid-answer ("... is", "eighty ...")
+    const open = /(\b(is|equals?|times|time|x|by|makes|twenty|thirty|forty|fourty|fifty|sixty|seventy|eighty|ninety)|\b[2-9]0|等于|得|乘|是|[二三四五六七八九]十)\s*$/i.test(fresh.trim());
+    if (latest.isFinal) go(); else settleTimer = setTimeout(go, open ? 1600 : 850);
+  };
+  r.onerror = e => {
+    dbg('Error: ' + e.error);
+    if (e.error === 'not-allowed' && IS_IOS && micOn && performance.now() - r._t0 < 400) { setNeedTap(true); return; }
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture') {
+      if (e.error === 'audio-capture' && meter.ok) { meter.broken = true; stopMeter(); return; }
+      micOn = false; save.micOn = false; persist(); micUI(); stopMeter();
+      const en = { 'not-allowed':'The microphone is blocked. Allow it for this website in the browser settings, then tap Turn on voice.', 'service-not-allowed':'Voice recognition is turned off on this device.', 'audio-capture':'No microphone was found.' };
+      const cn = { 'not-allowed':'麦克风被拦截了。请在浏览器设置里允许这个网站使用麦克风，再点“打开语音答题”。', 'service-not-allowed':'这台设备关闭了语音识别。', 'audio-capture':'找不到麦克风。' };
+      heard((zh() ? cn : en)[e.error], 'err');
+    } else if (e.error === 'network') { hardErr++; if (hardErr === 3) heard(zh() ? '语音识别需要联网，正在重试…' : 'Voice needs the internet. Retrying…', 'err'); }
+  };
+  r.onend = () => {
+    if (rec !== r) return;
+    dbg('Stopped, restarting…');
+    clearTimeout(settleTimer);
+    rec = null; listening = false;
+    if (micWanted() && !needTap) restartTimer = setTimeout(startRec, hardErr >= 3 ? 2500 : 150);
+  };
+  try { r.start(); } catch (e) { dbg('Could not start: ' + (e && e.message)); rec = null; listening = false; setNeedTap(true); }
+}
+// watchdog: restart a dropped session; if the browser won't start one without a tap, ask for a tap
+setInterval(() => {
+  if (!micWanted()) return;
+  if (!rec && !needTap) { startRec(); return; }
+  if (rec && !listening && performance.now() - rec._t0 > 3000) {
+    stopRec(); stuckCount++;
+    if (stuckCount >= 2 && IS_IOS && meter.ok) {
+      meter.broken = true; stopMeter();
+      heard(zh() ? '这台设备不能同时测量音量，已关闭音量检查。' : 'This device can’t check loudness while listening, so the loudness check is off.', 'err');
+      startRec();
+    } else setNeedTap(true);
+  }
+}, 1200);
+// any tap in the game counts as the user gesture iPhone/iPad need to restart the microphone
+document.addEventListener('pointerdown', () => {
+  if (!micWanted() || listening) return;
+  if (rec && performance.now() - rec._t0 < 1500) return;
+  stopRec(); setNeedTap(false); startRec(); startMeter(); lastRescue = performance.now();
+}, true);
+let lastRescue = 0;
+function dbg(msg){
+  const el = $('micDebug'); if (!el) return;
+  el.hidden = !save.voiceDebug || $('hud').hidden;
+  if (save.voiceDebug) el.textContent = '[voice] ' + msg + (meter.ok ? '  |  level ' + Math.round(meter.level) + ' dB' : IS_IOS ? '  |  loudness check off on iPhone/iPad' : '');
+}
+$('optVoiceDebug').addEventListener('change', e => { save.voiceDebug = e.target.checked; persist(); dbg(micOn ? (listening ? 'Listening' : 'Not listening') : 'Voice is off'); });
+function toggleMic(){
+  ac();
+  if (micOn && performance.now() - lastRescue < 700) return; // that tap just restarted listening
+  if (SR && window.isSecureContext === false) { heard(zh() ? '语音需要 https 网址。请通过 GitHub Pages 等 https 链接打开游戏。' : 'Voice needs an https:// web address. Open the game from your GitHub Pages link.', 'err'); return; }
+  if (!SR) { heard(zh() ? '这个浏览器不支持语音输入。请用 Safari 或 Chrome 打开 https 网址。' : 'Voice answers need Safari or Chrome, opened from an https:// web address.', 'err'); return; }
+  micOn = !micOn; save.micOn = micOn; persist(); micUI(); hardErr = 0;
+  if (micOn) { try { if ('speechSynthesis' in window) speechSynthesis.cancel(); } catch (e) {} meter.broken = false; startRec(); startMeter(); voicePrompt(); }
+  else { stopMic(); $('heard').hidden = true; }
+}
+function resumeMic(){ if (micWanted()) { if (!rec) restartTimer = setTimeout(startRec, 250); startMeter(); } }
+/* ---- loudness meter ---- */
+const LOUD_DB = { off:null, loud:-27, very:-19 };
+const meter = { stream:null, src:null, an:null, buf:null, hist:[], ok:false, broken:false, raf:0, level:-100, started:0, lastResult:0, loudCount:0, wasLoud:false };
+const loudTh = () => LOUD_DB[save.loud || 'loud'];
+const needLoud = () => loudTh() != null && meter.ok;
+const dbToPct = db => clamp((db + 60) / 54 * 100, 0, 100);
+async function startMeter(){
+  if (IS_IOS) { meter.broken = true; updateMeterUI(); return; }
+  if (meter.stream || meter.broken || loudTh() == null || !micWanted()) { updateMeterUI(); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { meter.broken = true; updateMeterUI(); return; }
+  try {
+    const st = await navigator.mediaDevices.getUserMedia({ audio:{ echoCancellation:false, noiseSuppression:false, autoGainControl:false } });
+    if (!micWanted()) { st.getTracks().forEach(t => t.stop()); return; }
+    const a = ac(); const src = a.createMediaStreamSource(st); const an = a.createAnalyser(); an.fftSize = 1024; src.connect(an);
+    Object.assign(meter, { stream:st, src, an, buf:new Float32Array(an.fftSize), ok:true, hist:[], started:performance.now(), lastResult:performance.now(), loudCount:0, wasLoud:false });
+    cancelAnimationFrame(meter.raf); tickMeter();
+  } catch (e) { meter.broken = true; }
+  updateMeterUI();
+}
+function stopMeter(){
+  cancelAnimationFrame(meter.raf);
+  if (meter.stream) meter.stream.getTracks().forEach(t => t.stop());
+  if (meter.src) { try { meter.src.disconnect(); } catch (e) {} }
+  Object.assign(meter, { stream:null, src:null, an:null, ok:false, hist:[] });
+  updateMeterUI();
+}
+function tickMeter(){
+  if (!meter.an) return;
+  meter.an.getFloatTimeDomainData(meter.buf);
+  let s = 0; for (let i = 0; i < meter.buf.length; i++) s += meter.buf[i] * meter.buf[i];
+  const db = 20 * Math.log10(Math.sqrt(s / meter.buf.length) + 1e-8), now = performance.now();
+  meter.level = db; meter.hist.push([now, db]);
+  while (meter.hist.length && meter.hist[0][0] < now - 5000) meter.hist.shift();
+  const th = loudTh(), loudNow = th != null && db > th;
+  if (loudNow && !meter.wasLoud) meter.loudCount++;
+  meter.wasLoud = loudNow;
+  // iOS can't always share the mic between the meter and speech recognition: if loud speech never produces results, drop the meter
+  if (meter.loudCount >= 5 && now - meter.lastResult > 20000 && now - meter.started > 20000) {
+    meter.broken = true; stopMeter(); stopRec(); resumeMic();
+    heard(zh() ? '这台设备不能同时测量音量，已关闭音量检查。' : 'This device can’t check loudness while listening, so the loudness check is off.', 'err');
+    return;
+  }
+  const f = $('meterFill'); f.style.width = dbToPct(db).toFixed(1) + '%'; f.classList.toggle('loud', loudNow);
+  meter.raf = requestAnimationFrame(tickMeter);
+}
+function peakDb(ms){ const now = performance.now(); let m = -100; for (const [t, d] of meter.hist) if (t > now - ms && d > m) m = d; return m; }
+function updateMeterUI(){
+  const el = $('meter'); if (!el) return;
+  el.hidden = !(micOn && meter.ok && loudTh() != null);
+  if (loudTh() != null) $('meterMark').style.left = dbToPct(loudTh()).toFixed(1) + '%';
+}
+function stopMic(){ stopRec(); stopMeter(); }
+function voicePrompt(){
+  if (!micOn || state.phase !== 'aim' && state.phase !== 'intro') return;
+  const [a, b] = state.q, loud = loudTh() != null;
+  if (save.needSentence === true) heard(zh() ? (loud ? '大声说：' : '说：') + a + '乘' + b + '等于……' : (loud ? 'Say it loudly: ' : 'Say: ') + a + ' times ' + b + ' equals …', '');
+  else heard(zh() ? (loud ? '大声说出答案！' : '说出答案') : (loud ? 'Say the answer loudly!' : 'Say the answer'), '');
+}
+/* ---- sentence parsing ---- */
+function parseEquation(text){
+  const { nums, eqAt } = extractNumbers(text);
+  if (!nums.length) return null;
+  let ai = -1;
+  if (eqAt >= 0) ai = nums.findIndex(n => n.pos > eqAt);
+  if (ai < 0 && nums.length >= 3) ai = nums.length - 1;
+  if (ai < 0 && nums.length === 1) return { answer:nums[0].v, factorsOk:false, hasFactors:false };
+  if (ai < 0) return { answer:null, factorsOk:false, hasFactors:nums.length >= 2 };
+  const f = nums.slice(0, ai).map(n => n.v).slice(-2), [a, b] = state.q;
+  const factorsOk = f.length === 2 && ((f[0] === a && f[1] === b) || (f[0] === b && f[1] === a));
+  return { answer:nums[ai].v, factorsOk, hasFactors:f.length === 2, factors:f };
+}
+let lastTipAt = 0;
+function tip(msg){ const n = performance.now(); if (n - lastTipAt < 2200) return; lastTipAt = n; heard(msg, 'err'); }
+const TWIN = { 13:30, 30:13, 14:40, 40:14, 15:50, 50:15, 16:60, 60:16, 17:70, 70:17, 18:80, 80:18, 19:90, 90:19 };
+// Every reading of what was said that could be the answer, most likely first. Only the answer counts:
+// "9 times 9 is 81" -> 81, "81" -> 81, "9 times 9 is 8 1" -> 81, "9981" -> 81, "nine nine eighty one" -> 81.
+function answerCandidates(text){
+  const { nums, eqAt } = extractNumbers(text);
+  const out = [];
+  if (!nums.length) return out;
+  const [a, b] = state.q || [0, 0];
+  const isPair = (x, y) => (x === a && y === b) || (x === b && y === a);
+  const add = v => { if (Number.isFinite(v) && v > 0 && v <= 100 && !out.includes(v)) out.push(v); };
+  const merge = arr => { const r = []; for (let i = 0; i < arr.length; i++) { const x = arr[i], y = arr[i + 1]; if (x >= 20 && x <= 90 && x % 10 === 0 && y >= 1 && y <= 9) { r.push(x + y); i++; } else r.push(x); } return r; };
+  const all = merge(nums.map(n => n.v));
+  if (eqAt >= 0) {
+    const after = merge(nums.filter(n => n.pos > eqAt).map(n => n.v));
+    if (after.length >= 2 && after.every(v => v < 10)) add(+after.join(''));
+    if (after.length) add(after[0]);
+  } else {
+    if (all.length === 2 && isPair(all[0], all[1])) return out;          // just the question read back, no answer
+    const tail = all.length >= 3 && isPair(all[0], all[1]) ? all.slice(2) : all;
+    if (tail.length >= 2 && tail.every(v => v < 10) && !(tail.length === 2 && isPair(tail[0], tail[1]))) add(+tail.join(''));
+    if (tail.length) add(tail[tail.length - 1]);
+  }
+  // numbers glued together by the recogniser ("9981", "981"): try the end of the digits
+  for (const v of all) { const s = String(v); if (s.length >= 3) for (let k = 1; k < s.length; k++) add(+s.slice(k)); }
+  return out;
+}
+const echoOfQuestion = v => { const [a, b] = state.q || [0, 0]; return String(v) === String(a) + String(b) || String(v) === String(b) + String(a); };
+function handleSpoken(alts){
+  meter.lastResult = performance.now(); meter.loudCount = 0;
+  if (state.screen !== 'game' || state.phase !== 'aim' || state.paused) return;
+  const loudPeak = meter.ok ? peakDb(clamp(performance.now() - (meter.sessionStart || 0) + 300, 1500, 6000)) : 0;
+  const targets = world.bodies.filter(b => kind(b) === 'monster' && !b.plugin.dead && b.plugin.value != null);
+  const holds = v => targets.find(m => m.plugin.value === v);
+  const sentence = save.needSentence === true, [a, b] = state.q;
+  const lists = [];
+  for (const t of alts) {
+    if (!t || isNoise(t)) continue;
+    if (sentence) { const r = parseEquation(t); if (!r || !r.factorsOk) continue; }
+    const c = answerCandidates(t); if (c.length) lists.push(c);
+  }
+  if (!lists.length) {
+    if (sentence && alts.some(t => t && !isNoise(t) && extractNumbers(t).nums.length))
+      tip(zh() ? '要说完整的算式哦：' + a + '乘' + b + '等于……' : 'Say the whole sentence: ' + a + ' times ' + b + ' equals …');
+    return;
+  }
+  // 1) a reading that matches a gremlin, 2) a teen/ten mix-up (eighteen/eighty) that matches, 3) the best reading
+  let ans = null;
+  for (const c of lists) { ans = c.find(holds); if (ans != null) break; }
+  if (ans == null) for (const c of lists) { const v = c.find(x => TWIN[x] && holds(TWIN[x])); if (v != null) { ans = TWIN[v]; break; } }
+  if (ans == null) {
+    const v = lists[0][0];
+    if (echoOfQuestion(v)) return;
+    heard(zh() ? '听到 ' + v + '，但没有小怪拿着 ' + v + '。' : 'Heard ' + v + ', but no gremlin is holding ' + v + '.', 'err');
+    return;
+  }
+  if (needLoud() && loudPeak < loudTh()) {
+    tip(sentence ? (zh() ? '再大声一点！' + a + '乘' + b + '等于……' : 'Louder! Say: ' + a + ' times ' + b + ' equals …') : (zh() ? '再大声一点！' : 'Louder!'));
+    const el = $('meter'); el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+    return;
+  }
+  const m = holds(ans);
+  heard(zh() ? '收到 ' + ans + '，发射！' : 'Got ' + ans + '. Fire!', 'ok');
+  autoAimAt(m);
+}
+function flyerPosAt(b, tms){
+  const pl = b.plugin;
+  if (!(pl.fly && b.isStatic)) return { x:b.position.x, y:b.position.y };
+  const t = tms / 1000 + pl.wob; let x = pl.bx, y = pl.by;
+  if (pl.vtype === 'bat') { x += Math.sin(t * 1.3) * 45; y += Math.sin(t * 2.1) * 35; } else y += Math.sin(t * 1.6) * 14;
+  return { x, y };
+}
+function solveShot(m, delay){
+  const br = BIRDS[state.birdType].r, g = engine.gravity.y * engine.gravity.scale * STEP * STEP;
+  const tr = m.plugin.vtype === 'bubble' && m.plugin.bubble ? 44 : m.plugin.r;
+  const pad = br * 0.8;
+  const obs = world.bodies.filter(b => b !== m && kind(b) !== 'ground' && kind(b) !== 'bird')
+    .map(b => ({ b, x0:b.bounds.min.x - pad, x1:b.bounds.max.x + pad, y0:b.bounds.min.y - pad, y1:b.bounds.max.y + pad }));
+  const t0 = state.time + delay;
+  const trial = (ang, pw) => {
+    const px = -Math.cos(ang) * pw * MAX_PULL, py = -Math.sin(ang) * pw * MAX_PULL;
+    let x = SLING.x + px, y = SLING.y + py, vx = -px * POWER, vy = -py * POWER, miss = 1e9;
+    const blocked = new Set();
+    for (let i = 0; i < 190; i++) {
+      vx *= 0.997; vy *= 0.997; vy += g; x += vx; y += vy;
+      if (y > GROUND - br * 0.5 || x > W + 60) break;
+      const tp = flyerPosAt(m, t0 + i * STEP);
+      const d = Math.hypot(x - tp.x, y - tp.y) - tr - br * 0.6;
+      if (d < miss) miss = d;
+      if (d <= 0) return { px, py, hit:true, steps:i, blocks:blocked.size, miss:0 };
+      if (i % 2 === 0) for (const o of obs) if (x > o.x0 && x < o.x1 && y > o.y0 && y < o.y1) blocked.add(o.b);
+    }
+    return { px, py, hit:false, miss, blocks:blocked.size, steps:999 };
+  };
+  const score = r => r.hit ? r.blocks * 1000 + r.steps : 1e6 + r.miss;
+  let best = null;
+  for (let a = -1.45; a <= 0.35; a += 0.025) for (let p = 0.3; p <= 1.1501; p += 0.025) { const r = trial(a, p); r.a = a; r.p = p; if (!best || score(r) < score(best)) best = r; }
+  const A = best.a, P = best.p;
+  for (let a = A - 0.025; a <= A + 0.025; a += 0.005) for (let p = Math.max(0.2, P - 0.025); p <= Math.min(1.15, P + 0.025); p += 0.005) { const r = trial(a, p); r.a = a; r.p = p; if (score(r) < score(best)) best = r; }
+  return { x:best.px, y:best.py };
+}
+function autoAimAt(m){
+  const dur = 750;
+  state.dragging = false; state.kbActive = false;
+  state.auto = { to: solveShot(m, dur), t0: state.time, dur };
+  state.phase = 'autoaim'; updateTray(); sfx.stretch();
+}
+$('btnMic').addEventListener('click', toggleMic);
+function renderVoiceLang(){
+  for (const b of document.querySelectorAll('[data-vl]')) b.setAttribute('aria-pressed', String((save.voiceLang || 'en') === b.dataset.vl));
+  for (const b of document.querySelectorAll('[data-loud]')) b.setAttribute('aria-pressed', String((save.loud || 'loud') === b.dataset.loud));
+  $('optSentence').checked = save.needSentence === true;
+  $('optVoiceDebug').checked = !!save.voiceDebug;
+  micUI(); updateMeterUI();
+}
+for (const b of document.querySelectorAll('[data-loud]')) b.addEventListener('click', () => { save.loud = b.dataset.loud; meter.broken = false; persist(); sfx.click(); renderVoiceLang(); });
+$('optSentence').addEventListener('change', e => { save.needSentence = e.target.checked; persist(); });
+for (const b of document.querySelectorAll('[data-vl]')) b.addEventListener('click', () => { save.voiceLang = b.dataset.vl; persist(); sfx.click(); renderVoiceLang(); });
 
 /* ================= boot ================= */
 for (let i = 0; i < 7; i++) state.clouds.push({ x: rnd(-200, 1800), y: rnd(70, 330), w: rnd(110, 220), v: rnd(0.08, 0.3) });
