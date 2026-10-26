@@ -21,9 +21,13 @@ const PRAISE=['Hoo-ray! Spot on.','Brilliant trick work!','Exactly right!','You\
 /* ---------- data & saving ---------- */
 const LS='mathstreet-v1';
 function newPlayer(name,grade,look){return{id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,grade:grade||DEFAULT_GRADE,look:look||'boy',avatar:'chick',owned:['chick'],gems:0,seen:{},lv:{},sessions:[],time:0}}
-function blank(){const a=newPlayer('Jayden',null,'boy'),b=newPlayer('Michelle',null,'girl');return{v:1,updated:0,current:null,players:[a,b]}}
+function blank(){const a=newPlayer('Jayden','p1','boy'),b=newPlayer('Michelle',null,'girl');return{v:2,updated:0,current:null,players:[a,b]}}
 let DATA=(()=>{try{const s=localStorage.getItem(LS);if(s){const d=JSON.parse(s);if(d&&d.players)return d}}catch(e){}return blank()})();
-DATA.players.forEach(p=>{if(!p.look)p.look=/^michelle$/i.test(p.name.trim())?'girl':'boy'});   // saves from before looks: Michelle is a girl
+/* Save migration v1 → v2 (runs once): Michelle is a girl, Jayden is a boy in P1. Later changes made on the
+   progress board or in the Art Studio are kept, because this only runs for older saves. */
+if((DATA.v||1)<2){DATA.players.forEach(p=>{const n=p.name.trim().toLowerCase();
+  if(!p.look)p.look=n==='michelle'?'girl':'boy';if(n==='jayden'){p.look='boy';p.grade='p1'}});DATA.v=2;try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}}
+DATA.players.forEach(p=>{if(!p.look)p.look='boy'});
 let DBREF=null,dbSaving=false,dbPending=false,dbTimer=null,SYNC='device';
 function save(){
   DATA.updated=Date.now();

@@ -264,7 +264,7 @@ happy-math-farm/
 ### 8.1 存档结构（localStorage 键名 `mathstreet-v1`）
 
 ```js
-DATA = { v:1, updated:时间戳, current:当前玩家id, players:[Player] }
+DATA = { v:2, updated:时间戳, current:当前玩家id, players:[Player] }
 Player = { id, name, grade:'p1'|'p3', daily:{d:日期, n:{任务id:次数}}, avatar, owned:[], gems:金币, seen:{已看过的教学},
            lv:{ 关卡id:{stars, plays, clears, qs:答题数, first:一次答对数, last} },
            sessions:[最近60次练习], time:总秒数,
@@ -273,6 +273,8 @@ Player = { id, name, grade:'p1'|'p3', daily:{d:日期, n:{任务id:次数}}, ava
 ```
 
 如果以后修改结构，要提高 `v` 的值，并在读取存档的地方写迁移逻辑，不要让旧存档失效。
+
+- **v1 → v2**（`core.js`，只运行一次）：Michelle 设为女孩；Jayden 设为男孩、P1；其他玩家默认男孩。新安装时的默认玩家同样是 Jayden（P1 👦）和 Michelle（P3 👧）。
 
 ### 8.2 数值
 
