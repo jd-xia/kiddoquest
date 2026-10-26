@@ -1,4 +1,4 @@
-/* Happy Math Farm — Farm Market (market.html): animals, decorations, outfits. */
+/* Happy Learning Farm — Farm Market (market.html): animals, decorations, outfits. */
 /* market */
 function rMarket(){
   const p=cur(),f=farmOf(p),lv=farmLevel(f.xp).l,tab=UI.tab||'animals';

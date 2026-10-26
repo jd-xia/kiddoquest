@@ -1,4 +1,4 @@
-/* Happy Math Farm — 3D engine: renderer, post-processing (bloom + colour grade), materials,
+/* Happy Learning Farm — 3D engine: renderer, post-processing (bloom + colour grade), materials,
    shared builders (trees, hero, labels). Used by index.html (plaza) and school-*.html. */
 const EMO='"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
 const FONT='"Fredoka",ui-rounded,"Segoe UI",sans-serif';
@@ -65,14 +65,17 @@ function engine(){
     const ptrs=new Map(),spread=()=>{const [a,b]=[...ptrs.values()];return Math.hypot(a.x-b.x,a.y-b.y)};   // two fingers = pinch zoom
     const lift=e=>{ptrs.delete(e.pointerId);if(ptrs.size<2)G.pinch=null};
     cv.addEventListener('pointerdown',e=>{ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+      if(e.pointerType==='touch')tapPointer(e);else ptrEl().classList.add('press');
       if(ptrs.size===2){G.pd=null;G.pinch=spread();return}
       G.pd={x:e.clientX,y:e.clientY,lx:e.clientX,drag:false};try{cv.setPointerCapture(e.pointerId)}catch(_){}});
     cv.addEventListener('pointermove',e=>{if(ptrs.has(e.pointerId))ptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
       if(G.pinch&&ptrs.size===2){const s=spread();if(G.stage&&G.stage.zoom&&s>0)G.stage.zoom(-Math.log(s/G.pinch)/Math.log(1.22));G.pinch=s;return}
-      const pd=G.pd;if(!pd)return;if(Math.abs(e.clientX-pd.x)>10||Math.abs(e.clientY-pd.y)>10)pd.drag=true;if(pd.drag&&G.stage&&G.stage.onDrag)G.stage.onDrag(e.clientX-pd.lx);pd.lx=e.clientX});
+      if(e.pointerType!=='touch'){movePointer(e);if(!G.pd){G.hoverEv=e;if(!G.hoverRaf)G.hoverRaf=requestAnimationFrame(doHover)}}
+      const pd=G.pd;if(!pd)return;if(Math.abs(e.clientX-pd.x)>10||Math.abs(e.clientY-pd.y)>10){if(!pd.drag&&e.pointerType!=='touch')setPointer({cursor:'drag'},e);pd.drag=true}if(pd.drag&&G.stage&&G.stage.onDrag)G.stage.onDrag(e.clientX-pd.lx);pd.lx=e.clientX});
     cv.addEventListener('wheel',e=>{if(!G.stage||!G.stage.zoom)return;e.preventDefault();G.stage.zoom(Math.max(-1,Math.min(1,e.deltaY/(e.ctrlKey?25:120))))},{passive:false});
-    cv.addEventListener('pointerup',e=>{lift(e);const pd=G.pd;G.pd=null;if(pd&&!pd.drag&&G.stage&&G.stage.onTap&&!DLG)G.stage.onTap(e)});
+    cv.addEventListener('pointerup',e=>{lift(e);if(G.ptr)G.ptr.classList.remove('press');const pd=G.pd;G.pd=null;if(pd&&!pd.drag&&G.stage&&G.stage.onTap&&!DLG)G.stage.onTap(e)});
     cv.addEventListener('pointercancel',e=>{lift(e);G.pd=null});
+    cv.addEventListener('pointerleave',e=>{if(e.pointerType!=='touch')endHover()});
     window.addEventListener('resize',()=>G.resize());
     return true;
   }catch(e){console.error(e);G.r=false;return false}
@@ -80,18 +83,78 @@ function engine(){
 G.resize=()=>{if(!G.stage||!G.host||!G.host.isConnected)return;const w=G.host.clientWidth,h=G.host.clientHeight;if(!w||!h)return;G.r.setSize(w,h);if(G.post){G.post.c.setPixelRatio(G.r.getPixelRatio());G.post.c.setSize(w,h)}G.stage.camera.aspect=w/h;G.stage.camera.updateProjectionMatrix()};
 function mountStage(st,host){
   if(!st||!engine())return false;
+  if(G.stage!==st)endHover();
   if(G.stage&&G.stage!==st&&G.stage.leave)G.stage.leave();
   G.stage=st;G.host=host;host.prepend(G.r.domElement);G.resize();
   if(!G.raf&&!G.inLoop){G.last=performance.now();G.raf=requestAnimationFrame(loop3d)}
   return true;
 }
-function unmountStage(){if(G.stage&&G.stage.leave)G.stage.leave();G.stage=null;G.host=null;KEYS.clear();if(!G.inLoop&&G.raf){cancelAnimationFrame(G.raf);G.raf=0}}
+/* ---------- game pointer ----------
+   Over 3D scenes the system cursor is replaced by a drawn pointer that follows the mouse:
+   a gold arrow to walk ('move'), the arrow with a spinning ring to pick ('select'), a paint brush
+   ('paint'), a grey arrow with a lock ('locked') and a turning badge while dragging the camera ('drag').
+   A stage may define hover(e) -> {cursor, label} and unhover(); the label floats next to the pointer.
+   Touch screens have no hover: a tap shows the pointer briefly where the finger landed. */
+const PTR_ICON={
+  arrow:(id,a,b,c)=>`<svg viewBox="0 0 48 48"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset=".55" stop-color="${b}"/><stop offset="1" stop-color="${c}"/></linearGradient></defs><path d="M6 4L6 36L14.5 28.5L20 41L26.5 38L21 25.5L32.5 25.5Z" fill="url(#${id})" stroke="#0C1330" stroke-width="3" stroke-linejoin="round"/><path d="M10 12V27" stroke="#fff" stroke-width="2.2" stroke-linecap="round" opacity=".75"/></svg>`,
+  brush:'<svg viewBox="0 0 48 48"><g stroke="#0C1330" stroke-width="2.6" stroke-linejoin="round"><path d="M23 25L40 6.5Q43 4 45 6Q46.5 8.5 43.5 11L26 28Z" fill="#9B6BFF"/><path d="M17.5 30.5L23 25L26 28L20.5 33.5Z" fill="#F7C548"/><path d="M17.5 30.5C12 31 8 34.5 6.5 39.5L4 45L9.5 42.5C14.5 41 18 37 20.5 33.5Z" fill="#FF5C8A"/></g><path d="M30 21.5L40.5 10" stroke="#fff" stroke-width="2" stroke-linecap="round" opacity=".7"/></svg>'
+};
+const GOLD_ARROW=()=>PTR_ICON.arrow('pgGold','#FFF4C2','#F7C548','#D98E1C');
+const PTR_LOOK={   // icon + hot spot (the pixel that points) inside the pointer's 44px box
+  move:{icon:GOLD_ARROW,hx:5,hy:3.5},select:{icon:GOLD_ARROW,hx:5,hy:3.5},drag:{icon:GOLD_ARROW,hx:5,hy:3.5},
+  locked:{icon:()=>PTR_ICON.arrow('pgGrey','#F1F4FF','#B8C2DE','#7D88A8'),hx:5,hy:3.5},
+  paint:{icon:()=>PTR_ICON.brush,hx:3.7,hy:41}
+};
+function ptrEl(){
+  if(!G.ptr){G.ptr=document.createElement('div');G.ptr.className='gptr';G.ptr.setAttribute('aria-hidden','true');
+    G.ptr.innerHTML='<i class="pring"></i><span class="pico"></span><b class="pbadge"></b>';document.body.appendChild(G.ptr)}
+  return G.ptr;
+}
+function lookPointer(state){const el=ptrEl(),L=PTR_LOOK[state]||PTR_LOOK.move;
+  if(el.dataset.state!==state){el.dataset.state=state;el.querySelector('.pico').innerHTML=L.icon();el.style.setProperty('--hx',L.hx+'px');el.style.setProperty('--hy',L.hy+'px')}
+  return L}
+function movePointer(e){const el=ptrEl(),L=PTR_LOOK[el.dataset.state]||PTR_LOOK.move;el.style.transform=`translate(${e.clientX-L.hx}px,${e.clientY-L.hy}px)`}
+function doHover(){G.hoverRaf=0;const e=G.hoverEv;
+  if(!e||!G.stage||!G.stage.hover||DLG||G.pd)return setPointer(e&&G.stage&&G.stage.hover&&!DLG?{cursor:'move'}:null,e);
+  setPointer(G.stage.hover(e)||{cursor:'move'},e)}
+function endHover(){G.hoverEv=null;setPointer(null);if(G.stage&&G.stage.unhover)G.stage.unhover()}
+function setPointer(r,e){
+  const on=!!(r&&r.cursor);if(G.r)G.r.domElement.dataset.cur=on?'game':'';
+  const el=ptrEl();el.classList.toggle('show',on&&!!e);if(on){lookPointer(r.cursor);if(e)movePointer(e)}
+  if(!G.tip){G.tip=document.createElement('div');G.tip.className='gtip';G.tip.setAttribute('aria-hidden','true');document.body.appendChild(G.tip)}
+  const show=!!(r&&r.label&&e);G.tip.classList.toggle('show',show);
+  if(show){G.tip.textContent=r.label;G.tip.style.left=Math.min(e.clientX+26,innerWidth-G.tip.offsetWidth-8)+'px';G.tip.style.top=Math.min(e.clientY+30,innerHeight-44)+'px'}
+}
+function tapPointer(e){   // touch: flash the pointer (and the stage's highlight) where the finger landed
+  if(!G.stage||!G.stage.hover||DLG)return;const r=G.stage.hover(e)||{cursor:'move'},el=ptrEl();
+  lookPointer(r.cursor);movePointer(e);el.classList.remove('tap');void el.offsetWidth;el.classList.add('show','tap');
+  clearTimeout(G.tapT);G.tapT=setTimeout(()=>{el.classList.remove('show','tap');if(G.stage&&G.stage.unhover)G.stage.unhover()},750);
+}
+/* 3D pointer marks: a glowing ring on the ground with a turning dashed halo, and an optional bouncing gold arrow above. */
+function makeMark(r,o={}){
+  const g=new THREE.Group(),disc=new THREE.Group(),color=o.color||'#FFD447',op=o.opacity||.95;g.visible=false;g.add(disc);
+  const flat=geo=>{geo.rotateX(-Math.PI/2);return geo};
+  const M=a=>new THREE.MeshBasicMaterial({color,transparent:true,opacity:a,depthWrite:false,toneMapped:false,side:THREE.DoubleSide});
+  const ring=new THREE.Mesh(flat(new THREE.RingGeometry(r*.8,r,48)),M(op));disc.add(ring);
+  const glow=new THREE.Mesh(flat(new THREE.CircleGeometry(r*.8,40)),M(.18));glow.material.blending=THREE.AdditiveBlending;disc.add(glow);
+  const dash=new THREE.Group();disc.add(dash);for(let k=0;k<6;k++)dash.add(new THREE.Mesh(flat(new THREE.RingGeometry(r*1.14,r*1.28,12,1,k*Math.PI/3,Math.PI/5)),M(op*.85)));
+  [ring,glow,...dash.children].forEach(m=>m.renderOrder=4);
+  let chev=null;
+  if(o.arrow){chev=new THREE.Group();const c=mesh(new THREE.ConeGeometry(.3,.62,4),'#FFD447',0,0,0,{e:'#FFB000',ei:.9,r:.3});c.rotation.x=Math.PI;c.castShadow=false;chev.add(c);
+    const s=new THREE.Sprite(new THREE.SpriteMaterial({map:dotTex(),color:'#FFE27A',transparent:true,opacity:.55,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));s.scale.set(1.3,1.3,1);chev.add(s);g.add(chev)}
+  g.userData={disc,ring,dash,glow,chev,r0:r,h:o.h||2};return g;
+}
+function placeMark(m,x,y,z,r,h){const U=m.userData;m.visible=true;m.position.set(x,y+.08,z);U.disc.scale.setScalar((r||U.r0)/U.r0);if(h!=null)U.h=h}
+function animMark(m,t){if(!m||!m.visible)return;const U=m.userData,s=1+Math.sin(t*5)*.05;
+  U.ring.scale.set(s,1,s);U.dash.rotation.y=t*.9;U.glow.material.opacity=.14+Math.sin(t*5)*.06;
+  if(U.chev){U.chev.position.y=U.h+Math.abs(Math.sin(t*3.2))*.4;U.chev.rotation.y=t*2}}
+function unmountStage(){endHover();if(G.stage&&G.stage.leave)G.stage.leave();G.stage=null;G.host=null;KEYS.clear();if(!G.inLoop&&G.raf){cancelAnimationFrame(G.raf);G.raf=0}}
 function loop3d(now){
   G.raf=0;const st=G.stage;if(!st)return;
   const dt=Math.min(.05,(now-G.last)/1000);G.last=now;st.t=(st.t||0)+dt;TIME.value+=dt;postQuality(dt);if(st.rim)RIM.value.copy(st.rim);
   G.inLoop=true;try{st.update(dt)}catch(e){console.error(e)}G.inLoop=false;
   if(!G.stage)return;
-  if(G.stage===st){const P=G.post;if(P){P.rp.scene=st.scene;P.rp.camera=st.camera;P.bloom.strength=st.bloom??.62;P.c.render(dt)}else G.r.render(st.scene,st.camera)}
+  if(G.stage===st){const P=G.post;if(P){P.rp.scene=st.scene;P.rp.camera=st.camera;P.bloom.strength=st.bloom??.62;const U=P.grade.uniforms;U.uVig.value=st.vig??.42;U.uSat.value=st.sat??1.05;U.uCon.value=st.con??.2;P.c.render(dt)}else G.r.render(st.scene,st.camera)}
   G.raf=requestAnimationFrame(loop3d);
 }
 function rayFrom(e,cam){const r=G.r.domElement.getBoundingClientRect();const v=new THREE.Vector2(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);const ray=new THREE.Raycaster();ray.setFromCamera(v,cam);return ray}
@@ -210,7 +273,9 @@ function fenceRect(x0,x1,z0,z1,step,color,parent){
     for(const y of[.36,.78]){const r=mesh(BOX(L,.1,.07),color,(ax+bx)/2,y,(az+bz)/2);r.rotation.y=-Math.atan2(bz-az,bx-ax);parent.add(r)}};
   side(x0,z0,x1,z0);side(x1,z0,x1,z1);side(x1,z1,x0,z1);side(x0,z1,x0,z0)}
 function buildHero(f,showTag){
+  const L=lookOf(cur());
   if(artOf('me'))return buildPaperHero(showTag);
+  if(!L.hero)return buildPaperHero(showTag,L.e);   // princess, unicorn, ninja…: a stand-up cut-out
   const g=new THREE.Group(),shirt=(SHIRTS.find(s=>s[0]===f.shirt)||SHIRTS[0])[2],skin='#F5CBA7',pants='#34539E';
   const legs=[],arms=[];
   for(const s of[-1,1]){const pv=new THREE.Group();pv.position.set(s*.17,.64,0);pv.add(mesh(rbox(.25,.6,.27,.08),pants,0,-.3,0,{r:.7}));pv.add(mesh(rbox(.29,.16,.4,.07),'#5A3A22',0,-.58,.06,{r:.5}));g.add(pv);legs.push(pv)}
@@ -221,7 +286,13 @@ function buildHero(f,showTag){
   for(const s of[-1,1]){const pv=new THREE.Group();pv.position.set(s*.42,1.3,0);pv.add(mesh(rbox(.19,.5,.21,.07),shirt,0,-.22,0,{r:.65}));pv.add(mesh(SPH(.115,12,10),skin,0,-.53,0,{r:.55}));body.add(pv);arms.push(pv)}
   const head=new THREE.Group();head.position.y=1.82;body.add(head);
   head.add(mesh(SPH(.44,28,20),skin,0,0,0,{r:.55}));
-  head.add(mesh(new THREE.SphereGeometry(.455,28,16,0,Math.PI*2,0,Math.PI/2.25),'#4A2F1C',0,.03,-.035,{r:.6}));
+  const hair=L.hero==='girl'?'#6B3A1E':'#4A2F1C';
+  head.add(mesh(new THREE.SphereGeometry(.455,28,16,0,Math.PI*2,0,Math.PI/2.25),hair,0,.03,-.035,{r:.6}));
+  if(L.hero==='girl'){   // long hair at the back, two pigtails with pink bows, and a fringe
+    const back=mesh(SPH(.46,22,16),hair,0,-.16,-.13,{r:.6});back.scale.set(1.02,1.15,.82);head.add(back);
+    for(const s of[-1,1]){head.add(mesh(SPH(.18,14,12),hair,s*.5,-.2,-.06,{r:.6}));const tail=mesh(SPH(.19,14,12),hair,s*.72,-.38,-.06,{r:.6});tail.scale.set(1,1.5,1);head.add(tail);   // pigtails reach past the hat brim
+      const bow=new THREE.Group();bow.position.set(s*.62,-.18,-.02);bow.scale.setScalar(1.4);for(const k of[-1,1]){const b=mesh(new THREE.ConeGeometry(.08,.16,10),'#FF6FA8',k*.07,0,0,{r:.4});b.rotation.z=k*Math.PI/2;bow.add(b)}bow.add(mesh(SPH(.045,8,6),'#FF3D8B'));head.add(bow)}
+    const fringe=mesh(SPH(.3,18,10),hair,0,.2,.25,{r:.6});fringe.scale.set(1.3,.45,.6);head.add(fringe)}
   const eyes=[];
   for(const s of[-1,1]){const e=new THREE.Group();e.position.set(s*.15,.04,.385);e.add(mesh(SPH(.075,12,10),'#FFFFFF',0,0,0,{r:.3}));e.add(mesh(SPH(.05,12,10),'#2A1B4A',0,0,.035,{r:.2}));
     const gl=new THREE.Mesh(SPH(.016,6,6),new THREE.MeshBasicMaterial({color:'#fff',toneMapped:false}));gl.position.set(.015,.02,.08);e.add(gl);head.add(e);eyes.push(e);
@@ -234,13 +305,13 @@ function buildHero(f,showTag){
   g.userData={legs,arms,body,head,eyes};return g;
 }
 /* The child's own character drawing as a paper cut-out. Same userData shape as buildHero so animHero works. */
-function buildPaperHero(showTag){
+function buildPaperHero(showTag,emoji){
   const g=new THREE.Group(),body=new THREE.Group(),head=new THREE.Object3D();g.add(body);body.add(head);
-  const sp=iconSprite('me','🧑‍🌾',2.7);sp.center.set(.5,.06);body.add(sp);   // anchored at the feet, so squash and wobble start from the ground
+  const sp=emoji?emojiSprite(emoji,2.3):iconSprite('me','🧑‍🌾',2.7);sp.center.set(.5,.06);body.add(sp);   // anchored at the feet, so squash and wobble start from the ground
   if(showTag!==false){const tag=labelSprite(cur().name,{bg:'rgba(214,150,30,.95)',fg:'#FFFFFF',border:'#FFF1B8',h:.45});tag.position.y=2.95;g.add(tag)}
   g.add(shadowDisc(.55));
   const stub=()=>new THREE.Object3D();
-  g.userData={legs:[stub(),stub()],arms:[stub(),stub()],body,head,eyes:[],paper:sp};return g;
+  g.userData={legs:[stub(),stub()],arms:[stub(),stub()],body,head,eyes:[],paper:sp,paperSize:emoji?2.3:2.7};return g;
 }
 function buildHat(h){const g=new THREE.Group();
   if(h==='cap'){g.add(mesh(new THREE.SphereGeometry(.47,20,10,0,Math.PI*2,0,Math.PI/2),'#3E7BFA',0,.1,0,{r:.6}));g.add(mesh(rbox(.52,.06,.42,.025),'#3E7BFA',0,.12,.44))}
@@ -262,7 +333,7 @@ function animHero(h,mode,t,dt){
   const blink=(t%3.6)<.12?.1:1;U.eyes.forEach(e=>e.scale.y=blink);
   if(U.paper){const sq=mode==='walk'?Math.abs(Math.sin(t*11))*.06:mode==='cheer'?Math.abs(Math.sin(t*6))*.1:0;   // paper cut-out: wobble and squash instead of limbs
     U.paper.material.rotation=mode==='walk'?Math.sin(t*11)*.1:mode==='sad'?.22:mode==='cast'?-.14:Math.sin(t*2.2)*.03;
-    U.paper.scale.set(2.7*(1+sq*.5),2.7*(1-sq*.5),1)}
+    const k=U.paperSize||2.7;U.paper.scale.set(k*(1+sq*.5),k*(1-sq*.5),1)}
 }
 function addFx(st,text,x,y,z){const s=labelSprite(text,{h:.55,border:'#2FA36B'});s.position.set(x,y,z);st.scene.add(s);st.fx.push({s,t:0})}
 function updFx(st,dt){for(let i=st.fx.length-1;i>=0;i--){const e=st.fx[i];e.t+=dt;e.s.position.y+=dt*1.1;e.s.material.opacity=Math.min(1,(1.6-e.t)*2);if(e.t>1.6){st.scene.remove(e.s);e.s.material.map.dispose();e.s.material.dispose();st.fx.splice(i,1)}}}

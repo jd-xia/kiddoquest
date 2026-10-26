@@ -1,4 +1,4 @@
-/* Happy Math Farm — TEMPLATE for a new house page.
+/* Happy Learning Farm — TEMPLATE for a new house page.
    1. Copy house-template.html  -> <your-house>.html  and set data-page to that file name.
    2. Copy js/house-template.js -> js/<your-house>.js and point the HTML's last <script> at it.
    3. Give the screen a name (below: 'workshop'), add it to PAGES in common/core.js,

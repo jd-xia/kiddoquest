@@ -1,37 +1,61 @@
-/* Happy Math Farm — 广场 / plaza (index.html): player select + the 3D farm square.
+/* Happy Learning Farm — 广场 / plaza (index.html): player select + the 3D farm square.
    Walking into a building opens that building's own page. */
 /* ---------- players ---------- */
-let NEWGRADE=DEFAULT_GRADE;
+let NEWGRADE=DEFAULT_GRADE,NEWLOOK='girl';
 function rPlayers(){
   $('#app').innerHTML=`
-  <h1>Happy Math Farm</h1>
+  <h1>Happy Learning Farm</h1>
   ${npcHTML(MAYOR,'Hello! Who is playing today? Tap your name.')}
   <div class="players">${DATA.players.map(p=>`<button class="player" data-act="choose" data-id="${p.id}"><div class="e">${avE(p)}</div><div class="nm">${esc(p.name)}</div><div class="muted"><span class="tag good">${gradeName(gradeOf(p))}</span> ⭐ ${totalStars(p)} · 🪙 ${p.gems}</div></button>`).join('')}</div>
-  ${DATA.players.length<6?`<h3>New player</h3><div style="display:flex;gap:8px;max-width:420px"><input type="text" id="newname" maxlength="16" placeholder="Name" aria-label="New player name">${GRADES.map(g=>`<button class="b ${NEWGRADE===g.id?'':'ghost'}" data-act="pickGrade" data-g="${g.id}" aria-pressed="${NEWGRADE===g.id}">${g.name}</button>`).join('')}<button class="b" data-act="addPlayer">Add</button></div>`:''}`;
+  ${DATA.players.length<6?`<h3>New player</h3><div style="display:flex;gap:8px;max-width:420px"><input type="text" id="newname" maxlength="16" placeholder="Name" aria-label="New player name">${GRADES.map(g=>`<button class="b ${NEWGRADE===g.id?'':'ghost'}" data-act="pickGrade" data-g="${g.id}" aria-pressed="${NEWGRADE===g.id}">${g.name}</button>`).join('')}${['girl','boy'].map(id=>{const L=LOOKS.find(l=>l.id===id);return `<button class="b ${NEWLOOK===id?'':'ghost'}" data-act="pickNewLook" data-id="${id}" aria-pressed="${NEWLOOK===id}" aria-label="${L.name}">${L.e}</button>`}).join('')}<button class="b" data-act="addPlayer">Add</button></div>`:''}`;
 }
 const BOUND={x:26.5,z:17.5}, PEN={x0:9,x1:16.5,z0:-6,z1:3};
-const SITES=[{id:'tricks',x:-17,z:-13},{id:'patterns',x:-6,z:-13},{id:'words',x:5,z:-13},{id:'fractions',x:16,z:-13}];
+const SITES=[{id:'tricks',x:-17,z:-13},{id:'soon1',x:-6,z:-13},{id:'soon2',x:5,z:-13},{id:'soon3',x:16,z:-13}];
 
 /* ===================== FARM ===================== */
 function inField(x,z){return Math.abs(x)<6.7&&z>-6.2&&z<4.2}
-function onPath(x,z){return (Math.abs(z+9.2)<1.4&&Math.abs(x)<24.5)||(Math.abs(x+11)<1.4&&z>-9&&z<9)||(Math.abs(z-7.2)<1.4&&x>-16.5&&x<20.5)||(Math.abs(x)<1.4&&z>7&&z<11.6)}
+function onPath(x,z){return (Math.abs(z+9.2)<1.9&&Math.abs(x)<26)||(Math.abs(x+11)<1.9&&z>-9.5&&z<9)||(Math.abs(z-7.2)<1.9&&x>-18&&x<22)||(Math.abs(x)<1.9&&z>7&&z<13.4)||(Math.abs(z-9.2)<1.9&&x>19&&x<22.5)}
 function farmHeight(x,z){const d=Math.max(Math.abs(x)/29,Math.abs(z)/20);return smooth(1.05,1.9,d)*(3.2+2.6*noise2(x*.07,z*.07))+smooth(1.9,3.2,d)*6}
 function buildFarm(){
   if(!engine())return null;
-  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(42,1,.1,600);
+  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(38,1,.1,600);
   F={scene,camera,hits:[],npcs:[],zones:[],baseObs:[],obs:[],plots:[],animals:[],fx:[],t:0,tick:0,camPos:new THREE.Vector3(),yaw:CAM.yaw,stuck:0,moving:false,
-    update:farmUpdate,onTap:farmTap,onDrag:dx=>{CAM.yaw-=dx*.008},rotate:d=>{CAM.yaw+=d*Math.PI/4},zoom:d=>{CAM.zoom=Math.max(.6,Math.min(farmZoomMax(),CAM.zoom*Math.pow(1.22,d)))},
+    update:farmUpdate,onTap:farmTap,hover:farmHover,unhover:hideMarks,onDrag:dx=>{CAM.yaw-=dx*.008},rotate:d=>{CAM.yaw+=d*Math.PI/4},zoom:d=>{CAM.zoom=Math.max(.6,Math.min(farmZoomMax(),CAM.zoom*Math.pow(1.22,d)))},
     leave(){if(F.player&&!LASTPOS)LASTPOS={x:F.player.position.x,z:F.player.position.z};KEYS.clear()}};
   scene.add(skyDome('#4E95E0','#FFE7C4','#BFD9A2'));scene.fog=new THREE.Fog(col('#F5E3C6'),60,170);
-  F.sun=addLights(scene,{sky:'#D6EAFF',ground:'#5E7F44',hemi:.62,sun:'#FFE4BC',si:1.9,pos:[28,26,18],range:32});F.rim=new THREE.Color(1,.9,.72);F.bloom=.5;
+  F.sun=addLights(scene,{sky:'#E2F0FF',ground:'#6E9A4A',hemi:.7,sun:'#FFE6C2',si:2,pos:[28,30,18],range:34});F.rim=new THREE.Color(1,.9,.72);F.bloom=.3;F.vig=.14;F.sat=1.16;F.con=.12;   // bright, clean picture-book look
   buildFarmWorld();return F;
+}
+/* The farm's ground is painted onto one canvas like an illustration: mottled grass, little flowers,
+   and wide winding dirt roads with soft darker edges and pebbles. Roads follow onPath() below. */
+const FARM_W=60,FARM_D=42,ROADS=[[[-24.5,-9.2],[24.5,-9.2]],[[-11,-9.2],[-11,7.2]],[[-16.5,7.2],[20.5,7.2]],[[0,7.2],[0,11.6]],[[20,7.2],[20.5,9.2],[22,9.2]]];
+function paintGround(S){
+  const ppu=32,W=FARM_W*ppu,H=FARM_D*ppu,c=document.createElement('canvas');c.width=W;c.height=H;const g=c.getContext('2d');
+  const X=x=>(x+FARM_W/2)*ppu,Z=z=>(z+FARM_D/2)*ppu,R=()=>Math.random();
+  g.fillStyle='#5DAF3C';g.fillRect(0,0,W,H);
+  const greens=['#6CBF45','#4FA234','#77C84C','#58AA3A','#68B842'];
+  for(let i=0;i<2600;i++){g.globalAlpha=.22;g.fillStyle=greens[i%5];g.beginPath();g.arc(R()*W,R()*H,8+R()*46,0,7);g.fill()}
+  g.globalAlpha=.35;g.strokeStyle='#3E8A2E';g.lineWidth=2;g.lineCap='round';
+  for(let i=0;i<9000;i++){const x=R()*W,y=R()*H;g.beginPath();g.moveTo(x,y);g.lineTo(x+(R()-.5)*5,y-5-R()*6);g.stroke()}
+  g.globalAlpha=.9;for(let i=0;i<700;i++){g.fillStyle=['#FFFFFF','#FFE066','#FFB3D1'][i%3];g.beginPath();g.arc(R()*W,R()*H,1.6+R()*1.6,0,7);g.fill()}
+  const wob=pts=>{const out=[];for(let k=0;k<pts.length-1;k++){const [ax,az]=pts[k],[bx,bz]=pts[k+1],n=Math.max(2,Math.round(Math.hypot(bx-ax,bz-az)/2));
+    for(let s=0;s<n;s++){const t=s/n,x=ax+(bx-ax)*t,z=az+(bz-az)*t,w=Math.sin(x*.7+z*1.3)*.22;out.push([x+(bz!==az?w:0),z+(bx!==ax?w:0)])}}out.push(pts[pts.length-1]);return out};
+  const stroke=(pts,width,col)=>{g.strokeStyle=col;g.lineWidth=width*ppu;g.lineJoin=g.lineCap='round';g.beginPath();pts.forEach(([x,z],k)=>k?g.lineTo(X(x),Z(z)):g.moveTo(X(x),Z(z)));g.stroke()};
+  const paths=ROADS.map(wob);g.globalAlpha=1;
+  paths.forEach(p=>stroke(p,3.5,'#9A6634'));paths.forEach(p=>stroke(p,3,'#C08A50'));paths.forEach(p=>stroke(p,1.7,'#CC985C'));
+  g.globalAlpha=.55;for(const p of paths)for(let i=0;i<p.length*6;i++){const [x,z]=p[Math.floor(R()*p.length)];   // pebbles and wheel marks
+    g.fillStyle=['#A9763F','#DDB57A','#8E5E2E'][i%3];g.beginPath();g.arc(X(x+(R()-.5)*2.4),Z(z+(R()-.5)*2.4),1.5+R()*3,0,7);g.fill()}
+  g.globalAlpha=1;
+  const tex=ctex(c);tex.anisotropy=8;
+  const m=new THREE.Mesh(new THREE.PlaneGeometry(FARM_W,FARM_D).rotateX(-Math.PI/2),new THREE.MeshStandardMaterial({map:tex,roughness:.95}));
+  m.position.y=.012;m.receiveShadow=true;S.add(m);F.groundPaint=m;
 }
 function buildFarmWorld(){
   const S=F.scene,markHit=(o,a)=>{o.userData.act=a;F.hits.push(o)};F.markHit=markHit;
-  F.ground=terrain(S,{size:240,seg:120,height:farmHeight,c1:'#64A84A',c2:'#55963F',c3:'#74B556',c4:'#4E8A44'});
+  F.ground=terrain(S,{size:240,seg:120,height:farmHeight,c1:'#7CC753',c2:'#68B946',c3:'#8BD45E',c4:'#5AA03F'});
   const flat=(w,d,color,x,z,y)=>{const m=new THREE.Mesh(rbox(w,d,.06,.03),mat(color,{r:.95}));m.rotation.x=-Math.PI/2;m.position.set(x,y,z);m.receiveShadow=true;S.add(m);return m};
-  flat(48,2.2,'#E6CC9C',0,-9.2,.02);flat(2.2,18,'#E6CC9C',-11,0,.021);flat(36,2.2,'#E6CC9C',2,7.2,.022);flat(2.2,4.4,'#E6CC9C',0,9.4,.021);
-  flat(13.4,10.4,'#9C6B42',0,-1,.018);
+  paintGround(S);
+  flat(13.4,10.4,'#7A5030',0,-1,.018);
   for(let k=0;k<22;k++){const a=k/22*Math.PI*2+Math.sin(k)*.15,R=100+(k%4)*12,h=20+((k*37)%25);
     const m=mesh(new THREE.ConeGeometry(16+(k%3)*6,h,7),k%2?'#7FA2C2':'#90B2D0',Math.cos(a)*R,h/2+4,Math.sin(a)*R,{flat:true,r:1});m.castShadow=false;S.add(m);
     if(h>34){const c=mesh(new THREE.ConeGeometry((16+(k%3)*6)*.32,h*.32,7),'#F4F7FB',Math.cos(a)*R,h+4-h*.16,Math.sin(a)*R,{flat:true,r:1});c.castShadow=false;S.add(c)}}
@@ -40,11 +64,13 @@ function buildFarmWorld(){
   for(const [x,z] of[[-25,15],[25,-16],[-25,-16],[13.5,14]]){S.add(roundTree(x,z,1));F.baseObs.push({x0:x-.8,x1:x+.8,z0:z-.8,z1:z+.8})}
   F.clouds=[];for(let k=0;k<7;k++){const c=cloud(-70+k*22,24+(k%3)*4,-40+(k%2)*18-(k%3)*10,1.4+(k%3)*.4);S.add(c);F.clouds.push(c)}
   // buildings
-  for(const s of SITES){const D=dun(s.id),g=D.open?buildSchool(D.color,D.sign):buildSite(D.color,D.sign);g.position.set(s.x,0,s.z);S.add(g);markHit(g,{kind:'zone',id:s.id});
+  for(const s of SITES){const D=schoolView(s.id),g=D.open?buildSchool(D.color,D.sign):buildSite(D.color,D.sign);g.position.set(s.x,0,s.z);S.add(g);markHit(g,{kind:'zone',id:s.id});
     F.baseObs.push({x0:s.x-3.8,x1:s.x+3.8,z0:s.z-2.9,z1:s.z+2.7});
-    F.zones.push({id:s.id,kind:D.open?'dungeon':'closed',x:s.x,z:s.z+3.3,r:.9,out:{x:s.x,z:s.z+4.9},name:D.sign});
+    F.zones.push({id:s.id,kind:D.open?'school':'closed',x:s.x,z:s.z+3.3,r:.9,out:{x:s.x,z:s.z+4.9},name:D.sign});
+    const soonFor=D.topics.length?` for ${gradeName(gradeOf(cur()))}`:'';   // Brain Boost exists but has no islands for this grade yet
     addNPC({npc:D.npc,x:s.x+3.2,z:s.z+3.8,line:D.open?'Hoo! Earn coins here!':'Opening soon!',
-      talk:D.open?['Hoo-hoo! I\'m Professor Hoot.','Inside my school, number monsters are waiting. Beat them with clever maths tricks!','Every answer you get right first time earns a coin 🪙 for your farm. Walk through my door to start!']:[`Hello! I'm ${D.npc.name}.`,D.grades&&D.grades[D.grade]===null?`My ${D.sign} for ${gradeName(D.grade)} is still being built. Come back soon!`:`My ${D.sign} is still being built. Come back soon!`]})}
+      talk:D.open?[`Hoo-hoo! I'm ${D.npc.name}.`,`${D.name} has ${D.topics.length} maths islands. Number monsters are waiting on every one!`,'Every answer you get right first time earns a coin 🪙 for your farm. Walk through my door to start!']
+                 :[`Hello! I'm ${D.npc.name}.`,`This ${D.sign}${soonFor} is still being built. Come back soon!`]})}
   const mk=buildMarket();mk.position.set(-17,0,5);mk.rotation.y=Math.PI/2;S.add(mk);markHit(mk,{kind:'zone',id:'market'});
   F.baseObs.push({x0:-18.3,x1:-16.1,z0:2.7,z1:7.3});
   F.zones.push({id:'market',kind:'market',x:-15.2,z:5,r:.9,out:{x:-13.6,z:5},name:'Farm Market'});
@@ -52,12 +78,19 @@ function buildFarmWorld(){
   const barn=buildBarn();barn.position.set(22.5,0,-1);barn.rotation.y=-Math.PI/2;S.add(barn);markHit(barn,{kind:'zone',id:'barn'});
   F.baseObs.push({x0:19.9,x1:25.2,z0:-4.2,z1:2.2});
   F.zones.push({id:'barn',kind:'barn',x:19.3,z:-1,r:.9,out:{x:17.8,z:-1},name:'Barn'});
+  const st=buildStudio();st.position.set(24,0,9.2);st.rotation.y=-Math.PI/2;S.add(st);markHit(st,{kind:'zone',id:'studio'});   // on the right edge, door facing the path, so it never hides the player
+  F.baseObs.push({x0:21.6,x1:26.4,z0:6.4,z1:12}); 
+  F.zones.push({id:'studio',kind:'studio',x:21.2,z:9.2,r:.9,out:{x:19.6,z:9.2},name:'Art Studio'});
+  addNPC({npc:ARTIST,x:21,z:12.9,line:'Draw your own farm!',talk:["Squawk! I'm Polly, the artist.",'In my Art Studio you can draw yourself, your animals, crops and friends. Take a photo or draw right on the screen!','Or tap 🎨 Paint, then tap anything on the farm to redraw it.']});
   const bd=buildBoard();bd.position.set(-9,0,9);S.add(bd);markHit(bd,{kind:'zone',id:'board'});
   F.baseObs.push({x0:-10.5,x1:-7.5,z0:8.6,z1:9.4});
   F.zones.push({id:'board',kind:'board',x:-9,z:10,r:.8,out:{x:-9,z:11.6},name:'Progress Board'});
   addNPC({npc:ELLIE,x:-11.2,z:10.4,line:'Grown-ups: records here!',talk:['I\'m Ellie. I keep all the records.','Grown-ups can walk up to the board to see stars, scores and practice tips.']});
   addNPC({npc:MAYOR,x:2.6,z:11.4,line:'Welcome to the farm!',mayor:true});
-  const pen=new THREE.Group();S.add(pen);fenceRect(PEN.x0,PEN.x1,PEN.z0,PEN.z1,1.5,'#FFFFFF',pen);
+  const ff=new THREE.Group();S.add(ff);   // wooden fence round the vegetable field, with a gap at the front
+  for(const [ax,az,bx,bz] of[[-7,-6.6,7,-6.6],[-7,-6.6,-7,4.6],[7,-6.6,7,4.6],[-7,4.6,-1.6,4.6],[1.6,4.6,7,4.6]])fenceLine(ff,ax,az,bx,bz,'#B07A45');
+  buildProps(S);
+  const pen=new THREE.Group();S.add(pen);fenceRect(PEN.x0,PEN.x1,PEN.z0,PEN.z1,1.5,'#B07A45',pen);
   pen.add(mesh(rbox(1.8,.5,.6,.08),'#8B5A2B',PEN.x1-1.4,.25,PEN.z1-.8));pen.add(mesh(BOX(1.55,.05,.42),new THREE.MeshStandardMaterial({color:col('#4FB6E6'),roughness:.15}),PEN.x1-1.4,.5,PEN.z1-.8));
   for(const [x,z] of[[PEN.x0+1.2,PEN.z0+1.2],[PEN.x0+2.4,PEN.z0+.9]]){const h=mesh(CYL(.5,.5,.9,18),'#E9C46A',x,.45,z,{r:.95});h.rotation.x=Math.PI/2;h.rotation.z=.4;pen.add(h)}
   const ps=signPlane('Animal Pen','#2FA36B',2.4);ps.position.set((PEN.x0+PEN.x1)/2,1.45,PEN.z1+.06);pen.add(ps);
@@ -81,6 +114,8 @@ function buildFarmWorld(){
   buildDecor();
   F.butterflies=[0,1,2].map(()=>{const b=emojiSprite('🦋',.6);S.add(b);return b});
   const ring=new THREE.Mesh(new THREE.RingGeometry(.3,.46,32),new THREE.MeshBasicMaterial({color:'#FFFFFF',transparent:true,opacity:0,depthWrite:false,toneMapped:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.06;S.add(ring);F.ring=ring;F.ringT=9;
+  F.hoverMark=makeMark(.5,{opacity:.6});F.walkMark=makeMark(.55,{arrow:true,h:1.3});F.selMark=makeMark(1,{arrow:true});   // pointer marks (engine3d.js)
+  S.add(F.hoverMark,F.walkMark,F.selMark);
   F.smoke=[];for(let k=0;k<6;k++){const p=new THREE.Mesh(ICO(.3,1),new THREE.MeshStandardMaterial({color:col('#FFFFFF'),transparent:true,opacity:.5,flatShading:true,roughness:1}));S.add(p);F.smoke.push({p,o:k/6})}
 }
 function buildSchool(color,name){const g=new THREE.Group(),dark=shade(color,-.12);
@@ -129,6 +164,25 @@ function buildBarn(){const g=new THREE.Group();
   g.add(mesh(rbox(.7,1.4,.7,.06),'#8A8A8A',-2,5,-.8));
   for(const [x,z] of[[3.8,1.6],[3.8,.4]]){const h=mesh(CYL(.5,.5,.9,18),'#E9C46A',x,.5,z,{r:.95});h.rotation.x=Math.PI/2;g.add(h)}
   return g}
+/* Art Studio: a pastel cottage with a giant paint palette, a brush and an easel. Door faces +z. */
+function buildStudio(){const g=new THREE.Group();
+  g.add(mesh(rbox(5.6,.3,4.6,.08),'#CFC3B2',0,.15,0));
+  g.add(mesh(rbox(5.2,3,4.2,.14),'#FFF0F6',0,1.75,0,{r:.85}));
+  const roof=gableRoof(5.8,5,2.1,'#8B5CF6');roof.position.y=3.25;g.add(roof);
+  g.add(mesh(rbox(5.9,.22,5.1,.08),'#FFFFFF',0,3.25,0));
+  ['#E5484D','#FF8A1F','#FFD43B','#2FA36B','#3E7BFA'].forEach((c,k)=>g.add(mesh(SPH(.16,10,8),c,-2+k,3.33,2.55,{r:.4})));   // paint drips on the eave
+  g.add(mesh(rbox(1.5,2.2,.2,.08),'#8B5CF6',0,1.25,2.12));g.add(mesh(rbox(1.1,1.85,.1,.05),'#4A3020',0,1.12,2.2,{r:.5}));
+  for(const x of[-1.75,1.75]){g.add(mesh(rbox(1.1,1,.12,.05),'#FFFFFF',x,1.95,2.12));g.add(mesh(BOX(.9,.8,.08),new THREE.MeshStandardMaterial({color:col('#FFE3F1'),roughness:.15,emissive:col('#FFC8E4'),emissiveIntensity:.25}),x,1.95,2.16))}
+  const pal=new THREE.Group();pal.position.set(0,4.15,2.05);g.add(pal);   // giant palette sign
+  const pm=mesh(CYL(1.05,1.05,.14,32),'#E9C99A',0,0,0,{r:.7});pm.rotation.x=Math.PI/2;pm.scale.set(1.25,1,.85);pal.add(pm);
+  [['#E5484D',-.75,.25],['#FFD43B',-.3,.5],['#2FA36B',.25,.5],['#3E7BFA',.75,.25],['#EC6FA9',.6,-.3]].forEach(([c,x,y])=>{const b=mesh(SPH(.17,12,10),c,x,y,.1,{r:.3});b.scale.z=.45;pal.add(b)});
+  const br=new THREE.Group();br.position.set(1.9,1.4,2.4);br.rotation.z=-.5;g.add(br);   // a big brush leaning on the wall
+  br.add(mesh(CYL(.08,.1,2.4,10),'#8B5CF6',0,0,0,{r:.5}));br.add(mesh(CYL(.12,.1,.3,10),'#F2B705',0,-1.3,0,{m:.6,r:.3}));br.add(mesh(new THREE.ConeGeometry(.14,.45,10),'#E5484D',0,-1.65,0,{r:.6}));
+  const ea=new THREE.Group();ea.position.set(-2.8,0,2.6);ea.rotation.y=.4;g.add(ea);   // easel with a canvas
+  for(const x of[-.35,.35]){const l=mesh(CYL(.04,.05,1.9,6),'#8B5A2B',x,.95,0);l.rotation.z=x*.25;ea.add(l)}
+  ea.add(mesh(rbox(1,.8,.06,.02),'#FFFFFF',0,1.35,.06));ea.add(mesh(SPH(.18,10,8),'#FFD43B',-.2,1.45,.1));ea.add(mesh(BOX(.45,.1,.02),'#3E7BFA',.15,1.2,.1));
+  const sign=signPlane('Art Studio','#8B5CF6',2.6);sign.position.set(0,2.95,2.2);g.add(sign);
+  return g}
 function buildBoard(){const g=new THREE.Group();
   for(const x of[-1.25,1.25])g.add(mesh(CYL(.08,.1,2.4,8),'#8B5A2B',x,1.2,0));
   g.add(mesh(rbox(2.8,1.6,.16,.06),'#C68B4E',0,1.55,0));
@@ -139,11 +193,19 @@ function cropMesh(id,stage){const g=new THREE.Group();
   for(const [x,z] of[[-.5,-.5],[.5,-.5],[-.5,.5],[.5,.5]]){const s=new THREE.Group();s.position.set(x,.28,z);g.add(s);
     if(stage===0){const m=mesh(SPH(.17,10,8),'#4E3018');m.scale.y=.45;s.add(m)}
     else if(stage===1){for(const d of[-.07,.07]){const m=mesh(new THREE.ConeGeometry(.05,.26,6),'#5DBB4A',d,.13,0,{flat:true});m.rotation.z=d*4;s.add(m)}}
-    else if(stage===2){if(id==='corn'||id==='sunflower'){s.add(mesh(CYL(.05,.06,.7,6),'#4E9A45',0,.35,0));s.add(mesh(new THREE.ConeGeometry(.2,.4,7),'#5DBB4A',0,.62,0,{flat:true}))}else s.add(mesh(ICO(.24,1),'#5DBB4A',0,.18,0,{flat:true}))}
+    else if(stage===2){if(id==='corn'||id==='sunflower'){s.add(mesh(CYL(.05,.06,.7,6),'#4E9A45',0,.35,0));s.add(mesh(new THREE.ConeGeometry(.2,.4,7),'#5DBB4A',0,.62,0,{flat:true}))}else leafyBush(s,.75,false)}
     else if(artOf('seed:'+id)){const sp=iconSprite('seed:'+id,'',.62);sp.position.y=.34;s.add(sp)}   // the child's own crop picture
     else readyCrop(id,s)}
   return g}
+/* A round bush of big leaves (optionally with little white flowers), for the leafy crop rows. */
+function leafyBush(s,k,flowers){const greens=['#3FA34D','#52B85A','#62C766','#48AD52'];
+  for(let i=0;i<7;i++){const a=i/7*Math.PI*2+(i%2)*.2,pv=new THREE.Group();pv.rotation.y=a;s.add(pv);
+    const l=mesh(SPH(.2*k,12,8),greens[i%4],.17*k,.16*k+(i%2)*.05*k,0,{r:.55});l.scale.set(1.35,.32,.85);l.rotation.z=.45;pv.add(l)}
+  const top=mesh(SPH(.17*k,12,10),'#5CC15E',0,.24*k,0,{r:.55});top.scale.y=.6;s.add(top);
+  if(flowers)for(let i=0;i<3;i++){const a=i*2.1+.4;s.add(mesh(SPH(.055,8,6),'#FFFFFF',Math.cos(a)*.16*k,.32*k,Math.sin(a)*.16*k,{e:'#FFFFFF',ei:.2}));s.add(mesh(SPH(.025,6,4),'#FFD43B',Math.cos(a)*.16*k,.35*k,Math.sin(a)*.16*k))}
+}
 function readyCrop(id,s){
+  if(id==='carrot'||id==='tomato'||id==='strawberry')leafyBush(s,id==='carrot'?.9:1,id!=='carrot');
   if(id==='carrot'){for(const a of[-.35,0,.35]){const l=mesh(new THREE.ConeGeometry(.05,.42,5),'#4E9A45',a*.3,.28,0,{flat:true});l.rotation.z=a;s.add(l)}const c=mesh(new THREE.ConeGeometry(.13,.3,10),'#FF8A1F',0,.06,0,{r:.5});c.rotation.x=Math.PI;s.add(c)}
   else if(id==='tomato'){s.add(mesh(ICO(.29,1),'#4E9A45',0,.3,0,{flat:true}));for(let k=0;k<4;k++){const a=k*Math.PI/2+.4;s.add(mesh(SPH(.1,12,10),'#E5333D',Math.cos(a)*.26,.28+(k%2)*.14,Math.sin(a)*.26,{r:.3}))}}
   else if(id==='sunflower'){s.add(mesh(CYL(.04,.05,1.3,6),'#4E9A45',0,.65,0));const f=mesh(CYL(.3,.3,.05,16),'#FFC93C',0,1.35,.05,{r:.6});f.rotation.x=Math.PI/2.6;s.add(f);const c=mesh(CYL(.14,.14,.07,12),'#6B3E1E',0,1.37,.08);c.rotation.x=Math.PI/2.6;s.add(c)}
@@ -154,9 +216,31 @@ function readyCrop(id,s){
 function addNPC(o){const g=new THREE.Group();const sp=iconSprite(npcKey(o.npc),o.npc.e,1.7);sp.position.y=.95;g.add(sp);
   const tg=labelSprite(o.npc.name.replace(/^Professor /,'').split(' ')[0],{h:.42});tg.position.y=2.05;g.add(tg);
   const bub=labelSprite(o.line,{h:.5,border:'#F5C24C'});bub.position.y=2.65;bub.visible=false;g.add(bub);
-  g.add(shadowDisc(.6));g.position.set(o.x,0,o.z);F.scene.add(g);F.markHit(sp,{kind:'npc',n:o});o.g=g;o.sp=sp;o.bub=bub;F.npcs.push(o)}
+  g.add(shadowDisc(.6));g.position.set(o.x,0,o.z);F.scene.add(g);F.markHit(sp,{kind:'npc',n:o});g.userData.art=npcKey(o.npc);o.g=g;o.sp=sp;o.bub=bub;F.npcs.push(o)}
+function fenceLine(parent,ax,az,bx,bz,color){const L=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.round(L/1.4));
+  for(let k=0;k<=n;k++){const t=k/n;parent.add(mesh(rbox(.2,.85,.2,.05),color,ax+(bx-ax)*t,.42,az+(bz-az)*t))}
+  for(const y of[.3,.62]){const r=mesh(BOX(L,.09,.06),color,(ax+bx)/2,y,(az+bz)/2);r.rotation.y=-Math.atan2(bz-az,bx-ax);parent.add(r)}}
+/* Little farm things from the picture: a tree stump with an axe, a crate of vegetables, a barrel,
+   a red mailbox and a row of sunflowers. */
+function buildProps(S){
+  const stump=new THREE.Group();stump.position.set(-6.9,0,10.9);S.add(stump);
+  stump.add(mesh(CYL(.55,.65,.6,14),'#8B5A2B',0,.3,0,{r:.8}));const top=mesh(CYL(.5,.5,.04,14),'#E2B97A',0,.61,0,{r:.9});stump.add(top);
+  for(const r of[.18,.34]){const ring=mesh(new THREE.TorusGeometry(r,.015,6,24),'#B8854C',0,.635,0);ring.rotation.x=Math.PI/2;stump.add(ring)}   // tree rings
+  const axe=new THREE.Group();axe.position.set(.12,.62,0);axe.rotation.z=-.5;stump.add(axe);axe.add(mesh(CYL(.04,.05,.9,8),'#9C6B3F',0,.45,0));axe.add(mesh(rbox(.32,.22,.06,.02),'#B8C2CC',.14,.82,0,{m:.7,r:.3}));
+  const crate=new THREE.Group();crate.position.set(-7.4,0,12.9);crate.rotation.y=.3;S.add(crate);
+  crate.add(mesh(rbox(1.1,.55,.8,.04),'#C68B4E',0,.28,0,{r:.8}));for(const y of[.18,.4])crate.add(mesh(BOX(1.12,.06,.82),'#9C6B3F',0,y,0));
+  [['#FF8A1F',-.3,0],['#E5333D',0,.1],['#FFD43B',.3,-.05]].forEach(([c,x,z])=>crate.add(mesh(SPH(.16,10,8),c,x,.6,z,{r:.4})));
+  const barrel=new THREE.Group();barrel.position.set(-8.7,0,11.7);S.add(barrel);
+  barrel.add(mesh(CYL(.42,.42,.95,16),'#A0683A',0,.48,0,{r:.7}));for(const y of[.18,.78]){const hoop=mesh(new THREE.TorusGeometry(.43,.03,6,24),'#5A5A5A',0,y,0,{m:.6});hoop.rotation.x=Math.PI/2;barrel.add(hoop)}
+  const mb=new THREE.Group();mb.position.set(1.9,0,9.4);S.add(mb);
+  mb.add(mesh(CYL(.06,.07,1,8),'#8B5A2B',0,.5,0));mb.add(mesh(rbox(.36,.32,.55,.12),'#D9452F',0,1.1,0,{r:.5}));mb.add(mesh(BOX(.04,.2,.1),'#FFD43B',.2,1.25,-.15));
+  for(let k=0;k<7;k++){const x=3.4+k*.85,z=15.6+Math.sin(k)*.2,f=new THREE.Group();f.position.set(x,0,z);S.add(f);   // sunflowers
+    f.add(mesh(CYL(.035,.045,1.3,6),'#4E9A45',0,.65,0));const head=mesh(CYL(.26,.26,.05,16),'#FFC93C',0,1.32,.05,{r:.6});head.rotation.x=Math.PI/2.4;f.add(head);
+    const c=mesh(CYL(.12,.12,.07,12),'#6B3E1E',0,1.34,.08);c.rotation.x=Math.PI/2.4;f.add(c)}
+  F.baseObs.push({x0:-7.6,x1:-6.2,z0:10.2,z1:11.6},{x0:-8.1,x1:-6.7,z0:12.4,z1:13.4},{x0:-9.2,x1:-8.2,z0:11.2,z1:12.2});
+}
 function buildDecor(){
-  const S=F.scene;F.decor={};const add=(id,g)=>{g.visible=false;S.add(g);F.decor[id]=g};
+  const S=F.scene;F.decor={};const add=(id,g)=>{g.visible=false;g.userData.art='decor:'+id;S.add(g);F.decor[id]=g};
   let g=new THREE.Group();const fc=['#FF6B9A','#FFD43B','#B56BFF','#FF8A3D','#FFFFFF'];
   for(const bx of[-7.7,7.7]){g.add(mesh(rbox(.9,.25,10,.08),'#7B4D2B',bx,.12,-.9));for(let k=0;k<10;k++){const z=-5.3+k*.95,x=bx+(k%2?.2:-.2);g.add(mesh(CYL(.03,.03,.4,4),'#3E8E41',x,.4,z));g.add(mesh(SPH(.17,10,8),fc[k%5],x,.65,z,{r:.5}))}}
   add('flowers',g);
@@ -166,18 +250,22 @@ function buildDecor(){
   g=new THREE.Group();g.position.set(0,0,-7);g.add(mesh(CYL(.07,.07,2.2,6),'#8B5A2B',0,1.1,0));g.add(mesh(BOX(1.6,.1,.1),'#8B5A2B',0,1.5,0));
   g.add(mesh(rbox(.7,.8,.35,.08),'#3E7BFA',0,1.45,0));g.add(mesh(SPH(.28,14,12),'#E8C99A',0,2.2,0));g.add(mesh(new THREE.ConeGeometry(.45,.45,14),'#E9C46A',0,2.55,0));
   add('scarecrow',g);
-  g=new THREE.Group();for(const [x,z] of[[-22,10],[-22,-9],[22,11]])g.add(roundTree(x,z,1.1,true));add('apples',g);
+  g=new THREE.Group();for(const [x,z] of[[-22,10],[-22,-9],[22,15]])g.add(roundTree(x,z,1.1,true));add('apples',g);
   g=new THREE.Group();g.position.set(-3,0,14);
   const w=new THREE.Mesh(new THREE.CircleGeometry(2.6,40),new THREE.MeshStandardMaterial({color:col('#3FA7DD'),roughness:.08,metalness:.25,emissive:col('#1E6E9E'),emissiveIntensity:.25}));w.rotation.x=-Math.PI/2;w.position.y=.05;w.receiveShadow=true;g.add(w);F.water=w;
   for(let k=0;k<18;k++){const a=k/18*Math.PI*2;g.add(mesh(ICO(.3,0),'#A9A39C',Math.cos(a)*2.75,.1,Math.sin(a)*2.75,{flat:true}))}
-  for(const [x,z] of[[.8,-.6],[-1.2,.9]]){const p=new THREE.Mesh(new THREE.CircleGeometry(.35,14),mat('#4E9A45'));p.rotation.x=-Math.PI/2;p.position.set(x,.07,z);g.add(p)}
+  for(const [x,z] of[[.8,-.6],[-1.2,.9],[1.3,.8],[-.5,-1.4]]){const p=new THREE.Mesh(new THREE.CircleGeometry(.35,14,.3,Math.PI*1.8),mat('#4E9A45'));p.rotation.x=-Math.PI/2;p.position.set(x,.07,z);g.add(p)}
+  g.add(mesh(SPH(.09,8,6),'#FF9FC6',.8,.12,-.6));g.add(mesh(SPH(.09,8,6),'#FFFFFF',1.3,.12,.8));
+  const dock=new THREE.Group();dock.position.set(1.4,0,-1.2);dock.rotation.y=-.6;g.add(dock);   // a little wooden dock
+  for(let k=0;k<5;k++)dock.add(mesh(rbox(1.2,.08,.32,.02),k%2?'#B98250':'#A97646',0,.22,-k*.36));
+  for(const [x,z] of[[-.55,0],[.55,0],[-.55,-1.45],[.55,-1.45]])dock.add(mesh(CYL(.06,.07,.6,6),'#8B5A2B',x,.1,z));
   F.ducks=[0,1].map(()=>{const d=emojiSprite('🦆',.9);d.position.y=.45;g.add(d);return d});add('pond',g);
   g=new THREE.Group();g.position.set(-23,0,-2);g.add(mesh(CYL(.7,1.3,5,10),'#F3EEE6',0,2.5,0,{flat:true}));g.add(mesh(new THREE.ConeGeometry(1.15,1.3,10),'#C8442E',0,5.65,0,{flat:true}));
   const bl=new THREE.Group();bl.position.set(0,4.6,1.15);for(let k=0;k<4;k++){const pv=new THREE.Group();pv.rotation.z=k*Math.PI/2;pv.add(mesh(rbox(.38,2.6,.06,.02),'#FFFFFF',0,1.3,0));bl.add(pv)}
   bl.add(mesh(SPH(.18,10,8),'#C8442E'));g.add(bl);F.blades=bl;add('windmill',g);
 }
 function decorObstacles(f){const o=[],has=id=>f.decor.includes(id);
-  if(has('apples'))for(const [x,z] of[[-22,10],[-22,-9],[22,11]])o.push({x0:x-.8,x1:x+.8,z0:z-.8,z1:z+.8});
+  if(has('apples'))for(const [x,z] of[[-22,10],[-22,-9],[22,15]])o.push({x0:x-.8,x1:x+.8,z0:z-.8,z1:z+.8});
   if(has('pond'))o.push({x0:-5.6,x1:-.4,z0:11.4,z1:16.6});
   if(has('windmill'))o.push({x0:-24.3,x1:-21.7,z0:-3.3,z1:-.7});
   if(has('scarecrow'))o.push({x0:-.3,x1:.3,z0:-7.3,z1:-6.7});
@@ -185,7 +273,7 @@ function decorObstacles(f){const o=[],has=id=>f.decor.includes(id);
 function syncWorld(){
   const p=cur(),f=farmOf(p);
   if(F.player){F.scene.remove(F.player);F.player.traverse(o=>{if(o.geometry&&!o.geometry.userData.keep)o.geometry.dispose()})}
-  F.player=buildHero(f);F.scene.add(F.player);
+  F.player=buildHero(f);F.player.userData.art='me';F.scene.add(F.player);
   const sp=LASTPOS||{x:0,z:12.4};LASTPOS=null;F.player.position.set(sp.x,0,sp.z);F.player.rotation.y=Math.PI;
   F.target=null;F.pending=null;
   for(const id in F.decor)F.decor[id].visible=f.decor.includes(id);
@@ -202,7 +290,7 @@ function syncPlots(force){
     if(!force&&key===P.key)return;P.key=key;
     P.soil.material=mat(locked?'#86B866':pl&&pl.watered?'#4A2C17':'#6E4426',{r:1});
     P.soil.scale.y=locked?.35:1;P.ridges.visible=!locked;
-    clearGroup(P.crop);if(pl)P.crop.add(cropMesh(pl.crop,info.stage));
+    clearGroup(P.crop);if(pl)P.crop.add(cropMesh(pl.crop,info.stage));P.crop.userData.art=pl?'seed:'+pl.crop:null;
     P.spark.visible=!!info&&info.stage===3;P.lock.visible=locked&&i===f.unlocked;
   });
 }
@@ -211,26 +299,77 @@ function syncAnimals(){
   F.hits=F.hits.filter(h=>!(h.userData.act&&h.userData.act.kind==='animal'));
   F.animals=f.animals.map((a,idx)=>{const A=ANIMALS.find(x=>x.id===a.type),g=new THREE.Group();
     const sp=iconSprite('animal:'+A.id,A.e,A.id==='cow'?1.5:1.15);sp.position.y=A.id==='cow'?.75:.6;g.add(sp);g.add(shadowDisc(.45));
-    const pr=iconSprite('prod:'+A.prod,A.pe,.7);pr.position.y=1.75;pr.visible=false;g.add(pr);
+    const pr=iconSprite('prod:'+A.prod,A.pe,.7);g.userData.art='animal:'+A.id;pr.userData.art='prod:'+A.prod;pr.position.y=1.75;pr.visible=false;g.add(pr);
     const x=PEN.x0+1+Math.random()*(PEN.x1-PEN.x0-2),z=PEN.z0+1+Math.random()*(PEN.z1-PEN.z0-2);g.position.set(x,0,z);
     F.animalGroup.add(g);sp.userData.act={kind:'animal',idx};F.hits.push(sp);
     return{g,sp,pr,a,A,tx:x,tz:z,wait:Math.random()*3}});
 }
+/* ---------- farm HUD: profile card, coins and stars, Art Studio and settings buttons ---------- */
+function farmHud(){const p=cur();
+  return `<div class="fhud">
+    <button class="fcard" data-act="toPlayers" aria-label="Switch player"><span class="fav">${avE(p)}</span>
+      <span class="fmeta"><b class="fname">${esc(p.name)}'s Happy Farm</b><span class="flvl" id="flvl"></span></span></button>
+    <div class="fright"><span class="fpill" id="coins">🪙 ${p.gems}</span><span class="fpill">⭐ ${totalStars(p)}</span>
+      <button class="fround art" data-act="toStudio" aria-label="Art Studio: draw your own pictures" title="Art Studio">🎨</button>
+      <button class="fround" data-act="openProgress" aria-label="Progress board and settings" title="Progress board">⚙️</button></div>
+  </div>`}
+function tasksOpen(){try{const v=sessionStorage.getItem('hmf-tasks');if(v)return v==='1'}catch(e){}return innerWidth>=600}
+function tasksHTML(){const p=cur(),D=dailyOf(p),T=tasksFor(p),done=T.filter(t=>(D.n[t.id]||0)>=t.goal).length,st=streakDays(p);
+  const end=D.chest?`<div class="tasks-end">🎉 All done today!${st?` <b>🔥 ${st} day${st>1?'s':''}</b>`:''}</div>`
+    :done===T.length?'<button class="b chestbtn" data-act="openChest">🎁 Open today\'s chest!</button>'
+    :`<div class="tasks-coins">🪙 Today: ${D.coins} / ${COIN_DAY_MAX}</div>`;
+  return `<button class="tasks-head ${done===T.length&&!D.chest?'ready':''}" data-act="tasksToggle" aria-label="Today's tasks"><span>📋 Today's Tasks${st?` · 🔥${st}`:''}</span><b>${done}/${T.length}</b></button>
+  <div class="tasks-list">${T.map(t=>{const n=D.n[t.id]||0,ok=n>=t.goal;return `<div class="task ${ok?'ok':''}"><span class="te">${t.e}</span><span class="tn">${t.name}</span><b>${ok?'✓':`${n}/${t.goal}`}</b></div>`}).join('')}${end}</div>`}
+/* All of today's tasks done: the chest gives coins, counts the streak and may hand out a streak gift. */
+function openChest(){
+  const p=cur(),D=dailyOf(p);if(D.chest||!allTasksDone(p))return;
+  D.chest=true;const g=earnCoins(p,COIN_CHEST),s=bumpStreak(p),gift=streakGift(p,s.days);save();
+  if(F&&F.decor)for(const id in F.decor)F.decor[id].visible=farmOf(p).decor.includes(id);
+  updateHud();if(F)F.obs=F.baseObs.concat(decorObstacles(farmOf(p)));
+  const lines=[`🎁 You opened today's chest${g?`: +${g} 🪙`:''}!`,`🔥 That's ${s.days} day${s.days>1?'s':''} in a row!${s.days<3?' Keep going: day 3 brings a surprise.':s.days<7?' Day 7 brings a big prize!':''}`];
+  if(gift)lines.push(`🎀 Streak gift: ${gift}! ${gift.startsWith('⭐')?'':'Look on your farm and in the market.'}`);
+  lines.push('Great job today! Your crops will be waiting tomorrow. See you then! 👋');
+  dialog(MAYOR,lines);
+}
+function taskDone(T){if(!T)return;addXP(TASK_XP);toast(`✅ ${T.name}: done! +${TASK_XP} XP`)}
+/* ---------- virtual joystick: drag the knob to walk, it springs back to the middle when let go ---------- */
+const JOY={x:0,y:0,id:null};
+function bindJoystick(){
+  const el=$('#joy'),knob=$('#joyKnob');if(!el)return;JOY.x=JOY.y=0;JOY.id=null;
+  const set=e=>{const r=el.querySelector('.joy-ring').getBoundingClientRect(),max=r.width*.3;
+    let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);const d=Math.hypot(dx,dy);if(d>max){dx*=max/d;dy*=max/d}
+    knob.style.transform=`translate(${dx}px,${dy}px)`;const m=Math.hypot(dx,dy)/max;JOY.x=m<.15?0:dx/max;JOY.y=m<.15?0:dy/max;
+    el.dataset.dir=m<.15?'':Math.abs(dx)>Math.abs(dy)?(dx>0?'rt':'lf'):(dy>0?'dn':'up')};
+  el.addEventListener('pointerdown',e=>{e.preventDefault();JOY.id=e.pointerId;try{el.setPointerCapture(e.pointerId)}catch(_){}el.classList.add('on');set(e);
+    if(F){F.target=null;F.pending=null}const tip=$('#joyTip');if(tip){tip.remove();const p=cur();p.seen.joy=1;save()}});
+  el.addEventListener('pointermove',e=>{if(e.pointerId===JOY.id)set(e)});
+  const end=e=>{if(e.pointerId!==JOY.id)return;JOY.id=null;JOY.x=JOY.y=0;knob.style.transform='';el.classList.remove('on');el.dataset.dir=''};
+  el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+}
 function updateHud(){
   const p=cur(),f=farmOf(p),L=farmLevel(f.xp);
-  const fl=$('#flv');if(fl)fl.innerHTML=`🌾 Farm level ${L.l}<span class="xpbar"><i style="width:${Math.round(L.into/L.need*100)}%"></i></span><small>${L.into}/${L.need} XP</small>`;
+  const lv=$('#flvl');if(lv)lv.innerHTML=`<span class="fstar">⭐</span>Lv. ${L.l}<span class="fxp" title="${L.into}/${L.need} XP"><i style="width:${Math.round(L.into/L.need*100)}%"></i></span>`;
   const c=$('#coins');if(c)c.textContent='🪙 '+p.gems;
+  const tk=$('#tasks');if(tk)tk.innerHTML=tasksHTML();
 }
 function rTown(){
-  const quick=[['tricks','🦉 Math School'],['market','🛒 Farm Market'],['barn','🌾 Barn'],['studio','🎨 Art Studio'],['board','📋 Progress Board']].map(([id,l])=>`<button class="b ghost sm" data-act="quick" data-id="${id}">${l}</button>`).join('');
-  $('#app').innerHTML=topBar('Happy Math Farm')+`
+  const quick=[['tricks','🦉 Brain Boost'],['market','🛒 Farm Market'],['barn','🌾 Barn'],['studio','🎨 Art Studio'],['board','📋 Progress Board']].map(([id,l])=>`<button class="b ghost sm" data-act="quick" data-id="${id}">${l}</button>`).join('');
+  $('#app').innerHTML=farmHud()+`
   <div class="world" id="world">
-    <div class="wtop"><div class="flv" id="flv"></div>${camCtl('<button class="wide" data-act="overview" aria-label="See the whole farm">🗺️</button>')}</div>
+    <div class="wtop farmtop">${camCtl('<button class="wide" data-act="overview" aria-label="See the whole farm">🗺️</button>')}<div class="tasks ${tasksOpen()?'':'closed'}" id="tasks">${tasksHTML()}</div></div>
     <div class="toast" id="toast" aria-live="polite"></div>
     <div class="sheet" id="sheet"></div>
+    <div class="paintbar" id="paintbar">🎨 Paint mode: tap anyone or anything on the farm to draw your own!</div>
   </div>
-  <p class="muted townhint">Tap the ground to walk and drag sideways to turn the camera. Tap a field patch to plant. Walk into a building to go inside. Coins 🪙 only come from Math School!</p>
-  <div class="quick dock">${quick}<button class="b ghost sm" data-act="mayorTalk">🐻 How to play</button></div>`;
+  <p class="muted townhint">Tap the ground to walk and drag sideways to turn the camera. Tap a field patch to plant. Walk into a building to go inside. Coins 🪙 only come from Brain Boost!</p>
+  <div class="places" id="places" role="menu"><b class="places-title">🗺️ Go to…</b>${quick}<button class="b ghost sm" data-act="mayorTalk">🐻 How to play</button></div>
+  <div class="sidebtns"><button class="sbtn" data-act="places" aria-label="Places" aria-expanded="false">🗺️<span>Places</span></button>
+    <button class="sbtn paintbtn ${PAINT?'on':''}" data-act="paint" aria-pressed="${PAINT}" aria-label="Paint the farm">🖌️<span>Paint</span></button>
+    <button class="sbtn bag" data-act="quick" data-id="barn" aria-label="Backpack: open the barn">🎒<span>Backpack</span></button></div>
+  <div class="joy" id="joy" role="application" aria-label="Joystick: drag to walk"><div class="joy-ring"><i class="ja up"></i><i class="ja dn"></i><i class="ja lf"></i><i class="ja rt"></i><span class="joy-cross"></span><span class="joy-knob" id="joyKnob"></span></div>
+    ${cur().seen.joy?'':'<div class="joy-tip" id="joyTip">Drag to walk.<br>Let go and it springs back!</div>'}</div>
+`;
+  bindJoystick();setPaint(PAINT);
   const fkey=cur().id+':'+gradeOf(cur());   // schools depend on the grade, NPC/animal pictures on the player
   if(F&&F.key!==fkey)F=null;
   if(!F){buildFarm();if(F)F.key=fkey}
@@ -239,14 +378,57 @@ function rTown(){
   const p=cur();if(!p.seen.farm){p.seen.farm=1;save();mayorTalk()}
 }
 function mayorTalk(){dialog(MAYOR,[
-  'Welcome to Happy Math Farm! I\'m Bella, the mayor.',
+  'Welcome to Happy Learning Farm! I\'m Bella, the mayor.',
   'Tap the ground to walk. Drag sideways to turn the camera. On a computer, the arrow keys work too.',
   'Seeds, animals and decorations cost coins 🪙. The only way to earn coins is at Math School: beat number monsters by answering questions! Every answer right first time earns a coin, and clearing a level earns a bonus.',
   'Tap a field patch to plant seeds. Crops grow in real time, so come back later to harvest! Watering 💧 makes them grow faster.',
   'Harvests earn XP to level up your farm and unlock new seeds and animals. Mo\'s Farm Market sells animals, decorations and outfits.',
   'Start at Professor Hoot\'s Math School, at the top left of the farm. Good luck!'])}
+/* ---------- paint mode: tap anything on the farm to redraw its picture in the Art Studio ---------- */
+let PAINT=false;try{PAINT=sessionStorage.getItem('hmf-paint')==='1'}catch(e){}
+function paintTargets(){return [F.player,...F.npcs.map(n=>n.g),F.animalGroup,...F.plots.map(P=>P.crop),...Object.values(F.decor).filter(g=>g.visible)]}
+function artAt(ray){   // -> {key, obj} of the paintable thing under the pointer
+  for(const h of ray.intersectObjects(paintTargets(),true)){let o=h.object;while(o&&!o.userData.art)o=o.parent;if(o&&o.visible)return{key:o.userData.art,obj:h.object}}
+  return null;
+}
+function hideMarks(){if(!F)return;F.hoverMark.visible=false;F.selMark.visible=false}
+/* Where the selection ring and arrow go for a thing the pointer is over: [x, z, ring radius, arrow height]. */
+function markFor(a){
+  if(a.kind==='zone'){const z=F.zones.find(z=>z.id===a.id);return z&&[z.x,z.z,1.2,2.2]}
+  if(a.kind==='npc'){const p=a.n.g.position;return[p.x,p.z,.9,3.2]}
+  if(a.kind==='animal'){const an=F.animals[a.idx];return an&&[an.g.position.x,an.g.position.z,.85,2.4]}
+  if(a.kind==='plot'){const {x,z}=plotPos(a.i);return[x,z,1.35,1.5]}
+  return null;
+}
+function setPaint(on){PAINT=on;try{sessionStorage.setItem('hmf-paint',on?'1':'0')}catch(e){}
+  const b=$('[data-act="paint"]');if(b){b.classList.toggle('on',on);b.setAttribute('aria-pressed',on)}
+  const bar=$('#paintbar');if(bar)bar.classList.toggle('show',on);if(F&&F.selMark)hideMarks()}
+/* What the pointer is over: the cursor to show and a name label (engine3d.js draws both). */
+function farmHover(e){
+  const ray=rayFrom(e,F.camera);F.hoverMark.visible=false;F.selMark.visible=false;
+  if(PAINT){const hit=artAt(ray);if(!hit)return{cursor:'paint'};
+    const w=new THREE.Vector3();hit.obj.getWorldPosition(w);placeMark(F.selMark,w.x,0,w.z,hit.key.startsWith('seed:')?.9:1,hit.key.startsWith('seed:')?1.3:2.8);
+    return{cursor:'paint',label:hit.key==='me'?'🎨 Draw yourself':`🎨 Draw my own ${artName(hit.key)}`}}
+  const a=actOf(ray.intersectObjects(F.hits,true));
+  if(a){const m=markFor(a);if(m)placeMark(F.selMark,m[0],0,m[1],m[2],m[3]);
+    const f=farmOf(cur()),locked=a.kind==='plot'&&a.i>f.unlocked;return{cursor:locked?'locked':'select',label:actLabel(a)}}
+  const g=ray.intersectObject(F.ground);
+  if(g.length)placeMark(F.hoverMark,g[0].point.x,g[0].point.y,g[0].point.z);
+  return{cursor:'move',label:''};
+}
+function actLabel(a){
+  if(a.kind==='zone')return (F.zones.find(z=>z.id===a.id)||{}).name||'';
+  if(a.kind==='npc')return a.n.npc.name;
+  if(a.kind==='animal'){const an=F.animals[a.idx];return an?an.A.name:''}
+  if(a.kind==='plot'){const f=farmOf(cur()),pl=f.plots[a.i];
+    if(a.i>=f.unlocked)return a.i===f.unlocked?`Buy this field · ${plotCost(f)} 🪙`:'Locked field';
+    if(!pl)return 'Empty field · plant here';
+    const info=plotInfo(pl);return `${info.S.name} · ${info.stage===3?'ready to harvest!':'growing'}`}
+  return '';
+}
 function farmTap(e){
   const ray=rayFrom(e,F.camera);
+  if(PAINT){const hit=artAt(ray);if(hit)go('studio',{edit:hit.key,from:'town'});else toast('🎨 Tap a person, animal, crop or decoration to draw it!');return}
   const a=actOf(ray.intersectObjects(F.hits,true));
   if(a&&doAct(a))return;
   const g=ray.intersectObject(F.ground);if(g.length)walkTo(g[0].point.x,g[0].point.z,null);
@@ -282,7 +464,7 @@ function placeCamera(snap){
   const p=F.player.position,zmax=farmZoomMax();if(CAM.zoom>zmax)CAM.zoom=zmax;
   const o=Math.max(0,Math.min(1,(CAM.zoom-1.4)/(zmax-1.4)));   // 0 = follow the player, 1 = whole-farm overview
   const d=15*CAM.zoom*camFit(),lx=p.x*(1-o),lz=p.z*(1-o)-o,ly=1.2*(1-o);
-  const hd=d*(1-.5*o),tx=lx+Math.sin(F.yaw)*hd,tz=lz+Math.cos(F.yaw)*hd,ty=d*(.68+.7*o)+1;   // the camera tilts down as it rises
+  const hd=d*(.7-.3*o),tx=lx+Math.sin(F.yaw)*hd,tz=lz+Math.cos(F.yaw)*hd,ty=d*(1.3+.4*o)+1;   // the camera tilts down as it rises
   if(snap===1)F.camPos.set(tx,ty,tz);else F.camPos.lerp(new THREE.Vector3(tx,ty,tz),snap);
   F.camera.position.copy(F.camPos);F.camera.lookAt(lx,ly,lz);
   F.scene.fog.near=60+d*.8;F.scene.fog.far=170+d*1.6;
@@ -291,19 +473,21 @@ function placeCamera(snap){
 function triggerZone(z){
   if(z.kind==='closed'){toast(`${z.name} is opening soon!`);F.target={x:z.out.x,z:z.out.z};F.pending=null;return}
   LASTPOS={x:z.out.x,z:z.out.z};
-  if(z.kind==='dungeon')go('dungeon',{did:z.id});
+  if(z.kind==='school')go('school',{sid:z.id});
   else if(z.kind==='market')go('market');
   else if(z.kind==='board')go('progress');
   else if(z.kind==='barn')go('barn');
+  else if(z.kind==='studio')go('studio');
 }
 function farmUpdate(dt){
   const me=F.player,P=me.position,SP=6,t=F.t;
   F.yaw+=(CAM.yaw-F.yaw)*Math.min(1,dt*8);
   let kx=0,kz=0;
-  if(!DLG){if(KEYS.has('ArrowLeft')||KEYS.has('a'))kx-=1;if(KEYS.has('ArrowRight')||KEYS.has('d'))kx+=1;if(KEYS.has('ArrowUp')||KEYS.has('w'))kz+=1;if(KEYS.has('ArrowDown')||KEYS.has('s'))kz-=1}
+  if(!DLG){if(KEYS.has('ArrowLeft')||KEYS.has('a'))kx-=1;if(KEYS.has('ArrowRight')||KEYS.has('d'))kx+=1;if(KEYS.has('ArrowUp')||KEYS.has('w'))kz+=1;if(KEYS.has('ArrowDown')||KEYS.has('s'))kz-=1;
+    kx+=JOY.x;kz-=JOY.y}   // the on-screen joystick adds to the arrow keys
   let moving=false,dx=0,dz=0;
-  if(kx||kz){F.target=null;F.pending=null;const s=Math.sin(F.yaw),c=Math.cos(F.yaw);dx=kz*-s+kx*c;dz=kz*-c+kx*-s;const m=Math.hypot(dx,dz);dx/=m;dz/=m;
-    if(moveBy(dx*SP*dt,dz*SP*dt))moving=true;if(F.sheet)closeSheet()}
+  if(kx||kz){F.target=null;F.pending=null;const s=Math.sin(F.yaw),c=Math.cos(F.yaw);dx=kz*-s+kx*c;dz=kz*-c+kx*-s;const m=Math.hypot(dx,dz),amt=Math.min(1,Math.hypot(kx,kz));dx/=m;dz/=m;
+    if(moveBy(dx*SP*amt*dt,dz*SP*amt*dt))moving=true;if(F.sheet)closeSheet()}
   else if(F.target&&!DLG){
     const tx=F.target.x-P.x,tz=F.target.z-P.z,d=Math.hypot(tx,tz);
     if(d<.08){F.target=null;const pd=F.pending;F.pending=null;
@@ -333,6 +517,8 @@ function farmUpdate(dt){
   F.smoke.forEach(s=>{const k=(t*.25+s.o)%1;s.p.position.set(20.5+k*.6,5.6+k*3.2,-2.8+Math.sin(k*6)*.3);const sc=.4+k*1.1;s.p.scale.setScalar(sc);s.p.material.opacity=.45*(1-k)});
   animSparkles(F.dust,t);
   for(const P2 of F.plots)if(P2.spark.visible)P2.spark.position.y=1.9+Math.sin(t*3)*.12;
+  const T=F.t;animMark(F.hoverMark,T);animMark(F.selMark,T);   // the walk marker stays on the target until we arrive
+  if(F.target){placeMark(F.walkMark,F.target.x,0,F.target.z);animMark(F.walkMark,T)}else F.walkMark.visible=false;
   F.ringT+=dt;F.ring.material.opacity=Math.max(0,.9-F.ringT*1.3);F.ring.scale.setScalar(1+F.ringT*1.5);
   updFx(F,dt);
   F.tick+=dt;if(F.tick>.5){F.tick=0;syncPlots(false);refreshSheet()}
@@ -347,8 +533,8 @@ function tapAnimal(idx){
   const f=farmOf(cur());an.a.last=Date.now();f.barn[an.A.prod]=(f.barn[an.A.prod]||0)+1;addXP(an.A.xp);save();
   const p=an.g.position;addFx(F,`+1 ${an.A.pe}  +${an.A.xp} XP`,p.x,2,p.z);updateHud();
 }
-function openSheet(kind,arg){F.sheet={kind,arg};F.sheetKey='';refreshSheet(true)}
-function closeSheet(){if(F)F.sheet=null;const el=$('#sheet');if(el){el.className='sheet';el.innerHTML=''}}
+function openSheet(kind,arg){F.sheet={kind,arg};F.sheetKey='';refreshSheet(true);document.body.classList.add('sheeton')}
+function closeSheet(){document.body.classList.remove('sheeton');if(F)F.sheet=null;const el=$('#sheet');if(el){el.className='sheet';el.innerHTML=''}}
 function refreshSheet(force){
   if(!F||!F.sheet)return;const el=$('#sheet');if(!el)return;
   const {kind,arg}=F.sheet,f=farmOf(cur());let key=kind,live=null;
@@ -378,23 +564,28 @@ function sheetBarn(){
 }
 function plant(i,id){const p=cur(),f=farmOf(p),S=SEEDS.find(s=>s.id===id);
   if(!S||p.gems<S.cost||farmLevel(f.xp).l<S.lv||f.plots[i]||i>=f.unlocked)return;
-  p.gems-=S.cost;f.plots[i]={crop:id,planted:Date.now(),watered:false};save();syncPlots(false);updateHud();
+  p.gems-=S.cost;f.plots[i]={crop:id,planted:Date.now(),watered:false};taskDone(taskStep('plant'));save();syncPlots(false);updateHud();
   const {x,z}=plotPos(i);addFx(F,`🌱 −${S.cost} 🪙`,x,1.6,z);refreshSheet(true)}
 function water(i){const f=farmOf(cur()),pl=f.plots[i];if(!pl||pl.watered)return;pl.watered=true;save();syncPlots(false);const {x,z}=plotPos(i);addFx(F,'💧💧💧',x,1.6,z);refreshSheet(true)}
 function harvest(i){const f=farmOf(cur()),pl=f.plots[i],info=plotInfo(pl);if(!info||info.stage<3)return;
-  f.barn[pl.crop]=(f.barn[pl.crop]||0)+4;f.plots[i]=null;addXP(info.S.xp);save();syncPlots(false);updateHud();
+  f.barn[pl.crop]=(f.barn[pl.crop]||0)+4;f.plots[i]=null;addXP(info.S.xp);taskDone(taskStep('harvest'));save();syncPlots(false);updateHud();
   const {x,z}=plotPos(i);addFx(F,`+4 ${info.S.e}  +${info.S.xp} XP`,x,1.8,z);refreshSheet(true)}
 function buyPlot(){const p=cur(),f=farmOf(p),c=plotCost(f);if(p.gems<c||f.unlocked>=12)return;p.gems-=c;f.unlocked++;save();syncPlots(false);updateHud();closeSheet();toast('New patch ready to plant!')}
 
 Object.assign(ACT,{
   choose:d=>{DATA.current=d.id;LASTPOS=null;save();go('town')},
+  pickNewLook:d=>{const v=$('#newname').value;NEWLOOK=d.id;rPlayers();$('#newname').value=v},
   pickGrade:d=>{const v=$('#newname').value;NEWGRADE=d.g;rPlayers();$('#newname').value=v},
+  paint:()=>setPaint(!PAINT),
+  openChest:()=>openChest(),
+  places:()=>{const el=$('#places'),b=$('[data-act="places"]');if(!el)return;const open=el.classList.toggle('open');if(b)b.setAttribute('aria-expanded',open)},
+  tasksToggle:()=>{const el=$('#tasks');if(!el)return;el.classList.toggle('closed');try{sessionStorage.setItem('hmf-tasks',el.classList.contains('closed')?'0':'1')}catch(e){}},
   overview:()=>{   // toggle the whole-farm view; on a tall screen, turn so the farm's long side runs down the screen
     if(CAM.back){CAM.zoom=CAM.back.zoom;CAM.yaw=CAM.back.yaw;CAM.back=null;return}
     CAM.back={zoom:CAM.zoom,yaw:CAM.yaw};
     if(F.camera.aspect<1)CAM.yaw=Math.round((CAM.yaw-Math.PI/2)/Math.PI)*Math.PI+Math.PI/2;
     CAM.zoom=farmZoomMax()},
-  addPlayer:()=>{const v=($('#newname').value||'').trim();if(!v)return $('#newname').focus();const p=newPlayer(v.slice(0,16),NEWGRADE);DATA.players.push(p);save();rPlayers()},
+  addPlayer:()=>{const v=($('#newname').value||'').trim();if(!v)return $('#newname').focus();const p=newPlayer(v.slice(0,16),NEWGRADE,NEWLOOK);DATA.players.push(p);save();rPlayers()},
   mayorTalk:()=>mayorTalk(),
   quick:(q=>d=>{if(F&&G.stage===F){const z=F.zones.find(z=>z.id===d.id);if(z){if(Math.hypot(z.x-F.player.position.x,z.z-F.player.position.z)<z.r)triggerZone(z);else walkTo(z.x,z.z,null)}return}q(d)})(ACT.quick),
   closeSheet:()=>closeSheet(),

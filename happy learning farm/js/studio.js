@@ -1,4 +1,4 @@
-/* Happy Math Farm — Art Studio (studio.html): children replace their character and any icon
+/* Happy Learning Farm — Art Studio (studio.html): children replace their character and any icon
    with their own drawing or photo. Pictures are turned into game-style stickers right here in
    the browser (cut out the paper, brighten, gold + white outline) and saved by common/art.js. */
 const ART_STYLES=[['sticker','✨ Sticker'],['cartoon','🖍️ Cartoon'],['pixel','👾 Pixel']];
@@ -18,10 +18,14 @@ function rStudio(){
   const hello=mine?`You have made <b>${mine}</b> of ${total} pictures. Keep going!`:'Hello, little artist! Draw anything on paper: yourself, a cow, a magic hat. Take a photo, and I will turn it into a sticker for your farm!';
   $('#app').innerHTML=topBar('Art Studio','toTown')+npcHTML(ARTIST,UI.msg||hello)+
   `<div class="card" style="margin-bottom:14px"><b>🎨 My pictures: ${mine} / ${total}</b><div class="pbarw"><i style="width:${Math.round(mine/total*100)}%"></i></div></div>
-   <div class="btns" style="margin:0 0 14px">${tabs}</div><div class="items">${items}</div>
+   <div class="btns" style="margin:0 0 14px">${tabs}</div>${G.id==='me'?looksHTML():''}<div class="items">${items}</div>
    <p class="muted">Your pictures are saved only on this device. Each player has their own.</p>`;
 }
 
+function looksHTML(){const p=cur(),mine=!!artOf('me');
+  return `<div class="card looks"><h3 style="margin-top:0">Pick your character</h3>
+    <div class="lookgrid">${LOOKS.map(L=>`<button class="lookbtn ${p.look===L.id?'on':''}" data-act="pickLook" data-id="${L.id}" aria-pressed="${p.look===L.id}" title="${L.name}"><span>${L.e}</span><small>${L.name}</small></button>`).join('')}</div>
+    ${mine?'<p class="muted" style="margin:10px 0 0">You are using your own drawing. To use a character from this list, open your drawing below and tap “Use the original”.</p>':'<p class="muted" style="margin:10px 0 0">Or draw yourself below!</p>'}</div>`}
 /* ---------- editor ---------- */
 function rEditor(){
   const it=artItem(UI.edit);if(!it){UI.edit=null;return rStudio()}
@@ -197,8 +201,10 @@ document.addEventListener('change',e=>{if(e.target.id==='artFile'&&e.target.file
 document.addEventListener('keydown',e=>{if(e.target.matches&&e.target.matches('label[for="artFile"]')&&(e.key==='Enter'||e.key===' ')){e.preventDefault();$('#artFile').click()}});
 Object.assign(ACT,{
   atab:d=>{UI.tab=d.id;UI.msg=null;rStudio()},
+  pickLook:d=>{const p=cur(),L=LOOKS.find(l=>l.id===d.id);if(!L)return;p.look=L.id;save();UI.msg=`Hello, ${L.e} ${esc(p.name)}! That's you on the farm now.`;rStudio()},
   artEdit:d=>{UI.edit=d.id;UI.msg=null;UI.resetting=false;UI.drawing=false;EDIT=null;DRAW=null;render();window.scrollTo({top:0})},
-  artBack:()=>{UI.edit=null;EDIT=null;UI.resetting=false;UI.drawing=false;DRAW=null;rStudio()},
+  artBack:()=>{if(UI.from==='town')return go('town');   // opened from paint mode on the farm
+    UI.edit=null;EDIT=null;UI.resetting=false;UI.drawing=false;DRAW=null;rStudio()},
   padOpen:()=>{UI.drawing=true;DRAW=null;rEditor();window.scrollTo({top:0})},
   padCancel:()=>{UI.drawing=false;DRAW=null;rEditor()},
   penColour:d=>{DRAW.colour=d.id;DRAW.erase=false;rEditor()},
@@ -213,10 +219,10 @@ Object.assign(ACT,{
   artBg:()=>{EDIT.bg=!EDIT.bg;restyle()},
   artSave:()=>{if(!EDIT||!EDIT.dirty||!EDIT.url)return;
     saveArt(cur().id,EDIT.key,{url:EDIT.url,src:EDIT.srcUrl,style:EDIT.style,bg:EDIT.bg})
-      .then(()=>{UI.msg=pick(ART_PRAISE);UI.edit=null;EDIT=null;rStudio()})
+      .then(()=>{if(UI.from==='town')return go('town');UI.msg=pick(ART_PRAISE);UI.edit=null;EDIT=null;rStudio()})
       .catch(()=>{EDIT.note='Sorry, I could not save it on this device.';rEditor()})},
   artReset:()=>{if(!UI.resetting){UI.resetting=true;return rEditor()}
-    deleteArt(cur().id,EDIT.key).catch(()=>{}).then(()=>{UI.resetting=false;UI.edit=null;EDIT=null;UI.msg='Back to the original. You can draw a new one any time!';rStudio()})}
+    deleteArt(cur().id,EDIT.key).catch(()=>{}).then(()=>{if(UI.from==='town')return go('town');UI.resetting=false;UI.edit=null;EDIT=null;UI.msg='Back to the original. You can draw a new one any time!';rStudio()})}
 });
 onPageKey=e=>{if(UI.drawing&&DRAW&&(e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'){e.preventDefault();ACT.padUndo()}};
 startPage({studio:rStudio},()=>({screen:'studio'}));

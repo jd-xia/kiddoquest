@@ -1,4 +1,4 @@
-# Happy Math Farm 快乐数学农场 · 需求与开发文档
+# Happy Learning Farm 快乐学习农场 · 需求与开发文档
 
 版本 2.0（多页面版） · 私人项目，不对外分享
 
@@ -39,7 +39,7 @@
 ```
 happy-math-farm/
 ├── index.html            广场：选择玩家 + 3D 农场（入口页）
-├── school-tricks.html    Brain Boost 学校（关卡岛 + 战斗）
+├── school-tricks.html    Brain Boost 学校（岛屿选择 + 关卡岛 + 战斗）
 ├── market.html           农场市场（动物 / 装饰 / 服装）
 ├── barn.html             谷仓（收获仓库 + 农场等级）
 ├── board.html            进度看板（家长用）
@@ -65,6 +65,8 @@ happy-math-farm/
 └── REQUIREMENTS.md       本文档
 ```
 
+**缓存**：HTML 里引用的 CSS/JS 都带版本号（如 `common/style.css?v=2`）。改了 CSS 或 JS 后，把所有 HTML 里的 `?v=` 数字加 1，孩子的设备才会下载新版本。
+
 **脚本加载顺序（不能乱）**：vendor（仅 3D 页面）→ `curriculum.js` → `core.js` → `art.js` → `engine3d.js`（仅 3D 页面）→ 页面自己的 `js/*.js`。所有脚本共享全局作用域，所以不同文件里不能用 `const`、`let` 或 `function` 声明同名变量。
 
 ## 4. 页面功能需求
@@ -77,7 +79,7 @@ happy-math-farm/
 |---|---|---|
 | PLZ-01 | 玩家选择页：显示所有玩家的星星和金币，可新建玩家（名字最长 16 字） | ✅ |
 | PLZ-02 | 3D 农场：点地面走路，左右拖动转镜头，按钮旋转和缩放，电脑上可用方向键或 WASD | ✅ |
-| PLZ-03 | 4 所学校的建筑：已开放的显示为学校，未开放的显示为工地，走进去提示"即将开放" | ✅ |
+| PLZ-03 | 4 所学校的建筑：Brain Boost 是学校，其余 3 块是"New School"工地（留给以后的新科目），走进去提示"即将开放" | ✅ |
 | PLZ-04 | 走进建筑门口自动跳转到该建筑的页面；返回时角色站在门口 | ✅ |
 | PLZ-05 | 12 块田：初始 6 块，其余用金币逐块购买；可种植、浇水（加速 30%）、收获（每次 +4） | ✅ |
 | PLZ-06 | 动物圈：点击动物收集产物，有冷却时间 | ✅ |
@@ -90,24 +92,37 @@ happy-math-farm/
 | PLZ-13 | 学校建筑按当前玩家的年级显示：该年级没有关卡时显示为工地 | ✅ |
 | PLZ-14 | 可以一直拉远到看见整个农场：🗺️ 按钮一键切换全景/回到原视角；竖屏时全景会自动转 90°，让农场长边对着屏幕长边。最远距离按屏幕比例自动计算（`farmZoomMax()`） | ✅ |
 | PLZ-15 | 缩放方式：＋/－ 按钮、鼠标滚轮、触控板双指、触屏双指捏合（所有 3D 场景通用，见 engine3d.js） | ✅ |
+| PLZ-17 | 🎨 Paint 模式：打开后点农场上的任何人或东西（自己、NPC、动物、产物、作物、装饰），直接进入创作工坊修改它的图片，返回时回到农场原位 | ✅ |
+| PLZ-18 | 游戏鼠标指针（电脑和带鼠标/触控板的 iPad）：屏幕上用画出来的指针代替系统光标——金色箭头＝走路；箭头＋旋转金圈＝可以选择；🖌️ 画笔＝Paint 模式；灰色箭头＋🔒＝锁住；拖动镜头时显示 ⟲。触屏上点一下，指针会在手指处闪现并带波纹 | ✅ |
+| PLZ-19 | 3D 指示标记：鼠标在地面上时显示金色光圈（会走到这里）；走路时目标点有跳动的金色箭头，到达后消失；指向人物、动物、田地、建筑门口时，脚下出现金色选择圈，头顶有跳动箭头 | ✅ |
+| PLZ-20 | 农场上新增 Art Studio 小屋（右侧，紫色屋顶＋调色盘招牌），走进门口进入创作工坊；门口有 🦜 Polly | ✅ |
+| PLZ-21 | 农场画面改成温暖的绘本风格（参考图）：地面是画出来的一整张贴图（深浅不一的草地、小花、弯曲的土路带深色边缘和小石子，见 `paintGround()`）；镜头约 60° 俯视；灯光明亮、暗角很淡（stage 可用 `vig`/`sat`/`con` 调色）；动物圈改为木栅栏。左上角头像卡片（头像、"XX's Happy Farm"、等级和绿色经验条，点击换玩家）；右上角金币、星星、🎨、⚙️ | ✅ |
+| PLZ-22 | 虚拟方向盘（左下角）：拖动控制角色移动，力度越大走得越快，松手后自动回正；第一次显示提示气泡；与方向键/WASD 同时可用 | ✅ |
+| PLZ-23 | 今日任务面板（右上）：种菜 3 次、完成今天的两关（P1/P3 各自的 Best Friend Pairs 和 Hat and Cloak）、收菜 3 次；显示今天已得金币 x/40 和连续打卡天数 🔥；全部完成后出现 🎁 宝箱按钮。详见 §8.3 | ✅ |
+| PLZ-24 | 农场不再有底部按钮条：右下角一列圆形按钮——🗺️ Places（弹出菜单：Brain Boost、市场、谷仓、创作工坊、进度看板、玩法说明）、🖌️ Paint、🎒 背包（打开谷仓） | ✅ |
+| PLZ-25 | 更接近参考图的农场细节：菜地四周的木栅栏（前面留口）、生长中和成熟的作物都是一丛丛叶子（番茄、草莓带白色小花）、树桩和斧头、装满蔬菜的木箱、木桶、红色邮箱、一排向日葵；池塘加了木码头、更多睡莲和小花 | ✅ |
 | PLZ-16 | 农场和关卡岛铺满整个窗口（电脑、iPad、iPhone），顶部栏和底部按钮浮在 3D 画面上，并避开刘海和底部横条 | ✅ |
 
 ### 4.2 学校 school-tricks.html（js/school.js + curriculum.js）
 
 | 编号 | 需求 | 状态 |
 |---|---|---|
-| SCH-01 | 3D 关卡岛：每关一块石台，打通前一关才解锁下一关，石台上显示星级 | ✅ |
+| SCH-13 | Brain Boost 先进入"岛屿选择"：海上 6 座岛，每座岛是一个数学专题；已开放的岛是绿色并显示星数，未开放的显示"Coming soon"；电脑/平板 3 列，竖屏手机 2 列 | ✅ |
+| SCH-15 | 岛屿选择画面升级：分层悬崖、圆顶草地、礁石、海浪泡沫圈、棕榈树；每座岛有自己的地标（Calculation Tricks 魔法塔＋环绕的 ➕➖✖️➗、Patterns 彩色方块螺旋、Fractions 抽出一块的大饼、Comparison 天平、Models 条形模型积木、Age 时钟塔），并会动；未开放的岛地标变灰并围着脚手架、飘着云；岛名用丝带横幅；老师和玩家坐在小帆船上；鼠标指向的岛会升起并在海面出现金圈 | ✅ |
+| SCH-14 | 6 个专题：① Calculation Tricks（🦉 Professor Hoot）② Number and Figure Patterns（🦓 Zara）③ Fractions（🐙 Otto）④ Comparison and Replacement（🦊 Felix）⑤ Mastering Models（🦫 Benny）⑥ Age Problems（🦕 Dino） | ✅ |
+| SCH-01 | 3D 关卡岛：每个专题一座岛，每关一块石台（最多 10 关，`MAX_LEVELS`），石台按 3 个一排之字形排列，最后一关是 Boss 时放在城堡前；打通前一关才解锁下一关 | ✅ |
 | SCH-02 | 每关开始前，老师讲解本关技巧（可跳过） | ✅ |
-| SCH-03 | 题型：`input`（数字键盘作答）、`pair`（点两个数凑成目标）、`zerobox`（把相邻且和为 0 的数打包） | ✅ |
+| SCH-03 | 题型：`input`（数字键盘作答）、`pair`（点两个数凑成目标）、`zerobox`（把相邻且和为 0 的数打包）、`friends`（Best Friend Pairs：点两个带符号的数，合起来是整百/整千就结成好朋友，变成金币；会阻止把别人落单的配对）、`hats`（Hat and Cloak：点每个数给它戴帽子变成整十/整百…，斗篷记住多加的数，最后"加帽子、脱斗篷"）。键盘最多可输入 8 位数 | ✅ |
 | SCH-04 | 3 颗红心；答错扣 1 颗并显示解题步骤；红心扣完则闯关失败 | ✅ |
 | SCH-05 | 战斗表现：施法光球、命中闪光、冲击波、PERFECT 等弹字、顿帧、镜头前推；Boss 有血量 | ✅ |
-| SCH-06 | 结算：星数 = 剩余红心；金币 = 一次答对的题数 + 奖励 | ✅ |
-| SCH-11 | 按年级分副本：同一所学校对不同年级加载不同的关卡（见 §6.5） | ✅ |
-| SCH-12 | Brain Boost 学校 P1 副本（内容待规划） | ⬜ |
-| SCH-07 | Brain Boost 学校 P3 副本 6 关：Friends of 100、Round and Fix、Multiplying Partners、Pair Them Up、Zero Boxes、Boss: Trick Master | ✅ |
-| SCH-08 | 图形规律学校 Pattern Garden（🐢 Tilly） | ⬜ |
-| SCH-09 | 应用题学校 Word Problem Quests（🦁 Leo） | ⬜ |
-| SCH-10 | 分数面包房 Fraction Bakery（🐧 Pip） | ⬜ |
+| SCH-06 | 结算：星数 = 剩余红心；金币 = 一次答对的题数 + 奖励；可以去下一关、关卡岛、岛屿选择或农场 | ✅ |
+| SCH-11 | 按年级分副本：同一座岛对不同年级加载不同的关卡（见 §6.5） | ✅ |
+| SCH-07 | Calculation Tricks P3：第 1 关 Best Friend Pairs（5 题，最后一题是练习卷原题 785+349−36−249−364+215 = 700）；第 2 关 Hat and Cloak（5 题，最后一题是原题 98+998+998+99998+999998 = 1102090）；第 3–10 关是"Coming soon"占位（`soon:true`，石台显示 🚧，不能进入，不计入星数） | ✅ |
+| SCH-12 | Calculation Tricks P1：第 1 关 Best Friend Pairs（只有加法，好朋友合起来是整十 10/20/30/40；5 题，最后一题是练习卷原题 19+6+12+13+21+4+8+17 = 100）；第 2 关 Hat and Cloak（接近 100 的数，最后一题是原题 99+97+98+96+98 = 488）；第 3–10 关 Coming soon。P1 玩家现在也能进入 Brain Boost（只开放这一座岛） | ✅ |
+| SCH-16 | 其他 5 个专题的 P1、P3 关卡 | ⬜ |
+| SCH-08 | Number and Figure Patterns 的关卡 | ⬜ |
+| SCH-09 | Fractions 的关卡 | ⬜ |
+| SCH-10 | Comparison and Replacement、Mastering Models、Age Problems 的关卡 | ⬜ |
 
 ### 4.3 市场 market.html（js/market.js）
 
@@ -149,6 +164,7 @@ happy-math-farm/
 | ART-07 | 鼓励创作：工坊显示"已画 X / 总数"进度，保存时 Polly 夸奖，进度看板显示"Pictures drawn" | ✅ |
 | ART-08 | 在 App 里直接画画：12 种颜色、3 种笔刷粗细、橡皮擦、撤销（也支持 Ctrl+Z，最多 15 步）、清空；画完后用同样的贴纸风格处理 | ✅ |
 | ART-09 | 已经有图片时打开画板，会把原图放进画板，可以在上面继续画（例如在照片上加帽子） | ✅ |
+| ART-10 | 选择角色（创作工坊 → Me）：24 个角色——农场女孩/男孩（3D 人物，女孩有长发、双马尾和粉色蝴蝶结）、公主、王子、仙女、美人鱼、超人、小女巫、宇航员、忍者和各种小动物（在农场和战斗里以立牌形式出现）。孩子自己画的人物优先。新建玩家时选 👧/👦；旧存档里名字是 Michelle 的玩家自动设为女孩，其他人默认男孩（`Player.look`，见 `core.js` 的 `LOOKS`） | ✅ |
 
 ## 5. 视觉规范
 
@@ -166,13 +182,15 @@ happy-math-farm/
 
 ## 6. 扩展指南
 
-### 6.1 开放一所新学校（例如 Pattern Garden）
+### 6.1 给一座岛（专题）加关卡（例如 Fractions）
 
 1. 在 `common/curriculum.js` 里写题目生成函数，函数返回 `{type, html, answer, steps, say}` 格式的对象（参考 `qRound`）。
-2. 在 `DUNGEONS` 里找到 `patterns` 这一项，改成 `open:true`，再补上 `intro` 和 `levels`（参考 `tricks`）。
-3. 复制 `school-tricks.html` 为 `school-patterns.html`，把里面的 `data-page` 改成 `school-patterns.html`，`data-school` 改成 `patterns`。
-4. 这样就完成了。广场会自动把工地换成学校建筑，走进去就会打开新页面，进度看板也会自动统计新学校。
-5. 如果需要新的题型（不是 `input`、`pair`、`zerobox` 这三种），参考 §6.3。
+2. 在 `DUNGEONS` 里找到这个专题（例如 `fractions`），在 `grades` 里给对应年级加上 `{intro, levels}`（参考 `tricks` 的 `p3`）。最多 10 关；最后一关写 `boss:true` 就会放在城堡前。Boss 关用 `set:函数` 一次生成整套题。还没想好的关卡写成 `{id, name:'Coming soon', soon:true}` 占位，以后把它换成真正的关卡即可。
+3. 这样就完成了：岛屿选择里这座岛会变绿并可以进入，关卡岛的石台会自动排好，进度看板也会自动统计。
+4. 关卡 id 必须全局唯一（存档以它为键），建议加专题和年级前缀，例如 `fr3-1`。专题 id 也是存档键的一部分，不要改名。
+5. 新增一个专题：在 `DUNGEONS` 加一项（`school:'tricks'`），并把它的 id 加进 `SCHOOLS` 里 Brain Boost 的 `topics`。岛屿会自动排版。
+6. 开放一所新的学校建筑（例如以后的英语学校）：把 `SCHOOLS` 里的一个 `soon*` 改成 `open:true` 并给它 `topics`，再复制 `school-tricks.html` 为 `school-<id>.html`，`data-page` 和 `data-school` 改成对应的值。
+7. 如果需要新的题型（不是 `input`、`pair`、`zerobox` 这三种），参考 §6.3。
 
 ### 6.2 新增一间普通房子（例如手工坊）
 
@@ -247,7 +265,7 @@ happy-math-farm/
 
 ```js
 DATA = { v:1, updated:时间戳, current:当前玩家id, players:[Player] }
-Player = { id, name, grade:'p1'|'p3', avatar, owned:[], gems:金币, seen:{已看过的教学},
+Player = { id, name, grade:'p1'|'p3', daily:{d:日期, n:{任务id:次数}}, avatar, owned:[], gems:金币, seen:{已看过的教学},
            lv:{ 关卡id:{stars, plays, clears, qs:答题数, first:一次答对数, last} },
            sessions:[最近60次练习], time:总秒数,
            farm:{ plots:[{crop, planted, watered}|null], unlocked:田数, animals:[], decor:[],
@@ -258,7 +276,7 @@ Player = { id, name, grade:'p1'|'p3', avatar, owned:[], gems:金币, seen:{已�
 
 ### 8.2 数值
 
-- **金币**：每题一次答对 +1。首次通关额外奖励 星数 × 5；重玩时如果星数提高，奖励新增的 星数差 × 5。
+- **金币**：见 §8.3（每日 10 分钟规划）。答错不扣金币，只扣红心。
 - **星数**：通关时剩余的红心数（0 到 3）。
 - **农场等级**：第 L 级升到 L+1 级需要 20 × L 经验。
 - **田地**：初始 6 块，最多 12 块。第 n 块的价格是 12 + 4 × (已解锁数 − 6)。
@@ -282,6 +300,47 @@ Player = { id, name, grade:'p1'|'p3', avatar, owned:[], gems:金币, seen:{已�
 - **装饰**：花坛 8、路灯 10、稻草人 12、苹果树 18、鸭塘 25、风车 40。
 - **服装**：衬衫 0 到 8 金币；帽子包括草帽 0、棒球帽 10、花冠 15、金冠 40。
 
+### 8.3 每日 10 分钟规划（金币、今日任务、宝箱、连续打卡）
+
+目标：每天玩约 10 分钟，做 2 类题各 5 道，一共 10 题，然后开心地结束。
+
+| 时间 | 做什么 |
+|---|---|
+| 0–1 分钟 | 进农场，用昨天的金币种菜 |
+| 1–4 分钟 | Brain Boost：第 1 关 Best Friend Pairs（5 题） |
+| 4–7 分钟 | Brain Boost：第 2 关 Hat and Cloak（5 题） |
+| 7–10 分钟 | 回农场收菜（作物 2–6 分钟就长好）、开宝箱、买东西 |
+
+**金币**（数值在 `core.js` 顶部：`COIN_RIGHT`、`COIN_LEVEL`、`COIN_CHEST`、`COIN_DAY_MAX`）
+
+| 来源 | 金币 | 每天最多 |
+|---|---|---|
+| 每题一次答对 | +2 | 20 |
+| 当天第一次完成某一关 | +5 | 10（两关） |
+| 4 个任务全部完成后开宝箱 | +10 | 10 |
+| 合计 | | 40 |
+
+- 每天最多 40 金币。达到上限后继续玩只得星星，答题气泡显示 ⭐，结算页提示"Today's coins are full! Come back tomorrow"。
+- 金币在一关结束（或中途退出）时结算；每天的记录在 `Player.daily = {d, n:{任务}, coins, levels:{今天完成过的关卡}, chest}`，午夜重置。
+- 旧的"首次通关 星数 × 5"奖励已取消。
+
+**今日任务**（`core.js` 的 `tasksFor()`，每日两关在 `curriculum.js` 的 `DAILY_LEVELS` 里按年级配置）
+
+| 任务 | 目标 | 奖励 |
+|---|---|---|
+| 🌱 Plant seeds | 3 | +10 农场经验 |
+| 🤝 Finish Best Friend Pairs | 1 关 | +10 农场经验 |
+| 🎩 Finish Hat and Cloak | 1 关 | +10 农场经验 |
+| 🧺 Harvest crops | 3 | +10 农场经验 |
+| 🎁 全部完成 | 开宝箱 | +10 金币，并计入连续打卡 |
+
+**连续打卡**（`Player.streak = {last, days, best}`，开宝箱时计算；断一天重新从 1 开始）
+
+- 第 3 天：💐 花冠帽子。
+- 每第 7 天：大奖，依次是风车、金冠、鸭塘、苹果树中还没有的一样；都有了就给 30 经验。
+- 打卡奖励不给金币，保证金币只来自学习。
+- 开完宝箱后 Bella 说"See you tomorrow"，任务面板显示 "🎉 All done today! 🔥 N days"，给孩子一个明确的结束点。
+
 ## 9. 功能待办（Backlog）
 
 按建议优先级排列，做完后把状态改掉，并在 §4 里补上编号。
@@ -289,12 +348,13 @@ Player = { id, name, grade:'p1'|'p3', avatar, owned:[], gems:金币, seen:{已�
 | 优先级 | 想法 | 备注 |
 |---|---|---|
 | 高 | 音效：出招、命中、答错、胜利号角、背景音乐开关 | 用 Web Audio 合成或嵌入短音频，需要提供静音按钮 |
-| 高 | 开放 Pattern Garden（找规律、数列） | 按 §6.1 操作 |
+| 高 | 给 Number and Figure Patterns 岛写关卡（找规律、数列） | 按 §6.1 操作 |
 | 中 | 英雄与怪物更精细的造型（盔甲、披风、武器、挥砍动作） | 在 engine3d.js 的 `buildHero` 和 school.js 的 `buildSlime` 里改 |
 | 中 | 谷仓兑换功能（BRN-03） | 先确定规则，不能破坏"金币只来自学校" |
 | 中 | 每日任务、连续登录奖励 | 存在 `Player.daily` 里 |
 | 中 | 中英双语切换 | 把界面文字抽到一个 `TEXT` 字典里 |
-| 低 | 开放 Word Problem Quests、Fraction Bakery | 按 §6.1 操作 |
+| 中 | 给 Fractions、Comparison and Replacement、Mastering Models、Age Problems 岛写关卡 | 按 §6.1 操作 |
+| 低 | 决定 3 块 "New School" 工地以后开什么科目 | 按 §6.1 第 6 步 |
 | 低 | 导出、导入存档（JSON 文件） | 方便换电脑 |
 | 低 | 家长设置：每次游戏时长提醒 | |
 

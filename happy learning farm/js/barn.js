@@ -1,4 +1,4 @@
-/* Happy Math Farm — Barn (barn.html): harvest store and farm level. */
+/* Happy Learning Farm — Barn (barn.html): harvest store and farm level. */
 function barnHTML(){
   const f=farmOf(cur()),L=farmLevel(f.xp);
   const prods=[...SEEDS.map(s=>[s.id,ico('seed:'+s.id,s.e),s.name]),...ANIMALS.map(a=>[a.prod,ico('prod:'+a.prod,a.pe),a.pn])];

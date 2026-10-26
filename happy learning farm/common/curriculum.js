@@ -1,4 +1,4 @@
-/* Happy Math Farm — curriculum: question generators + school (house) definitions.
+/* Happy Learning Farm — curriculum: question generators + school (house) definitions.
    Every school in DUNGEONS gets its own page: school-<id>.html (see REQUIREMENTS.md §6.1). */
 /*GEN-START*/
 const P4=['+','-','-','+'], P2=['+','-'], MINUS='−';
@@ -99,10 +99,58 @@ function bossSet(){
 }
 /*GEN-END*/
 
+/* ---------- P3 Calculation Tricks ---------- */
+/* Best Friend Pairs: two terms are best friends when together they make a round hundred or thousand.
+   'add': a + b = 100 or 1000      'same': +a − b, same last two digits      'neg': −a − b = −(round number) */
+function friendPair(kind){
+  if(kind==='add'){const R=pick([100,1000,1000]);let a;do{a=R===100?rnd(11,89):rnd(101,899)}while(a%10===0);return[{n:a,s:'+'},{n:R-a,s:'+'}]}
+  if(kind==='same'){let b;do{b=rnd(112,480)}while(b%10===0);return[{n:b+100*rnd(1,3),s:'+'},{n:b,s:'-'}]}
+  let a;do{a=rnd(12,89)}while(a%10===0);return[{n:a,s:'-'},{n:100*rnd(2,4)-a,s:'-'}];
+}
+const pairText=(p,plain)=>plain?`${p[0].n} + ${p[1].n} = ${sumT(p)}`:`${sg(p[0].s)}${p[0].n} ${sg(p[1].s)} ${p[1].n} = ${sumT(p)>0?'+':MINUS}${Math.abs(sumT(p))}`;
+function friendsQ(pairs,terms,say,unit){
+  const plain=terms.every(t=>t.s==='+'),vals=pairs.map(sumT),last=vals.map((v,k)=>(k?(v<0?` ${MINUS} `:' + '):'')+Math.abs(v)).join('');
+  return{type:'friends',unit:unit||100,plain,terms,html:exprHTML(terms)+' = ?',answer:sumT(terms),steps:[...pairs.map(p=>pairText(p,plain)),`${last} = ?`],say};
+}
+function qBestFriends(kinds){
+  for(;;){const pairs=kinds.map(friendPair),terms=shuffle(pairs.flat());
+    const first=terms.findIndex(t=>t.s==='+'&&t.n>300);if(first<0)continue;terms.unshift(terms.splice(first,1)[0]);   // start with a big + number
+    let run=0;if(terms.some(t=>(run+=val(t))<0))continue;   // never dips below zero on the way
+    return friendsQ(pairs,terms,'Tap two best friends that make a round number.')}
+}
+function qFriendsWorksheet(){
+  const t=makeTerms([785,349,36,249,364,215],['+','+','-','-','-','+']);
+  return friendsQ([[t[0],t[5]],[t[1],t[3]],[t[2],t[4]]],t,'This one is from your worksheet! Find all three pairs of best friends.');
+}
+/* Hat and Cloak: a near-round number puts on a hat (it grows to the round number) and its cloak
+   remembers how much it grew: 998 = 1000 − 2. Add the hats, then take off the cloaks. */
+function hatQ(nums,say){
+  const hats=nums.map(n=>{let R=1;while(R<n)R*=10;return{R,d:R-n}}),round=hats.reduce((a,h)=>a+h.R,0),cloak=hats.reduce((a,h)=>a+h.d,0);
+  return{type:'hats',nums,hats,html:nums.join(' + ')+' = ?',answer:round-cloak,
+    steps:[...nums.map((n,k)=>`${n} = ${hats[k].R} ${MINUS} ${hats[k].d}`),`Hats: ${hats.map(h=>h.R).join(' + ')} = ${round}`,`Cloaks: ${hats.map(h=>h.d).join(' + ')} = ${cloak}`,`${round} ${MINUS} ${cloak} = ?`],say};
+}
+function qHatCloak(count,maxPow){
+  const nums=Array.from({length:count},()=>Math.pow(10,rnd(2,maxPow))-rnd(1,3)).sort((a,b)=>a-b);
+  return hatQ(nums,'Tap each number to give it a hat.');
+}
+function qHatWorksheet(){return hatQ([98,998,998,99998,999998],'This one is from your worksheet! Five numbers need hats.')}
+
+/* ---------- P1 Calculation Tricks ---------- */
+/* Best Friend Pairs for P1: only adding, and best friends make a round ten (10, 20, 30, 40). */
+function tenPair(){const S=10*rnd(1,4);let a;do{a=rnd(1,S-1)}while(a%10===0);return[{n:a,s:'+'},{n:S-a,s:'+'}]}
+function qTenFriends(n){const pairs=Array.from({length:n},tenPair);return friendsQ(pairs,shuffle(pairs.flat()),'Tap two best friends that make 10, 20, 30…',10)}
+function qTenWorksheet(){
+  const t=makeTerms([19,6,12,13,21,4,8,17],['+']);
+  return friendsQ([[t[0],t[4]],[t[1],t[5]],[t[2],t[6]],[t[3],t[7]]],t,'This one is from your worksheet! Find four pairs of best friends.',10);
+}
+/* Hat and Cloak for P1: numbers just under 100. */
+function qHatsP1(count){return hatQ(Array.from({length:count},()=>100-rnd(1,4)),'Tap each number to give it a hat.')}
+function qHatWorksheetP1(){return hatQ([99,97,98,96,98],'This one is from your worksheet! Five numbers need hats.')}
+
 /* ---------- grades ----------
    Each player picks a grade. Every school keeps one set of levels per grade in `grades`,
-   so the same building opens a different 副本 for a P1 player and a P3 player.
-   A school with no levels for the player's grade shows as "opening soon".
+   so the same island opens a different 副本 for a P1 player and a P3 player.
+   A topic with no levels for the player's grade shows as "coming soon".
    Level ids must be unique across all grades (they are the keys in Player.lv). */
 const GRADES=[
   {id:'p1',name:'P1',label:'Primary 1'},
@@ -110,45 +158,78 @@ const GRADES=[
 ];
 const DEFAULT_GRADE='p3';   // players saved before grades existed played the P3 content
 
+/* ---------- schools and topics ----------
+   SCHOOLS are the buildings on the farm. Brain Boost opens onto a sea of islands, one island per
+   maths topic (listed in `topics`). DUNGEONS are those topics: each has up to MAX_LEVELS levels per
+   grade. A topic id is also its save key prefix (Player.seen, sessions), so never rename one. */
+const MAX_LEVELS=10;
+const SCHOOLS=[
+  {id:'tricks',name:'Brain Boost',sign:'Brain Boost',color:'#7A4DE0',open:true,npc:{name:'Professor Hoot',e:'🦉'},
+   blurb:'Six maths islands to explore',
+   intro:['Hoo-hoo! Welcome to Brain Boost!','Every island out there is a maths topic. Sail to an island, then clear its levels one by one.','Each answer you get right first time earns a coin 🪙 for your farm.'],
+   topics:['tricks','patterns','fractions','compare','models','age']},
+  {id:'soon1',name:'New School',sign:'New School',color:'#0B8F80',open:false,npc:{name:'Tilly the Turtle',e:'🐢'},blurb:'Opening soon',topics:[]},
+  {id:'soon2',name:'New School',sign:'New School',color:'#E07A1F',open:false,npc:{name:'Leo the Lion',e:'🦁'},blurb:'Opening soon',topics:[]},
+  {id:'soon3',name:'New School',sign:'New School',color:'#D93652',open:false,npc:{name:'Pip the Penguin',e:'🐧'},blurb:'Opening soon',topics:[]}
+];
 const DUNGEONS=[
-  {id:'tricks',name:'Brain Boost',sign:'Brain Boost',color:'#7A4DE0',open:true,
+  {id:'tricks',school:'tricks',name:'Calculation Tricks',sign:'Calculation Tricks',color:'#7A4DE0',open:true,
    npc:{name:'Professor Hoot',e:'🦉'},blurb:'Shortcuts that make big sums tiny',
    grades:{
-   p1:null,   // P1 副本: content to be planned (max 6 levels, one per stone on the island)
-   p3:{
-   intro:['Hoo-hoo! Welcome to my Trick Shop.','In here, we never add numbers one by one. We hunt for shortcuts that make big sums tiny.','Clear a level to open the next one. The Trick Master boss waits at the end!'],
+   p1:{
+   intro:['Hoo-hoo! Welcome to my Trick Shop.','We don\'t add numbers one by one here. We look for clever shortcuts!','Clear a level to open the next one. More levels are coming soon!'],
    levels:[
-    {id:'t1',name:'Friends of 100',count:5,gen:i=>qFriends(i>=2&&i%2===0),
-     intro:['Some numbers are best friends: together they make 100. Like <span class="ex">37 + 63 = 100</span>.',
-            'Here\'s a secret: the ones digits make 10 (7 + 3), and the tens make 9 (3 + 6).',
-            'In <span class="ex">37 + 48 + 63 + 52</span>, find the friends first: 37 + 63 = 100 and 48 + 52 = 100. So the answer is 200!',
-            'Tap two numbers to make a friend pair, then add up what you have.']},
-    {id:'t2',name:'Round and Fix',count:5,gen:()=>qRound(),
-     intro:['Numbers like 99 and 198 are almost round. Round numbers are easy to add!',
-            'To add 99, add 100 and take 1 away: <span class="ex">356 + 99 = 356 + 100 − 1 = 455</span>.',
-            'To take away 98, take away 100, then give 2 back: <span class="ex">523 − 98 = 523 − 100 + 2 = 425</span>.',
-            'Remember: if you took away too much, give it back!']},
-    {id:'t3',name:'Multiplying Partners',count:5,gen:i=>qPartners(i===4),
-     intro:['Some numbers are magic partners when you multiply: <span class="ex">25 × 4 = 100</span> <span class="ex">5 × 2 = 10</span> <span class="ex">125 × 8 = 1000</span>.',
-            'In <span class="ex">25 × 13 × 4</span>, multiply the partners first: 25 × 4 = 100. Then 100 × 13 = 1300.',
-            'You can multiply in any order, so the partners can be far apart. Hunt them down!']},
-    {id:'t4',name:'Pair Them Up',count:5,gen:i=>qPairUp(['a','b','d','c','a'][i]),
-     intro:['Look at <span class="ex">20 − 19 + 18 − 17 + … + 2 − 1</span>. So many numbers!',
-            'Pair them up: (20 − 19) = 1, (18 − 17) = 1 … every pair makes 1.',
-            'There are 20 numbers, so there are 10 pairs. The answer is 10!',
-            'Count the numbers, then halve it to count the pairs.']},
-    {id:'t5',name:'Zero Boxes',count:5,gen:i=>[qZeroBox,qWorksheet,()=>qGroup4('down'),()=>qGroup4('up'),()=>qGroup4('down')][i](),
-     intro:['Now the signs go <span class="ex">+ − − +</span> and then repeat.',
-            'Like <span class="ex">10 − 9 − 8 + 7 + 6 − 5 − 4 + 3 + 2 − 1</span>.',
-            'Each group of 4 makes 0! <span class="ex">(10 − 9 − 8 + 7) = 0</span>. I call them zero boxes.',
-            'Pack the zero boxes, and only the leftovers matter. Let\'s try!']},
-    {id:'t6',name:'Boss: Trick Master',count:8,boss:true,set:bossSet,
-     intro:['This is the Trick Master challenge!','All the tricks are mixed up. Read each question and choose the right trick.','You have 3 hearts. Good luck, hunter!']}
+    {id:'c1-1',name:'Best Friend Pairs',count:5,gen:i=>i===4?qTenWorksheet():qTenFriends([2,3,3,4][i]),
+     intro:['Some numbers are best friends: together they make a round ten!',
+            '<span class="ex">6 + 4 = 10</span> <span class="ex">12 + 8 = 20</span> <span class="ex">19 + 21 = 40</span>',
+            'Look at the ones: 6 and 4 make 10. 2 and 8 make 10. 9 and 1 make 10.',
+            'Tap two best friends to join them. When everyone has a friend, add up the tens!']},
+    {id:'c1-2',name:'Hat and Cloak',count:5,gen:i=>i===4?qHatWorksheetP1():qHatsP1([2,3,3,4][i]),
+     intro:['99 and 98 are almost 100. Let\'s dress them up!',
+            'Put a hat on 98 and it grows into 100. Its cloak remembers the 2 we added: <span class="ex">98 = 100 − 2</span>',
+            'Add up the hundreds first, then take off the cloaks.',
+            '<span class="ex">99 + 98 = 100 + 100 − 1 − 2 = 197</span>']},
+    {id:'c1-3',name:'Coming soon',soon:true},
+    {id:'c1-4',name:'Coming soon',soon:true},
+    {id:'c1-5',name:'Coming soon',soon:true},
+    {id:'c1-6',name:'Coming soon',soon:true},
+    {id:'c1-7',name:'Coming soon',soon:true},
+    {id:'c1-8',name:'Coming soon',soon:true},
+    {id:'c1-9',name:'Coming soon',soon:true},
+    {id:'c1-10',name:'Coming soon',soon:true},
+   ]},
+   p3:{
+   intro:['Hoo-hoo! Welcome to my Trick Shop.','In here, we never add numbers one by one. We hunt for shortcuts that make big sums tiny.','Clear a level to open the next one. More levels are coming soon!'],
+   levels:[
+    {id:'c3-1',name:'Best Friend Pairs',count:5,gen:i=>i===4?qFriendsWorksheet():qBestFriends([['add','same'],['add','neg'],['add','same','neg'],['add','neg','same'],null][i]),
+     intro:['Some numbers are best friends: together they make a round number!',
+            '<span class="ex">785 + 215 = 1000</span> The ones make 10, the tens make 9, and the hundreds make 9.',
+            'Friends can share a minus sign too: <span class="ex">+349 − 249 = +100</span> <span class="ex">−36 − 364 = −400</span>',
+            'Tap two best friends to join them. When everyone has a friend, add up the round numbers!']},
+    {id:'c3-2',name:'Hat and Cloak',count:5,gen:i=>i===4?qHatWorksheet():qHatCloak([3,3,4,4][i],[3,4,5,6][i]),
+     intro:['Numbers like 98 and 998 are almost round. Let\'s dress them up!',
+            'Put a hat on 98 and it grows into 100. Its cloak remembers the 2 we added: <span class="ex">98 = 100 − 2</span>',
+            'Add up all the round numbers first, then take off the cloaks.',
+            '<span class="ex">98 + 998 = 100 + 1000 − 2 − 2 = 1094</span>']},
+    {id:'c3-3',name:'Coming soon',soon:true},
+    {id:'c3-4',name:'Coming soon',soon:true},
+    {id:'c3-5',name:'Coming soon',soon:true},
+    {id:'c3-6',name:'Coming soon',soon:true},
+    {id:'c3-7',name:'Coming soon',soon:true},
+    {id:'c3-8',name:'Coming soon',soon:true},
+    {id:'c3-9',name:'Coming soon',soon:true},
+    {id:'c3-10',name:'Coming soon',soon:true},
    ]}}},
-  {id:'patterns',name:'Patterns & Sequences',sign:'Pattern Garden',color:'#0B8F80',open:false,npc:{name:'Tilly the Turtle',e:'🐢'},blurb:'Opening soon',grades:{}},
-  {id:'words',name:'Word Problem Quests',sign:'Word Problem Quests',color:'#E07A1F',open:false,npc:{name:'Leo the Lion',e:'🦁'},blurb:'Opening soon',grades:{}},
-  {id:'fractions',name:'Fraction Bakery',sign:'Fraction Bakery',color:'#D93652',open:false,npc:{name:'Pip the Penguin',e:'🐧'},blurb:'Opening soon',grades:{}}
+  /* Topics still to be written: add {intro, levels} under a grade to open the island (REQUIREMENTS.md §6.1). */
+  {id:'patterns',school:'tricks',name:'Number and Figure Patterns',sign:'Number and Figure Patterns',color:'#0B8F80',open:true,npc:{name:'Zara the Zebra',e:'🦓'},blurb:'Spot the rule, find what comes next',grades:{}},
+  {id:'fractions',school:'tricks',name:'Fractions',sign:'Fractions',color:'#D93652',open:true,npc:{name:'Otto the Octopus',e:'🐙'},blurb:'Halves, quarters and more',grades:{}},
+  {id:'compare',school:'tricks',name:'Comparison and Replacement',sign:'Comparison and Replacement',color:'#E07A1F',open:true,npc:{name:'Felix the Fox',e:'🦊'},blurb:'Swap one thing for another to solve it',grades:{}},
+  {id:'models',school:'tricks',name:'Mastering Models',sign:'Mastering Models',color:'#2F7FD6',open:true,npc:{name:'Benny the Beaver',e:'🦫'},blurb:'Draw bar models to crack word problems',grades:{}},
+  {id:'age',school:'tricks',name:'Age Problems',sign:'Age Problems',color:'#8B5CF6',open:true,npc:{name:'Dino the Dinosaur',e:'🦕'},blurb:'How old will they be?',grades:{}}
 ];
+const schoolById=id=>SCHOOLS.find(s=>s.id===id);
+/* The daily 10-minute practice: two levels, 5 questions each. Today's Tasks ask for these. */
+const DAILY_LEVELS={p1:['c1-1','c1-2'],p3:['c3-1','c3-2']};
 const gradeOf=p=>p&&GRADES.some(g=>g.id===p.grade)?p.grade:DEFAULT_GRADE;
 const gradeName=id=>(GRADES.find(g=>g.id===id)||{}).name||id;
 /* A school as one grade sees it: base info + that grade's intro/levels.

@@ -1,4 +1,4 @@
-/* Happy Math Farm — shared styles for every page. See REQUIREMENTS.md §5 for the design tokens. */
+/* Happy Learning Farm — shared styles for every page. See REQUIREMENTS.md §5 for the design tokens. */
 :root{
   --bg:#0C1330; --surface:#16214A; --ink:#EEF2FF; --muted:#A3B2DC; --line:#2E3E78;
   --plus:#3EE6C5; --plus-bg:#0F3A3C; --minus:#FF6B81; --minus-bg:#43192A;
@@ -414,3 +414,159 @@ body.fullworld .dock>:first-child{margin-left:auto}body.fullworld .dock>:last-ch
 main{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 @media (min-width:1100px){main{max-width:1040px}}
 @media (max-width:520px){body.fullworld .top .title{font-size:0}}   /* no room for the title next to the stats; the 3D sign says where you are */
+/* game pointer label (engine3d.js setPointer) and farm paint mode (plaza.js) */
+.gtip{position:fixed;z-index:20;pointer-events:none;padding:5px 12px;border-radius:999px;font-weight:600;font-size:15px;white-space:nowrap;
+  background:rgba(12,19,48,.9);color:var(--gold-hi);border:1.5px solid var(--gold);box-shadow:0 6px 16px rgba(0,0,0,.35);opacity:0;transition:opacity .12s}
+.gtip.show{opacity:1}
+.paintbar{position:absolute;z-index:3;left:50%;transform:translateX(-50%);top:calc(env(safe-area-inset-top,0px) + 130px);display:none;max-width:calc(100% - 24px);text-align:center;
+  padding:8px 16px;border-radius:999px;font-weight:600;background:linear-gradient(180deg,#FFE793,#F7BE3E);color:#3A2300;box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.paintbar.show{display:block}
+body:not(.fullworld) .paintbar{top:64px}
+/* entries to the Art Studio: top-bar 🎨 button and the farm's paint button */
+.pill.artpill{padding:4px;width:42px;height:42px;justify-content:center;font-size:21px;background:linear-gradient(180deg,#B794FF,#7A4DE0);border:2px solid var(--gold);box-shadow:0 0 14px rgba(183,148,255,.45)}
+.top .pill:not(.artpill){max-width:150px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.dock .b.paintbtn{background:linear-gradient(180deg,#C7A6FF,#8B5CF6);color:#fff;border:2px solid var(--gold);text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.dock .b.paintbtn.on{background:linear-gradient(180deg,#FFE793,#F7BE3E);color:#3A2300;text-shadow:none;animation:paintpulse 1.2s ease-in-out infinite}
+@keyframes paintpulse{50%{box-shadow:0 0 0 4px rgba(245,194,76,.35),0 0 22px rgba(245,194,76,.6)}}
+@media (max-width:440px){.top .pill:not(.artpill){max-width:120px}}
+/* game pointer (engine3d.js): replaces the system cursor over 3D scenes */
+canvas[data-cur="game"]{cursor:none}
+.gptr{position:fixed;left:0;top:0;z-index:30;width:44px;height:44px;pointer-events:none;opacity:0;transition:opacity .12s;will-change:transform;filter:drop-shadow(0 4px 6px rgba(0,0,0,.45))}
+.gptr.show{opacity:1}
+.gptr .pico{display:block;width:44px;height:44px;transform-origin:var(--hx) var(--hy);transition:transform .12s}
+.gptr .pico svg{display:block;width:100%;height:100%}
+.gptr .pring{position:absolute;left:calc(var(--hx) - 17px);top:calc(var(--hy) - 17px);width:34px;height:34px;border-radius:50%;border:3px dashed #FFD447;box-shadow:0 0 12px rgba(255,212,71,.6);opacity:0;transition:opacity .15s}
+.gptr[data-state="select"] .pring,.gptr[data-state="paint"] .pring{opacity:1;animation:pspin 2.4s linear infinite}
+.gptr[data-state="paint"] .pring{border-color:#FF8FC0;box-shadow:0 0 12px rgba(255,92,138,.6)}
+@keyframes pspin{to{transform:rotate(360deg)}}
+.gptr[data-state="select"] .pico{transform:scale(1.08)}
+.gptr.press .pico{transform:scale(.84)}
+.gptr .pbadge{position:absolute;right:-2px;bottom:0;display:none;font-style:normal;line-height:1}
+.gptr[data-state="locked"] .pbadge,.gptr[data-state="drag"] .pbadge{display:block}
+.gptr[data-state="locked"] .pbadge::after{content:"🔒";font-size:16px}
+.gptr[data-state="drag"] .pbadge::after{content:"⟲";font-size:22px;font-weight:700;color:#FFD447;text-shadow:0 0 3px #0C1330,0 0 3px #0C1330,0 0 3px #0C1330}
+.gptr.tap{animation:ptap .75s ease-out forwards}
+.gptr.tap::after{content:"";position:absolute;left:calc(var(--hx) - 20px);top:calc(var(--hy) - 20px);width:40px;height:40px;border-radius:50%;border:3px solid #FFD447;animation:pripple .6s ease-out forwards}
+@keyframes ptap{0%{opacity:0}15%,75%{opacity:1}100%{opacity:0}}
+@keyframes pripple{from{transform:scale(.3);opacity:1}to{transform:scale(1.7);opacity:0}}
+@media (prefers-reduced-motion:reduce){.gptr .pring{animation:none!important}}
+
+/* ---------- farm screen HUD (plaza.js farmHud): warm wood and cream, like a cosy farm game ---------- */
+.fhud{position:fixed;z-index:4;top:calc(env(safe-area-inset-top,0px) + 10px);left:calc(env(safe-area-inset-left,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 10px);
+  display:flex;justify-content:space-between;align-items:flex-start;gap:10px;pointer-events:none}
+.fhud>*{pointer-events:auto}
+.fcard{display:flex;align-items:center;gap:10px;min-width:0;max-width:min(380px,58vw);padding:6px 18px 6px 6px;border-radius:44px 22px 22px 44px;cursor:pointer;font:inherit;color:#FFF6E3;text-align:left;
+  background:linear-gradient(180deg,#A56A3B,#6E4020);border:3px solid #F2C46B;box-shadow:inset 0 2px 0 rgba(255,255,255,.25),inset 0 -3px 0 rgba(0,0,0,.2),0 6px 16px rgba(0,0,0,.35)}
+.fav{flex:none;width:62px;height:62px;border-radius:50%;display:grid;place-items:center;overflow:hidden;font-size:40px;line-height:1;
+  background:radial-gradient(circle at 50% 35%,#FFF6E3,#F2D3A0);border:3px solid #F2C46B;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.fav .ico{width:.95em;height:.95em}
+.fmeta{min-width:0;flex:1}
+.fname{display:block;font-size:19px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+.flvl{display:flex;align-items:center;gap:6px;margin-top:4px;font-weight:700;font-size:15px}
+.fstar{filter:drop-shadow(0 1px 1px rgba(0,0,0,.4))}
+.fxp{flex:1;min-width:70px;height:13px;border-radius:99px;background:#3E2410;border:2px solid #2A170A;overflow:hidden}
+.fxp i{display:block;height:100%;border-radius:99px;background:linear-gradient(180deg,#B5F27E,#4CB33A)}
+.fright{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:8px}
+.fpill{display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border-radius:99px;font-weight:700;font-size:17px;color:#FFF6E3;
+  background:linear-gradient(180deg,#5B3A20,#3E2410);border:2px solid #F2C46B;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+.fround{flex:none;width:46px;height:46px;border-radius:50%;cursor:pointer;font-size:22px;line-height:1;
+  background:linear-gradient(180deg,#5B3A20,#3E2410);border:2px solid #F2C46B;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+.fround.art{background:linear-gradient(180deg,#C7A6FF,#7A4DE0);box-shadow:0 0 14px rgba(183,148,255,.55),0 4px 10px rgba(0,0,0,.3)}
+body.fullworld .wtop.farmtop{top:calc(env(safe-area-inset-top,0px) + 92px);align-items:flex-start}
+/* Today's Tasks */
+.tasks{width:min(260px,48vw);border-radius:18px;overflow:hidden;color:#4A2E14;background:#FFF6E3;border:3px solid #A56A3B;box-shadow:0 8px 20px rgba(0,0,0,.3)}
+.tasks-head{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;padding:8px 12px;border:none;cursor:pointer;font:inherit;font-weight:700;font-size:16px;color:#FFF6E3;
+  background:linear-gradient(180deg,#A56A3B,#6E4020)}
+.tasks-head b{background:#3E2410;border-radius:99px;padding:1px 9px;font-size:14px;color:#FFD447}
+.tasks-list{padding:2px 10px 6px}
+.tasks.closed .tasks-list{display:none}
+.task{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px dashed #E2C9A0;font-size:15px;font-weight:600}
+.task:last-child{border-bottom:none}
+.task .te{font-size:20px;line-height:1}.task .tn{flex:1;line-height:1.2}.task b{color:#D2553A}
+.task.ok b{color:#2FA36B;font-size:18px}.task.ok .tn{opacity:.55;text-decoration:line-through}
+/* virtual joystick */
+.joy{position:fixed;z-index:4;left:calc(env(safe-area-inset-left,0px) + 16px);bottom:calc(env(safe-area-inset-bottom,0px) + 82px);width:150px;height:150px;touch-action:none;user-select:none;-webkit-user-select:none}
+.joy-ring{position:absolute;inset:0;border-radius:50%;cursor:grab;
+  background:radial-gradient(circle at 50% 38%,rgba(130,200,255,.5),rgba(22,64,130,.62) 72%);border:4px solid rgba(170,220,255,.9);
+  box-shadow:0 0 0 3px rgba(12,19,48,.35),0 0 26px rgba(90,170,255,.5),inset 0 0 20px rgba(255,255,255,.25);-webkit-backdrop-filter:blur(4px);backdrop-filter:blur(4px)}
+.joy.on .joy-ring{cursor:grabbing;border-color:#FFD447;box-shadow:0 0 0 3px rgba(12,19,48,.35),0 0 30px rgba(255,212,71,.55),inset 0 0 20px rgba(255,255,255,.25)}
+.joy-cross{position:absolute;inset:0}
+.joy-cross::before,.joy-cross::after{content:"";position:absolute;left:50%;top:50%;border-radius:18px;background:rgba(10,28,70,.5);box-shadow:inset 0 2px 6px rgba(0,0,0,.35)}
+.joy-cross::before{width:36%;height:74%;transform:translate(-50%,-50%)}
+.joy-cross::after{width:74%;height:36%;transform:translate(-50%,-50%)}
+.ja{position:absolute;width:0;height:0;border:9px solid transparent;opacity:.8;transition:opacity .15s,filter .15s}
+.ja.up{top:7px;left:50%;margin-left:-9px;border-top:0;border-bottom:12px solid #EAF6FF}
+.ja.dn{bottom:7px;left:50%;margin-left:-9px;border-bottom:0;border-top:12px solid #EAF6FF}
+.ja.lf{left:7px;top:50%;margin-top:-9px;border-left:0;border-right:12px solid #EAF6FF}
+.ja.rt{right:7px;top:50%;margin-top:-9px;border-right:0;border-left:12px solid #EAF6FF}
+.joy[data-dir="up"] .ja.up,.joy[data-dir="dn"] .ja.dn,.joy[data-dir="lf"] .ja.lf,.joy[data-dir="rt"] .ja.rt{opacity:1;filter:drop-shadow(0 0 6px #FFD447)}
+.joy-knob{position:absolute;left:50%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle at 35% 30%,#B5DEFF,#2F7BFF 55%,#1A4FC2);border:3px solid #DDF0FF;box-shadow:0 6px 14px rgba(0,0,0,.45),inset 0 -5px 9px rgba(0,0,0,.25),inset 0 4px 6px rgba(255,255,255,.4)}
+.joy:not(.on) .joy-knob{transition:transform .3s cubic-bezier(.3,1.7,.5,1)}
+.joy-tip{position:absolute;left:118px;bottom:132px;width:max-content;max-width:230px;padding:10px 14px;border-radius:16px;font-weight:600;font-size:15px;line-height:1.3;color:#fff;
+  background:linear-gradient(180deg,#3E86F5,#2563D9);border:2px solid #CFE3FF;box-shadow:0 8px 18px rgba(0,0,0,.3);pointer-events:none;animation:tipbob 1.6s ease-in-out infinite}
+.joy-tip::after{content:"";position:absolute;left:18px;bottom:-11px;border:10px solid transparent;border-bottom:0;border-top-color:#2563D9}
+@keyframes tipbob{50%{transform:translateY(-4px)}}
+/* backpack */
+.bag{position:fixed;z-index:4;right:calc(env(safe-area-inset-right,0px) + 16px);bottom:calc(env(safe-area-inset-bottom,0px) + 84px);width:76px;height:76px;border-radius:50%;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;font-size:32px;line-height:1;color:#FFF6E3;
+  background:radial-gradient(circle at 50% 35%,#2E4C7E,#12244A);border:3px solid #F2C46B;box-shadow:0 8px 18px rgba(0,0,0,.35)}
+.bag span{font-size:12px;font-weight:700;margin-top:2px}
+body.sheeton .joy,body.sheeton .bag{display:none}
+@media (max-width:520px){
+  .fcard{padding-right:12px}.fav{width:50px;height:50px;font-size:32px}.fname{font-size:16px}
+  .fpill{padding:4px 10px;font-size:15px}.fround{width:40px;height:40px;font-size:19px}
+  body.fullworld .wtop.farmtop{top:calc(env(safe-area-inset-top,0px) + 118px)}
+  .joy{width:126px;height:126px}.joy-knob{width:52px;height:52px;margin:-26px 0 0 -26px}.joy-tip{left:96px;bottom:112px;max-width:180px;font-size:14px}
+  .bag{width:64px;height:64px;font-size:26px}
+}
+.flvl,.tasks-head span{white-space:nowrap}
+@media (max-width:520px){.fxp{min-width:44px}.tasks{width:min(210px,52vw)}.tasks-head{font-size:14px;padding:7px 10px}.task{font-size:13px}}
+
+/* farm side buttons: Places menu, Paint and Backpack (the farm has no bottom bar, like the reference picture) */
+.sidebtns{position:fixed;z-index:4;right:calc(env(safe-area-inset-right,0px) + 14px);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);display:flex;flex-direction:column;align-items:center;gap:12px}
+.sbtn{width:66px;height:66px;border-radius:50%;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:27px;line-height:1;color:#FFF6E3;
+  background:radial-gradient(circle at 50% 35%,#2E4C7E,#12244A);border:3px solid #F2C46B;box-shadow:0 8px 18px rgba(0,0,0,.35)}
+.sbtn span{font-size:11px;font-weight:700;margin-top:3px}
+.sidebtns .sbtn.bag{position:static;right:auto;bottom:auto;width:78px;height:78px;font-size:32px}
+.sbtn.paintbtn{background:radial-gradient(circle at 50% 35%,#C7A6FF,#7A4DE0)}
+.sbtn.paintbtn.on{background:radial-gradient(circle at 50% 35%,#FFE793,#F7BE3E);color:#3A2300;animation:paintpulse 1.2s ease-in-out infinite}
+.places{position:fixed;z-index:5;right:calc(env(safe-area-inset-right,0px) + 96px);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);display:none;flex-direction:column;gap:8px;
+  padding:12px;border-radius:18px;max-height:70vh;overflow:auto;background:#FFF6E3;border:3px solid #A56A3B;box-shadow:0 10px 24px rgba(0,0,0,.35)}
+.places.open{display:flex}
+.places-title{color:#6E4020;font-size:16px;padding:0 4px}
+.places .b{justify-content:flex-start;text-align:left;white-space:nowrap;color:#FFF6E3;background:linear-gradient(180deg,#A56A3B,#6E4020);border:2px solid #F2C46B}
+.joy{bottom:calc(env(safe-area-inset-bottom,0px) + 18px)}
+body.sheeton .sidebtns,body.sheeton .places{display:none}
+@media (max-width:520px){.sbtn{width:56px;height:56px;font-size:23px}.sidebtns .sbtn.bag{width:64px;height:64px;font-size:26px}.sidebtns{gap:9px}.places{right:calc(env(safe-area-inset-right,0px) + 78px)}}
+/* P3 games (school.js): Best Friend Pairs coins and Hat and Cloak chips */
+.coin.neg{background:radial-gradient(circle at 35% 30%,#FFD1DA,#FF6B81 50%,#B8324A);color:#fff;box-shadow:0 0 0 2px #7A1F30,0 4px 10px rgba(0,0,0,.35)}
+.row.friends .coinwrap small{color:var(--muted);font-size:12px;white-space:nowrap}
+.row.hats{gap:6px;margin-top:30px;row-gap:30px}
+.plusjoin{font-size:22px;font-weight:700;color:var(--plus)}
+.chip.hatchip{position:relative;min-width:64px;height:66px;padding:0 10px}
+.chip.hatchip:not(.on){cursor:pointer;animation:hatwiggle 1.6s ease-in-out infinite}
+.chip.hatchip.on{border-color:var(--gold);background:linear-gradient(180deg,#3A2E6F,#1E1846);opacity:1}
+.chip.hatchip .hat{position:absolute;top:-22px;left:50%;transform:translateX(-50%) rotate(-8deg);font-size:26px;animation:hatdrop .35s ease-out;filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+.chip.hatchip .cloak{font-size:13px;font-weight:700;color:#FF8FA3;line-height:1}
+@keyframes hatdrop{from{transform:translate(-50%,-26px) rotate(-30deg);opacity:0}to{transform:translateX(-50%) rotate(-8deg);opacity:1}}
+@keyframes hatwiggle{0%,100%{transform:rotate(0)}50%{transform:rotate(-2deg) translateY(-2px)}}
+.lvchip.soon{opacity:.55}
+@media (prefers-reduced-motion:reduce){.chip.hatchip:not(.on){animation:none}}
+/* Today's Tasks: coins today, the chest and the streak (plaza.js tasksHTML) */
+.tasks-coins{margin-top:4px;padding:6px 4px 2px;font-size:14px;font-weight:700;color:#8A5A10;border-top:1px dashed #E2C9A0}
+.tasks .b.chestbtn{display:block;width:100%;margin:6px 0 2px;min-height:44px;font-size:16px;background:linear-gradient(180deg,#FFE793,#F7BE3E);color:#3A2300;border:2px solid #A56A3B;animation:paintpulse 1.2s ease-in-out infinite}
+.tasks-end{margin-top:6px;padding:8px 4px 2px;text-align:center;font-weight:700;color:#2F7A36;border-top:1px dashed #E2C9A0}
+.tasks-end b{color:#D2553A;white-space:nowrap}
+.tasks-head.ready{background:linear-gradient(180deg,#F7BE3E,#C98A1C);animation:paintpulse 1.2s ease-in-out infinite}
+/* character picker (studio.js looksHTML) */
+.card.looks{margin-bottom:14px}
+.lookgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(86px,1fr));gap:10px}
+.lookbtn{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px 8px;border-radius:18px;cursor:pointer;font:inherit;color:var(--ink);
+  background:linear-gradient(180deg,#22336F,#141D42);border:2px solid var(--frame);transition:transform .12s}
+.lookbtn span{font-size:40px;line-height:1.1;filter:drop-shadow(0 3px 4px rgba(0,0,0,.4))}
+.lookbtn small{font-size:12px;font-weight:600;color:var(--muted);text-align:center;line-height:1.15}
+.lookbtn:hover{transform:translateY(-2px)}
+.lookbtn.on{border-color:var(--gold);background:linear-gradient(180deg,#5A3FA8,#2C1F66);box-shadow:0 0 0 3px rgba(245,194,76,.35),0 0 18px rgba(245,194,76,.4)}
+.lookbtn.on small{color:var(--gold-hi)}
+@media (max-width:440px){.lookgrid{grid-template-columns:repeat(4,1fr);gap:8px}.lookbtn span{font-size:32px}}

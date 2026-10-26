@@ -1,4 +1,4 @@
-/* Happy Math Farm — art: children's own pictures for their character and every icon.
+/* Happy Learning Farm — art: children's own pictures for their character and every icon.
    Pictures stay on this device (IndexedDB 'hmf-art'), one set per player; they are never uploaded.
    Loaded by every page right after core.js. HTML draws icons with ico(key, emoji);
    3D pages use iconSprite()/iconTex() in engine3d.js. See REQUIREMENTS.md §6.6. */
@@ -8,9 +8,9 @@ const npcKey=n=>'npc:'+n.name;
 
 /* Every picture a child can redraw, grouped for the Art Studio. key -> default emoji + name. */
 function artCatalog(){
-  const npcs=[MAYOR,MERCHANT,ELLIE,FARMER,ARTIST,...DUNGEONS.map(d=>d.npc)];
+  const npcs=[MAYOR,MERCHANT,ELLIE,FARMER,ARTIST,...SCHOOLS.map(d=>d.npc),...DUNGEONS.map(d=>d.npc)].filter((n,i,a)=>a.findIndex(m=>m.name===n.name)===i);
   return [
-    {id:'me',name:'🧑‍🌾 Me',items:[{key:'me',e:'🧑‍🌾',name:'My character'}]},
+    {id:'me',name:`${lookOf(cur()).e} Me`,items:[{key:'me',e:lookOf(cur()).e,name:'My own drawing'}]},
     {id:'seeds',name:'🥕 Crops',items:SEEDS.map(s=>({key:'seed:'+s.id,e:s.e,name:s.name}))},
     {id:'animals',name:'🐔 Animals',items:ANIMALS.map(a=>({key:'animal:'+a.id,e:a.e,name:a.name}))},
     {id:'goods',name:'🥚 Farm goods',items:ANIMALS.map(a=>({key:'prod:'+a.prod,e:a.pe,name:a.pn}))},
@@ -19,6 +19,7 @@ function artCatalog(){
     {id:'friends',name:'🦉 Friends',items:npcs.map(n=>({key:npcKey(n),e:n.e,name:n.name}))}
   ];
 }
+function artName(key){for(const g of artCatalog())for(const it of g.items)if(it.key===key)return it.name;return ''}
 function artOf(key,p){p=p||cur();const a=p&&ART[p.id];return a&&a[key]||null}
 function ico(key,e,p){const a=artOf(key,p);return a?`<img class="ico" src="${a.url}" alt="">`:e}
 const artCount=p=>Object.keys(ART[p.id]||{}).length;

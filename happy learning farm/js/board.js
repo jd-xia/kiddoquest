@@ -1,4 +1,4 @@
-/* Happy Math Farm — Progress Board (board.html): grown-up view of stars, accuracy and history. */
+/* Happy Learning Farm — Progress Board (board.html): grown-up view of stars, accuracy and history. */
 /* ---------- progress board ---------- */
 const pct=(a,b)=>b?Math.round(a/b*100):null;
 const when=t=>new Date(t).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
@@ -7,9 +7,9 @@ function rProgress(){
     const allQ=Object.values(p.lv).reduce((a,r)=>a+r.qs,0),allF=Object.values(p.lv).reduce((a,r)=>a+r.first,0);
     const cleared=Object.values(p.lv).filter(r=>r.stars>0).length;
     const schools=DUNGEONS.map(d=>dun(d.id,p)).filter(d=>d.open);
-    const maxStars=schools.reduce((a,d)=>a+d.levels.length*3,0);
+    const maxStars=schools.reduce((a,d)=>a+playable(d).length*3,0),shownStars=schools.reduce((a,d)=>a+playable(d).reduce((b,l)=>b+((p.lv[l.id]||{}).stars||0),0),0);
     const weak=[],strong=[];
-    const rows=schools.map(D=>`<tr><th colspan="5" style="padding-top:14px;color:var(--ink)">${D.name}</th></tr>`+D.levels.map(l=>{
+    const rows=schools.map(D=>`<tr><th colspan="5" style="padding-top:14px;color:var(--ink)">${D.name}</th></tr>`+playable(D).map(l=>{
       const r=p.lv[l.id];
       if(!r)return `<tr><td>${l.name}</td><td class="muted" colspan="4">Not started</td></tr>`;
       const a=pct(r.first,r.qs);
@@ -26,7 +26,7 @@ function rProgress(){
       <p>Grade: ${GRADES.map(g=>`<button class="b ${gradeOf(p)===g.id?'':'ghost'} sm" data-act="setGrade" data-id="${p.id}" data-g="${g.id}" aria-pressed="${gradeOf(p)===g.id}">${g.name}</button>`).join(' ')}
         <span class="muted">Each grade has its own levels in every school. Stars from other grades are kept.</span></p>
       <div class="kpis">
-        <div class="kpi"><b>${totalStars(p)}<small style="font-size:15px"> / ${maxStars}</small></b><span>Stars</span></div>
+        <div class="kpi"><b>${shownStars}<small style="font-size:15px"> / ${maxStars}</small></b><span>Stars</span></div>
         <div class="kpi"><b>${cleared}</b><span>Levels cleared</span></div>
         <div class="kpi"><b>${pct(allF,allQ)===null?'–':pct(allF,allQ)+'%'}</b><span>Right first try</span></div>
         <div class="kpi"><b>${Math.round(p.time/60)}</b><span>Minutes of maths</span></div>
