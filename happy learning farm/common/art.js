@@ -22,7 +22,7 @@ function artCatalog(){
 function artName(key){for(const g of artCatalog())for(const it of g.items)if(it.key===key)return it.name;return ''}
 function artOf(key,p){p=p||cur();const a=p&&ART[p.id];return a&&a[key]||null}
 function ico(key,e,p){const a=artOf(key,p);return a?`<img class="ico" src="${a.url}" alt="">`:e}
-const artCount=p=>Object.keys(ART[p.id]||{}).length;
+const artCount=p=>Object.keys(ART[p.id]||{}).filter(k=>k!=='face'&&k!=='portrait').length;   // the 3D maker's photo face and portrait are not drawings
 
 /* ---------- storage ---------- */
 let ARTDB=null;

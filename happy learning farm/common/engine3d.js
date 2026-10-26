@@ -272,37 +272,13 @@ function fenceRect(x0,x1,z0,z1,step,color,parent){
     for(let k=0;k<=n;k++){const t=k/n;parent.add(mesh(rbox(.2,1.05,.2,.05),color,ax+(bx-ax)*t,.52,az+(bz-az)*t))}
     for(const y of[.36,.78]){const r=mesh(BOX(L,.1,.07),color,(ax+bx)/2,y,(az+bz)/2);r.rotation.y=-Math.atan2(bz-az,bx-ax);parent.add(r)}};
   side(x0,z0,x1,z0);side(x1,z0,x1,z1);side(x1,z1,x0,z1);side(x0,z1,x0,z0)}
+/* The player on the farm, the islands and in battle: their own drawing or an emoji character as a
+   stand-up cut-out, otherwise the big-head 3D kid from avatar3d.js (a preset or their own design). */
 function buildHero(f,showTag){
-  const L=lookOf(cur());
+  const p=cur(),L=lookOf(p);
   if(artOf('me'))return buildPaperHero(showTag);
-  if(!L.hero)return buildPaperHero(showTag,L.e);   // princess, unicorn, ninja…: a stand-up cut-out
-  const g=new THREE.Group(),shirt=(SHIRTS.find(s=>s[0]===f.shirt)||SHIRTS[0])[2],skin='#F5CBA7',pants='#34539E';
-  const legs=[],arms=[];
-  for(const s of[-1,1]){const pv=new THREE.Group();pv.position.set(s*.17,.64,0);pv.add(mesh(rbox(.25,.6,.27,.08),pants,0,-.3,0,{r:.7}));pv.add(mesh(rbox(.29,.16,.4,.07),'#5A3A22',0,-.58,.06,{r:.5}));g.add(pv);legs.push(pv)}
-  const body=new THREE.Group();g.add(body);
-  body.add(mesh(CYL(.31,.37,.74,20),shirt,0,1,0,{r:.65}));
-  body.add(mesh(SPH(.31,20,10),shirt,0,1.36,0,{r:.65}));
-  body.add(mesh(rbox(.42,.34,.12,.04),pants,0,.86,.31,{r:.7}));
-  for(const s of[-1,1]){const pv=new THREE.Group();pv.position.set(s*.42,1.3,0);pv.add(mesh(rbox(.19,.5,.21,.07),shirt,0,-.22,0,{r:.65}));pv.add(mesh(SPH(.115,12,10),skin,0,-.53,0,{r:.55}));body.add(pv);arms.push(pv)}
-  const head=new THREE.Group();head.position.y=1.82;body.add(head);
-  head.add(mesh(SPH(.44,28,20),skin,0,0,0,{r:.55}));
-  const hair=L.hero==='girl'?'#6B3A1E':'#4A2F1C';
-  head.add(mesh(new THREE.SphereGeometry(.455,28,16,0,Math.PI*2,0,Math.PI/2.25),hair,0,.03,-.035,{r:.6}));
-  if(L.hero==='girl'){   // long hair at the back, two pigtails with pink bows, and a fringe
-    const back=mesh(SPH(.46,22,16),hair,0,-.16,-.13,{r:.6});back.scale.set(1.02,1.15,.82);head.add(back);
-    for(const s of[-1,1]){head.add(mesh(SPH(.18,14,12),hair,s*.5,-.2,-.06,{r:.6}));const tail=mesh(SPH(.19,14,12),hair,s*.72,-.38,-.06,{r:.6});tail.scale.set(1,1.5,1);head.add(tail);   // pigtails reach past the hat brim
-      const bow=new THREE.Group();bow.position.set(s*.62,-.18,-.02);bow.scale.setScalar(1.4);for(const k of[-1,1]){const b=mesh(new THREE.ConeGeometry(.08,.16,10),'#FF6FA8',k*.07,0,0,{r:.4});b.rotation.z=k*Math.PI/2;bow.add(b)}bow.add(mesh(SPH(.045,8,6),'#FF3D8B'));head.add(bow)}
-    const fringe=mesh(SPH(.3,18,10),hair,0,.2,.25,{r:.6});fringe.scale.set(1.3,.45,.6);head.add(fringe)}
-  const eyes=[];
-  for(const s of[-1,1]){const e=new THREE.Group();e.position.set(s*.15,.04,.385);e.add(mesh(SPH(.075,12,10),'#FFFFFF',0,0,0,{r:.3}));e.add(mesh(SPH(.05,12,10),'#2A1B4A',0,0,.035,{r:.2}));
-    const gl=new THREE.Mesh(SPH(.016,6,6),new THREE.MeshBasicMaterial({color:'#fff',toneMapped:false}));gl.position.set(.015,.02,.08);e.add(gl);head.add(e);eyes.push(e);
-    head.add(mesh(SPH(.075,10,8),'#F7A1AE',s*.27,-.11,.33,{r:.8}))}
-  head.add(mesh(SPH(.045,8,6),'#EBA98A',0,-.04,.44));
-  const sm=mesh(new THREE.TorusGeometry(.085,.022,8,16,Math.PI),'#8A3B3B',0,-.13,.41);sm.rotation.z=Math.PI;head.add(sm);
-  head.add(buildHat(f.hat));
-  if(showTag!==false){const tag=labelSprite(cur().name,{bg:'rgba(214,150,30,.95)',fg:'#FFFFFF',border:'#FFF1B8',h:.45});tag.position.y=2.95;g.add(tag)}
-  g.add(shadowDisc(.5));
-  g.userData={legs,arms,body,head,eyes};return g;
+  if(!L.hero)return buildPaperHero(showTag,L.e);
+  return buildChibi(cfgFor(p),f,{showTag,player:p});
 }
 /* The child's own character drawing as a paper cut-out. Same userData shape as buildHero so animHero works. */
 function buildPaperHero(showTag,emoji){

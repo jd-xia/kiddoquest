@@ -13,9 +13,11 @@ const LOOKS=[
   {id:'witch',e:'🧙‍♀️',name:'Little witch'},{id:'astronaut',e:'🧑‍🚀',name:'Astronaut'},{id:'ninja',e:'🥷',name:'Ninja'},
   {id:'cat',e:'🐱',name:'Kitty'},{id:'bunny',e:'🐰',name:'Bunny'},{id:'dog',e:'🐶',name:'Puppy'},{id:'fox',e:'🦊',name:'Fox'},
   {id:'panda',e:'🐼',name:'Panda'},{id:'koala',e:'🐨',name:'Koala'},{id:'tiger',e:'🐯',name:'Tiger'},{id:'frog',e:'🐸',name:'Frog'},
-  {id:'chick',e:'🐥',name:'Chick'},{id:'unicorn',e:'🦄',name:'Unicorn'},{id:'dragon',e:'🐲',name:'Dragon'}];
-const lookOf=p=>LOOKS.find(l=>l.id===(p&&p.look))||LOOKS[1];
-const avE=p=>ico('me',lookOf(p).e,p);   // the player's own drawing, or the picked character
+  {id:'chick',e:'🐥',name:'Chick'},{id:'unicorn',e:'🦄',name:'Unicorn'},{id:'dragon',e:'🐲',name:'Dragon'},
+  {id:'me3d',e:'🧍',name:'My 3D me',hero:'custom'}];   // the child's own design from the Character Maker
+const lookOf=p=>{const L=LOOKS.find(l=>l.id===(p&&p.look));return L&&!(L.hero==='custom'&&!p.avatar3d)?L:LOOKS[1]};
+/* Profile picture: the child's own drawing, else the 3D portrait of their own design, else the character emoji. */
+const avE=p=>!artOf('me',p)&&lookOf(p).hero==='custom'&&artOf('portrait',p)?ico('portrait','🧍',p):ico('me',lookOf(p).e,p);
 const PRAISE=['Hoo-ray! Spot on.','Brilliant trick work!','Exactly right!','You\'re getting sharp!','Super hunter move!','Nailed it!'];
 
 /* ---------- data & saving ---------- */

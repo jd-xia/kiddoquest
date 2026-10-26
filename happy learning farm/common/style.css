@@ -570,3 +570,23 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .lookbtn.on{border-color:var(--gold);background:linear-gradient(180deg,#5A3FA8,#2C1F66);box-shadow:0 0 0 3px rgba(245,194,76,.35),0 0 18px rgba(245,194,76,.4)}
 .lookbtn.on small{color:var(--gold-hi)}
 @media (max-width:440px){.lookgrid{grid-template-columns:repeat(4,1fr);gap:8px}.lookbtn span{font-size:32px}}
+/* Character Maker (studio.js rMaker) */
+.mk-entry{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:12px 14px;margin-bottom:6px;border-radius:16px;
+  background:linear-gradient(135deg,rgba(139,92,246,.35),rgba(62,123,250,.25));border:1.5px solid var(--frame)}
+.maker{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.mk-world{position:relative;height:min(420px,56vh);border-radius:18px;overflow:hidden;background:#1F2D63;touch-action:none;cursor:grab}
+.mk-world canvas{display:block;width:100%!important;height:100%!important}
+.mk-hint{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:2;padding:4px 12px;border-radius:99px;font-size:13px;font-weight:600;background:rgba(12,19,48,.7);color:var(--gold-hi);pointer-events:none}
+.mk-side h4{margin:12px 0 6px;font-size:15px;color:var(--gold-hi)}
+.mk-side h4:first-child{margin-top:0}
+.mk-chips{display:flex;flex-wrap:wrap;gap:6px}
+.mk-chip{padding:7px 12px;border-radius:99px;cursor:pointer;font:inherit;font-weight:600;font-size:14px;color:var(--ink);background:linear-gradient(180deg,#22336F,#141D42);border:1.5px solid var(--frame)}
+.mk-chip.on{border-color:var(--gold);background:linear-gradient(180deg,#5A3FA8,#2C1F66);box-shadow:0 0 0 2px rgba(245,194,76,.35);color:var(--gold-hi)}
+.mk-sw{display:flex;flex-wrap:wrap;gap:7px}
+.mk-sw .swatchbtn{width:32px;height:32px}
+.mk-crop{position:fixed;inset:0;z-index:40;display:grid;place-items:center;padding:16px;background:rgba(5,8,22,.75)}
+.mk-crop .card{max-width:340px;text-align:center}
+#mkCropCv{width:100%;max-width:280px;aspect-ratio:1;border-radius:16px;touch-action:none;cursor:grab;background:#0C1330}
+.mk-zoom{display:flex;align-items:center;gap:8px;justify-content:center;margin:10px 0 2px;font-size:20px}
+.mk-zoom input{flex:1;max-width:220px;accent-color:#F5C24C}
+@media (max-width:720px){.maker{grid-template-columns:1fr}.mk-world{height:min(340px,46vh)}}
