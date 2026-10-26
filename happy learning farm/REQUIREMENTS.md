@@ -1,0 +1,316 @@
+# Happy Math Farm 快乐数学农场 · 需求与开发文档
+
+版本 2.0（多页面版） · 私人项目，不对外分享
+
+---
+
+## 1. 项目概述
+
+一个给孩子玩的数学学习游戏。孩子在 3D 农场广场上走动，进入各个"房子"：在学校里答题打怪赚金币，再用金币回农场种地、养动物、买装饰和衣服。家长可以在进度看板上查看每个孩子的星级、正确率和练习记录。
+
+- **用户**：孩子（主要玩家，默认两个存档 Jayden、Michelle，最多 6 个）；家长（看进度看板）。
+- **核心循环**：在学校答题 → 赚金币 → 回农场花金币 → 农场升级解锁新内容 → 想要更多金币 → 回学校答题。
+- **设计原则**：金币只能从学校获得，保证学习是游戏的唯一"收入来源"；答错不惩罚金币，只扣红心，并给出解题步骤。
+
+## 2. 运行方式与隐私
+
+### 2.1 运行
+
+各页面之间通过浏览器的 `localStorage` 共享存档，所以所有页面必须在同一个"来源"下打开：
+
+- **推荐**：在项目文件夹里启动一个本地服务器，然后访问 `http://localhost:8000`。
+  - Mac：双击 `start-server.command`
+  - Windows：双击 `start-server.bat`
+  - 或在命令行运行 `python3 -m http.server 8000`
+- **iPad / iPhone**：在 Safari 里打开后点「分享 → 添加到主屏幕」，从主屏幕打开时没有浏览器地址栏，游戏会真正全屏。
+- **也可以**：用 Chrome 或 Edge 直接双击 `index.html`。Safari 直接打开本地文件时，页面之间可能不共享存档，不推荐。
+
+### 2.2 离线与隐私
+
+- Three.js 及后期处理插件已放在 `vendor/` 里，不依赖 CDN，可以完全离线运行。
+- 唯一的外部请求是 Google Fonts（Fredoka、Lilita One）。离线时会自动退回系统字体，不影响功能。
+- 存档只保存在本机浏览器里，没有服务器，也不上传任何数据。
+- 孩子导入的图片只存在本机浏览器的 IndexedDB（库名 `hmf-art`）里，也不会参与云同步；换电脑或清除浏览器数据后需要重新导入。
+- `core.js` 里保留了 `initDb()` 云同步代码。它只在 claude.ai 发布环境里生效，本地运行时自动跳过。
+- 旧的单文件版本（claude.ai 链接）和本地版的存档互不相通。
+
+## 3. 目录结构
+
+```
+happy-math-farm/
+├── index.html            广场：选择玩家 + 3D 农场（入口页）
+├── school-tricks.html    Brain Boost 学校（关卡岛 + 战斗）
+├── market.html           农场市场（动物 / 装饰 / 服装）
+├── barn.html             谷仓（收获仓库 + 农场等级）
+├── board.html            进度看板（家长用）
+├── studio.html           创作工坊：孩子导入自己画的人物和 icon
+├── house-template.html   新房子模板（复制它来加新页面）
+├── common/
+│   ├── style.css         全局样式与设计变量
+│   ├── curriculum.js     题目生成器 + 学校与关卡定义（DUNGEONS）
+│   ├── core.js           存档、玩家、页面路由、对话框、农场数据表、通用按钮动作
+│   ├── art.js            孩子自己的图片：图片存储（IndexedDB）、ico()、可替换图标目录
+│   └── engine3d.js       3D 渲染器、后期处理、材质、通用模型（树、角色、标签）
+├── js/
+│   ├── plaza.js          广场页逻辑（农场世界、种地、动物、走路）
+│   ├── school.js         所有学校页共用：关卡岛、战斗、答题、结算
+│   ├── market.js         市场页
+│   ├── barn.js           谷仓页
+│   ├── board.js          进度看板页
+│   ├── studio.js         创作工坊页（导入图片、生成游戏风格贴纸）
+│   └── house-template.js 新房子模板脚本
+├── vendor/               Three.js r128 及后期处理插件（含许可证）
+├── start-server.command  Mac 启动脚本
+├── start-server.bat      Windows 启动脚本
+└── REQUIREMENTS.md       本文档
+```
+
+**脚本加载顺序（不能乱）**：vendor（仅 3D 页面）→ `curriculum.js` → `core.js` → `art.js` → `engine3d.js`（仅 3D 页面）→ 页面自己的 `js/*.js`。所有脚本共享全局作用域，所以不同文件里不能用 `const`、`let` 或 `function` 声明同名变量。
+
+## 4. 页面功能需求
+
+编号用于以后追踪改动。状态：✅ 已完成 · 🚧 进行中 · ⬜ 未开始。
+
+### 4.1 广场 index.html（js/plaza.js）
+
+| 编号 | 需求 | 状态 |
+|---|---|---|
+| PLZ-01 | 玩家选择页：显示所有玩家的星星和金币，可新建玩家（名字最长 16 字） | ✅ |
+| PLZ-02 | 3D 农场：点地面走路，左右拖动转镜头，按钮旋转和缩放，电脑上可用方向键或 WASD | ✅ |
+| PLZ-03 | 4 所学校的建筑：已开放的显示为学校，未开放的显示为工地，走进去提示"即将开放" | ✅ |
+| PLZ-04 | 走进建筑门口自动跳转到该建筑的页面；返回时角色站在门口 | ✅ |
+| PLZ-05 | 12 块田：初始 6 块，其余用金币逐块购买；可种植、浇水（加速 30%）、收获（每次 +4） | ✅ |
+| PLZ-06 | 动物圈：点击动物收集产物，有冷却时间 | ✅ |
+| PLZ-07 | 装饰物购买后出现在农场上，并成为走路障碍 | ✅ |
+| PLZ-08 | 农场等级 HUD（XP 进度条）；升级时由市长弹窗提示新解锁的内容 | ✅ |
+| PLZ-09 | NPC：市长 Bella、商人 Mo、记录员 Ellie、各学校老师，可对话 | ✅ |
+| PLZ-10 | 首次进入时播放玩法教学对话 | ✅ |
+| PLZ-11 | 底部快捷按钮：走向各建筑 | ✅ |
+| PLZ-12 | 新建玩家时选择年级（P1 / P3），玩家卡片上显示年级 | ✅ |
+| PLZ-13 | 学校建筑按当前玩家的年级显示：该年级没有关卡时显示为工地 | ✅ |
+| PLZ-14 | 可以一直拉远到看见整个农场：🗺️ 按钮一键切换全景/回到原视角；竖屏时全景会自动转 90°，让农场长边对着屏幕长边。最远距离按屏幕比例自动计算（`farmZoomMax()`） | ✅ |
+| PLZ-15 | 缩放方式：＋/－ 按钮、鼠标滚轮、触控板双指、触屏双指捏合（所有 3D 场景通用，见 engine3d.js） | ✅ |
+| PLZ-16 | 农场和关卡岛铺满整个窗口（电脑、iPad、iPhone），顶部栏和底部按钮浮在 3D 画面上，并避开刘海和底部横条 | ✅ |
+
+### 4.2 学校 school-tricks.html（js/school.js + curriculum.js）
+
+| 编号 | 需求 | 状态 |
+|---|---|---|
+| SCH-01 | 3D 关卡岛：每关一块石台，打通前一关才解锁下一关，石台上显示星级 | ✅ |
+| SCH-02 | 每关开始前，老师讲解本关技巧（可跳过） | ✅ |
+| SCH-03 | 题型：`input`（数字键盘作答）、`pair`（点两个数凑成目标）、`zerobox`（把相邻且和为 0 的数打包） | ✅ |
+| SCH-04 | 3 颗红心；答错扣 1 颗并显示解题步骤；红心扣完则闯关失败 | ✅ |
+| SCH-05 | 战斗表现：施法光球、命中闪光、冲击波、PERFECT 等弹字、顿帧、镜头前推；Boss 有血量 | ✅ |
+| SCH-06 | 结算：星数 = 剩余红心；金币 = 一次答对的题数 + 奖励 | ✅ |
+| SCH-11 | 按年级分副本：同一所学校对不同年级加载不同的关卡（见 §6.5） | ✅ |
+| SCH-12 | Brain Boost 学校 P1 副本（内容待规划） | ⬜ |
+| SCH-07 | Brain Boost 学校 P3 副本 6 关：Friends of 100、Round and Fix、Multiplying Partners、Pair Them Up、Zero Boxes、Boss: Trick Master | ✅ |
+| SCH-08 | 图形规律学校 Pattern Garden（🐢 Tilly） | ⬜ |
+| SCH-09 | 应用题学校 Word Problem Quests（🦁 Leo） | ⬜ |
+| SCH-10 | 分数面包房 Fraction Bakery（🐧 Pip） | ⬜ |
+
+### 4.3 市场 market.html（js/market.js）
+
+| 编号 | 需求 | 状态 |
+|---|---|---|
+| MKT-01 | 三个分页：动物、装饰、服装 | ✅ |
+| MKT-02 | 动物需要达到对应农场等级才能买，每种最多 3 只 | ✅ |
+| MKT-03 | 装饰每样只能买一次 | ✅ |
+| MKT-04 | 衣服和帽子买过之后可以随时换着穿，3D 角色同步更新 | ✅ |
+
+### 4.4 谷仓 barn.html（js/barn.js）
+
+| 编号 | 需求 | 状态 |
+|---|---|---|
+| BRN-01 | 显示农场等级与 XP 进度 | ✅ |
+| BRN-02 | 显示每种作物和动物产物的库存数量 | ✅ |
+| BRN-03 | 用库存兑换东西（例如卖给商人换金币、做成菜） | ⬜（需要先决定是否允许农场产出金币，见 §1 的设计原则） |
+
+### 4.5 进度看板 board.html（js/board.js）
+
+| 编号 | 需求 | 状态 |
+|---|---|---|
+| BRD-01 | 每个玩家的总星数、通关数、一次答对率 | ✅ |
+| BRD-02 | 每关的星级和正确率；正确率低于 70%（且至少做过 5 题）时标为"需要练习" | ✅ |
+| BRD-03 | 最近 60 次练习记录 | ✅ |
+| BRD-04 | 给玩家改名、删除玩家（删除需要点两次确认） | ✅ |
+| BRD-05 | 家长可切换玩家的年级；统计只算当前年级的关卡，其他年级的星星保留 | ✅ |
+
+### 4.6 创作工坊 studio.html（js/studio.js + common/art.js）
+
+| 编号 | 需求 | 状态 |
+|---|---|---|
+| ART-01 | 孩子可以用自己的图片替换：自己的人物、作物、动物、产物、装饰、帽子、NPC | ✅ |
+| ART-02 | 拍照或选图后，在本机自动生成游戏风格贴纸：去掉纸张背景、裁到画的内容、提亮颜色，加白边、金边和阴影 | ✅ |
+| ART-03 | 三种风格：贴纸、卡通（平涂色块 + 黑色描边）、像素 | ✅ |
+| ART-04 | 自己画的人物在农场、关卡岛和战斗里以"纸片人"形式出现，走路时会摇摆和弹跳 | ✅ |
+| ART-05 | 自定义图片在所有页面生效（HTML 图标和 3D 精灵都会替换），每个玩家各有一套 | ✅ |
+| ART-06 | 可以随时换回原来的图标（点两次确认）；删除玩家时一并删除 TA 的图片 | ✅ |
+| ART-07 | 鼓励创作：工坊显示"已画 X / 总数"进度，保存时 Polly 夸奖，进度看板显示"Pictures drawn" | ✅ |
+| ART-08 | 在 App 里直接画画：12 种颜色、3 种笔刷粗细、橡皮擦、撤销（也支持 Ctrl+Z，最多 15 步）、清空；画完后用同样的贴纸风格处理 | ✅ |
+| ART-09 | 已经有图片时打开画板，会把原图放进画板，可以在上面继续画（例如在照片上加帽子） | ✅ |
+
+## 5. 视觉规范
+
+风格定位是"夜色竞技场"：深海军蓝面板配金色边框，3D 场景色彩明亮，界面庄重。
+
+- **设计变量**（`common/style.css` 顶部的 `:root`）：`--bg #0C1330`、`--surface #16214A`、`--ink #EEF2FF`、`--muted #A3B2DC`、`--gold #F5C24C`、`--gold-hi #FFEFB0`、`--plus #3EE6C5`（正确、加号）、`--minus #FF6B81`（错误、减号）。
+- **字体**：标题、数字和题目用 Lilita One；正文和按钮用 Fredoka。
+- **按钮**：主按钮用金色渐变，底部有一条深色"厚度"，按下时下沉；次要按钮 `.b.ghost` 用深蓝底配金边；"下一题"按钮 `.big-next` 用青绿色。
+- **面板**：`.card`、`.item`、`.player` 等统一使用深蓝竖向渐变、金色细边和内高光。
+- **3D 画面**：ACES 色调映射、泛光（Bloom）、调色（饱和度、对比度、冷暗暖亮、暗角）、边缘光、随风摆动的草。不同场景的泛光强度由 `stage.bloom` 控制，边缘光颜色由 `stage.rim` 控制。
+- **性能保护**：平均帧率持续低于约 34 时，自动关闭泛光并把像素比降到 1.25（见 `postQuality()`）。
+- **全屏布局**：`core.js` 的 `render()` 在 town、dungeon 两个屏幕上给 body 加 `fullworld` class，`.world` 铺满窗口，`.top` 和 `.dock`（底部按钮条，可横向滑动）浮在上面；所有贴边元素都用 `env(safe-area-inset-*)` 避开刘海和底部横条。新的 3D 页面要全屏，就把底部按钮包进 `<div class="dock">`，并把屏幕名加进 `render()` 里的判断。
+- 内容页（市场、谷仓、看板、工坊）在大屏上最宽 1040px。
+- 新加的页面直接复用这些 class，不要另外写一套颜色。
+
+## 6. 扩展指南
+
+### 6.1 开放一所新学校（例如 Pattern Garden）
+
+1. 在 `common/curriculum.js` 里写题目生成函数，函数返回 `{type, html, answer, steps, say}` 格式的对象（参考 `qRound`）。
+2. 在 `DUNGEONS` 里找到 `patterns` 这一项，改成 `open:true`，再补上 `intro` 和 `levels`（参考 `tricks`）。
+3. 复制 `school-tricks.html` 为 `school-patterns.html`，把里面的 `data-page` 改成 `school-patterns.html`，`data-school` 改成 `patterns`。
+4. 这样就完成了。广场会自动把工地换成学校建筑，走进去就会打开新页面，进度看板也会自动统计新学校。
+5. 如果需要新的题型（不是 `input`、`pair`、`zerobox` 这三种），参考 §6.3。
+
+### 6.2 新增一间普通房子（例如手工坊）
+
+1. 复制 `house-template.html` 为 `workshop.html`，并把 `data-page` 改成 `workshop.html`；复制 `js/house-template.js` 为 `js/workshop.js`，并改好 HTML 最后一个 `<script>` 的路径。
+2. 在 `common/core.js` 的 `PAGES` 里加一行 `workshop:'workshop.html'`。
+3. 在 `js/plaza.js` 的 `buildFarmWorld()` 里放一个建筑模型，并完成两件事：
+   - 用 `markHit(g,{kind:'zone',id:'workshop'})` 让建筑可以点击；
+   - 在 `F.zones` 和 `F.baseObs` 里各加一项，分别是门口触发区和碰撞区（参考 barn 的写法）。
+4. 在 `triggerZone()` 里加一行 `else if(z.kind==='workshop')go('workshop');`。
+5. 如果需要底部快捷按钮：在 `rTown()` 的 `quick` 列表里加一项，并在 `core.js` 的 `ACT.quick` 映射里加上 `workshop`。
+
+### 6.3 新增题型
+
+题目对象里的 `type` 决定答题区怎么画：
+
+- 在 `js/school.js` 的 `rLevel()` 里加一个分支，生成答题区 HTML（参考 `pairHTML`、`zeroHTML`）。
+- 点击事件写成 `data-act="xxx"`，在 `school.js` 底部的 `Object.assign(ACT,{...})` 里注册。
+- 作答完成后统一调用 `submit(value)`，扣红心、发金币、播放动画都由它处理。
+
+### 6.4 新增种子、动物、装饰、服装
+
+改 `common/core.js` 里的 `SEEDS`、`ANIMALS`、`DECOR`、`SHIRTS`、`HATS` 数组即可，市场和谷仓会自动显示。
+
+- 新种子在农场上的 3D 模型在 `plaza.js` 的 `cropMesh()` 和 `readyCrop()` 里。
+- 新动物的模型在 `syncAnimals()` 一带。
+- 新装饰的模型在 `buildDecor()` 里，碰撞区在 `decorObstacles()` 里。
+
+### 6.5 年级与副本
+
+- 支持的年级在 `common/curriculum.js` 的 `GRADES` 里配置，目前是 P1、P3。加年级就在这里加一行。
+- `DEFAULT_GRADE` 是旧存档（没有 `grade` 字段）和新玩家的默认年级，目前是 `p3`（现有的计算技巧关卡属于 P3）。
+- 每所学校的关卡放在 `grades:{年级id:{intro, levels}}` 里。值为 `null` 或没有这一项，表示该年级还没开放，广场上显示为工地。
+- 关卡 id 必须在所有年级中唯一（存档 `Player.lv` 以关卡 id 为键），建议加年级前缀，例如 `p1t1`。
+- 每个副本最多 6 关（关卡岛上只有 6 块石台，见 `school.js` 的 `PLATS`）。
+- Boss 关用 `set:函数` 一次生成整套题（例如 `bossSet`），普通关用 `gen:i=>题目`。
+- 代码里统一用 `dun(id)` 取学校，它会按当前玩家的年级返回对应的关卡；看板用 `dun(id, 玩家)`。
+
+### 6.6 新增可以被孩子替换的图标
+
+- 在 `common/art.js` 的 `artCatalog()` 里加一项 `{key, e, name}`，工坊就会自动显示它。
+- HTML 里显示图标时，用 `ico(key, 默认emoji)` 代替直接写 emoji；3D 里用 `iconSprite(key, 默认emoji, 大小)` 代替 `emojiSprite`。
+- key 的格式：`me`、`seed:<id>`、`animal:<id>`、`prod:<产物id>`、`decor:<id>`、`hat:<id>`、`npc:<名字>`（用 `npcKey(npc)` 生成）。
+- 图片处理全部在 `js/studio.js` 里完成（`stylize()`）：输出 256×256 的 WebP（不支持时用 PNG），约 10 KB 一张。
+
+## 7. 架构说明
+
+### 7.1 页面路由
+
+- 每个页面在 `<body data-page="...">` 里声明自己的文件名，并在脚本末尾调用 `startPage({屏幕名: 渲染函数}, 默认UI)`。
+- 跳转统一用 `go(screen, extra)`：如果当前页面拥有这个屏幕，就直接渲染；否则把 `{screen, extra}` 存进 `sessionStorage['hmf-nav']`，然后跳到目标页面。目标页面启动时读取它，恢复到对应的屏幕。
+- 屏幕和文件的对应关系见 `core.js` 里的 `PAGES` 和 `pageFor()`。学校类屏幕（dungeon、level、result）会映射到 `school-<did>.html`。
+- 角色在广场上的位置（`LASTPOS`）存在 `sessionStorage['hmf-lastpos']`，用来实现"从哪个门出去，就从哪个门回来"。
+- 没有选择玩家时，任何页面都会自动跳回 `index.html`。
+
+### 7.2 按钮与键盘
+
+- 所有可点击元素都写成 `data-act="动作名"`，加上可选的 `data-id`、`data-i`。`core.js` 统一监听点击，再去 `ACT[动作名]` 里找处理函数。
+- 页面自己的动作用 `Object.assign(ACT,{...})` 添加。
+- 页面专属的键盘逻辑赋值给 `onPageKey`（例如广场的走路、学校的数字键）。
+
+### 7.3 3D 引擎（engine3d.js）
+
+- 全局只有一个渲染器 `G.r`。每个 3D 场景是一个 stage 对象，包含 `{scene, camera, update(dt), onTap, onDrag, rotate, zoom, leave, bloom, rim}`。
+- 用 `mountStage(stage, 容器)` 挂载场景，用 `unmountStage()` 卸载。
+- 后期处理链：`RenderPass` → `UnrealBloomPass` → 调色 `ShaderPass`（`GRADE`）。如果插件没有加载成功，自动退回普通渲染。
+- 常用材质函数：`mat(颜色, {r:粗糙度, m:金属度, e:自发光颜色, flat:平面着色})`，生成的材质会缓存，并自动带边缘光。
+- 常用模型函数：`rbox` 圆角盒、`roundTree`、`pine`、`cloud`、`buildHero`、`labelSprite`、`signPlane`。
+
+## 8. 数据模型与游戏数值
+
+### 8.1 存档结构（localStorage 键名 `mathstreet-v1`）
+
+```js
+DATA = { v:1, updated:时间戳, current:当前玩家id, players:[Player] }
+Player = { id, name, grade:'p1'|'p3', avatar, owned:[], gems:金币, seen:{已看过的教学},
+           lv:{ 关卡id:{stars, plays, clears, qs:答题数, first:一次答对数, last} },
+           sessions:[最近60次练习], time:总秒数,
+           farm:{ plots:[{crop, planted, watered}|null], unlocked:田数, animals:[], decor:[],
+                  shirt, hat, owned:[], xp, barn:{产物id:数量} } }
+```
+
+如果以后修改结构，要提高 `v` 的值，并在读取存档的地方写迁移逻辑，不要让旧存档失效。
+
+### 8.2 数值
+
+- **金币**：每题一次答对 +1。首次通关额外奖励 星数 × 5；重玩时如果星数提高，奖励新增的 星数差 × 5。
+- **星数**：通关时剩余的红心数（0 到 3）。
+- **农场等级**：第 L 级升到 L+1 级需要 20 × L 经验。
+- **田地**：初始 6 块，最多 12 块。第 n 块的价格是 12 + 4 × (已解锁数 − 6)。
+- **作物**：生长阶段按进度 15%、50%、100% 划分；浇水后生长时间变为原来的 70%；每次收获 +4。
+
+| 种子 | 价格 | 时长（分钟） | XP | 解锁等级 |
+|---|---|---|---|---|
+| 🥕 Carrot | 2 | 2 | 3 | 1 |
+| 🍅 Tomato | 4 | 4 | 5 | 1 |
+| 🌻 Sunflower | 5 | 5 | 6 | 2 |
+| 🍓 Strawberry | 6 | 6 | 8 | 3 |
+| 🌽 Corn | 8 | 8 | 10 | 4 |
+| 🎃 Pumpkin | 12 | 15 | 16 | 5 |
+
+| 动物 | 价格 | 解锁等级 | 产物 | 冷却（分钟） | XP |
+|---|---|---|---|---|---|
+| 🐔 Chicken | 20 | 2 | 🥚 | 3 | 4 |
+| 🐑 Sheep | 35 | 3 | 🧶 | 6 | 8 |
+| 🐄 Cow | 50 | 4 | 🥛 | 8 | 12 |
+
+- **装饰**：花坛 8、路灯 10、稻草人 12、苹果树 18、鸭塘 25、风车 40。
+- **服装**：衬衫 0 到 8 金币；帽子包括草帽 0、棒球帽 10、花冠 15、金冠 40。
+
+## 9. 功能待办（Backlog）
+
+按建议优先级排列，做完后把状态改掉，并在 §4 里补上编号。
+
+| 优先级 | 想法 | 备注 |
+|---|---|---|
+| 高 | 音效：出招、命中、答错、胜利号角、背景音乐开关 | 用 Web Audio 合成或嵌入短音频，需要提供静音按钮 |
+| 高 | 开放 Pattern Garden（找规律、数列） | 按 §6.1 操作 |
+| 中 | 英雄与怪物更精细的造型（盔甲、披风、武器、挥砍动作） | 在 engine3d.js 的 `buildHero` 和 school.js 的 `buildSlime` 里改 |
+| 中 | 谷仓兑换功能（BRN-03） | 先确定规则，不能破坏"金币只来自学校" |
+| 中 | 每日任务、连续登录奖励 | 存在 `Player.daily` 里 |
+| 中 | 中英双语切换 | 把界面文字抽到一个 `TEXT` 字典里 |
+| 低 | 开放 Word Problem Quests、Fraction Bakery | 按 §6.1 操作 |
+| 低 | 导出、导入存档（JSON 文件） | 方便换电脑 |
+| 低 | 家长设置：每次游戏时长提醒 | |
+
+## 10. 测试清单（每次改动后过一遍）
+
+1. 打开 `index.html` → 选择玩家 → 进入农场，控制台没有报错。
+2. 走进Brain Boost 学校 → 打开关卡岛 → 进入第 1 关 → 答对一题、答错一题 → 完成结算 → 金币增加。
+3. 点"Farm"回到广场，角色出现在学校门口。
+4. 依次走进市场、谷仓、看板，每个页面都正常显示，并且能返回广场。
+5. 买一样东西后回到广场，3D 场景里能看到它，金币数也对。
+6. 刷新任意页面，存档仍然在。
+7. 在手机宽度（≤ 440px）下检查布局，确认 3D 画面流畅、没有卡顿。
+
+## 11. 已知限制
+
+- Safari 直接打开本地文件时，页面之间可能不共享存档，需要用本地服务器运行。
+- 页面跳转会重新加载 3D 场景，有短暂的加载过程。
+- 正在答题时刷新学校页面，会回到关卡岛，当前这关的进度不会保留。
+- 3D 角色由基础几何体拼成；要达到商业手游的精细度，需要导入建模软件做的 glTF 模型（可以放进 `vendor/` 旁边的 `assets/` 目录）。
