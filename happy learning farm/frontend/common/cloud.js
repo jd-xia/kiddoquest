@@ -3,7 +3,8 @@
    Guest play never calls the server. */
 function cloudConfig(){
   const cfg=window.HMF_CLOUD||{};
-  return {googleClientId:cfg.googleClientId||'',authBase:String(cfg.authBase||'http://localhost:8080').replace(/\/$/,''),dataBase:String(cfg.dataBase||'http://localhost:8081').replace(/\/$/,'')};
+  const base=v=>v==null?'http://localhost:8000':String(v).replace(/\/$/,'');
+  return {googleClientId:cfg.googleClientId||'',authBase:base(cfg.authBase),dataBase:base(cfg.dataBase==null?cfg.authBase:cfg.dataBase)};
 }
 function cloudDefault(){return {session:null,mode:'guest',childId:null}}
 function cloudRead(){try{const c=JSON.parse(localStorage.getItem('hmf-cloud')||'null');if(c&&(c.mode==='guest'||c.mode==='account'))return Object.assign(cloudDefault(),c)}catch(e){}return cloudDefault()}
@@ -95,6 +96,7 @@ function cloudLoadGsi(){
 function cloudLogin(){
   if(DLG)return;const cfg=cloudConfig();
   if(!cfg.googleClientId){dialog(MAYOR,['Sign-in is not set up on this copy of the farm yet.','You can keep playing on this device. Nothing is sent anywhere.']);return}
+  if(!cfg.authBase){dialog(MAYOR,['This published farm does not have the laptop address yet.','Add the https address in cloud-config.js. You can keep playing on this device.']);return}
   cloudLoadGsi().then(()=>{const el=$('#dlg');if(!el)return;const email=cloudRead().session&&cloudRead().session.email;el.className='show';el.innerHTML=`<div class="dlg"><div style="flex:1"><div class="dlg-name">${cloudPickingAccount?'Switch account':'Sign in'}</div>
     <p>${cloudPickingAccount?`Choose a different email.${email?` <b>${esc(email)}</b> stays on this account.`:''} An email that is already linked cannot be moved.`:'Sign in with Google when you want saved farms. Playing here stays on this device until you tap Sync.'}</p><div id="gsi"></div>
     <div class="dlg-btns"><button class="b ghost sm" data-act="cloudClose">Not now</button></div></div></div>`;

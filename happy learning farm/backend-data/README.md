@@ -72,7 +72,7 @@ mvn spring-boot:run
 
 密钥必须和认证服务相同。农场服务只验签，不能自己签发登录令牌。
 
-默认数据库是 `./data/farm`。MySQL 使用 `--spring.profiles.active=mysql`，变量见 `.env.example`。
+默认数据库是 `./data/farm`。MySQL 使用 `--spring.profiles.active=mysql`，并设置 `FARM_DB_URL`、`FARM_DB_USERNAME` 和 `FARM_DB_PASSWORD`。
 
 游戏页面由 Compose 提供，地址是 `http://localhost:8000`。不启动这两个服务时，游戏仍然可以离线玩。链接 Google 并打开孩子的农场后，页面大约每一分钟把该农场保存到这里；未登录时不会上传。
 
@@ -82,7 +82,7 @@ mvn spring-boot:run
 docker compose up --build
 ```
 
-农场 API 在 `http://localhost:8081`。它会等认证服务健康检查通过后再启动，并使用同一个 `AUTH_JWT_SECRET`。
+农场 API 与认证服务共用 `http://localhost:8000`。Nginx 把 `/api/v1/children` 转到农场服务。它会等认证服务健康检查通过后再启动，并使用同一个 `AUTH_JWT_SECRET`。
 
 打包：
 

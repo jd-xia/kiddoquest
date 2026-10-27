@@ -1,8 +1,12 @@
 /* Public game settings. No secrets belong here.
-   Leave googleClientId empty and the farm never offers a working sign-in.
-   Login, opening a saved farm, Sync, and the once-a-minute save use these addresses. */
+   This laptop serves the game and both APIs at http://localhost:8000.
+   The page published at https://jd-xia.github.io uses HMF_SERVICE instead.
+   That value must be the laptop's public https address, with no trailing slash.
+   Leave it empty until the address exists. An https page cannot call an http service. */
+const HMF_SERVICE='';
+const HMF_API=(location.hostname==='jd-xia.github.io'?HMF_SERVICE:'http://localhost:8000').replace(/\/$/,'');
 window.HMF_CLOUD={
   googleClientId:'669511875089-psnjdrjcfl3v8pc7kktm11bu8a3aau7p.apps.googleusercontent.com',
-  authBase:'http://localhost:8080',
-  dataBase:'http://localhost:8081'
+  authBase:HMF_API,
+  dataBase:HMF_API
 };

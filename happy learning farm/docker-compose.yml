@@ -1,4 +1,5 @@
-# Starts the game page (8000), backend-openid (8080), and backend-data (8081).
+# Public address is http://localhost:8000 for the game, OpenID, and the farm API.
+# OpenID and the farm API stay on the Docker network (8080 and 8081).
 # From this directory: docker compose up --build
 # Override secrets by copying .env.example to .env.
 
@@ -45,6 +46,9 @@ services:
     volumes:
       - ./frontend:/usr/share/nginx/html:ro
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - openid
+      - farm
     restart: unless-stopped
 
 volumes:

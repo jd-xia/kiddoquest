@@ -64,7 +64,7 @@ mvn -q -DskipTests package
 java -jar target/backend-openid-1.0.0-SNAPSHOT.jar
 ```
 
-变量说明见 `backend/.env.example`。服务读取进程环境，不会自动加载 `.env` 文件。
+变量写在进程环境里。服务不会自动加载 `.env` 文件。用 Docker Compose 时，写在游戏目录的 `.env`（见同目录 `.env.example`）。
 
 两个服务一起启动时，在游戏目录执行：
 
@@ -72,7 +72,7 @@ java -jar target/backend-openid-1.0.0-SNAPSHOT.jar
 docker compose up --build
 ```
 
-游戏页面在 `http://localhost:8000`，认证服务在 `http://localhost:8080`。密钥和 Google Client ID 可写在游戏目录的 `.env`（见 `.env.example`）。未提供密钥时，Compose 使用仅供本机的默认值。
+游戏、登录和农场 API 都从 `http://localhost:8000` 进入。Nginx 把 `/api/v1/auth/` 转到认证服务。密钥和 Google Client ID 可写在游戏目录的 `.env`（见 `.env.example`）。未提供密钥时，Compose 使用仅供本机的默认值。
 
 ## 测试
 
