@@ -590,3 +590,9 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .mk-zoom{display:flex;align-items:center;gap:8px;justify-content:center;margin:10px 0 2px;font-size:20px}
 .mk-zoom input{flex:1;max-width:220px;accent-color:#F5C24C}
 @media (max-width:720px){.maker{grid-template-columns:1fr}.mk-world{height:min(340px,46vh)}}
+.camctl button.on{background:linear-gradient(180deg,#FFE793,#F7BE3E);box-shadow:0 0 0 2px #F5C24C,0 0 14px rgba(245,194,76,.5)}
+.cloudbar{margin:18px 0;padding:14px 16px;border-radius:18px;border:1.5px solid var(--frame);background:rgba(8,12,32,.35)}
+.cloudbar h3{margin-top:0}
+.cloudbar .row,.dlg-btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.cloudpick{max-width:720px}
+#gsi{display:flex;justify-content:flex-start;margin:8px 0 12px}

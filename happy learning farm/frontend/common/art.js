@@ -15,7 +15,7 @@ function artCatalog(){
     {id:'animals',name:'🐔 Animals',items:ANIMALS.map(a=>({key:'animal:'+a.id,e:a.e,name:a.name}))},
     {id:'goods',name:'🥚 Farm goods',items:ANIMALS.map(a=>({key:'prod:'+a.prod,e:a.pe,name:a.pn}))},
     {id:'decor',name:'🌷 Decorations',items:DECOR.map(d=>({key:'decor:'+d.id,e:d.e,name:d.name}))},
-    {id:'hats',name:'👒 Hats',items:HATS.map(h=>({key:'hat:'+h[0],e:h[2],name:h[1]}))},
+    {id:'hats',name:'👒 Hats',items:HATS.filter(h=>h[0]!=='none').map(h=>({key:'hat:'+h[0],e:h[2],name:h[1]}))},
     {id:'friends',name:'🦉 Friends',items:npcs.map(n=>({key:npcKey(n),e:n.e,name:n.name}))}
   ];
 }

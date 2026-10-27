@@ -289,7 +289,7 @@ function buildPaperHero(showTag,emoji){
   const stub=()=>new THREE.Object3D();
   g.userData={legs:[stub(),stub()],arms:[stub(),stub()],body,head,eyes:[],paper:sp,paperSize:emoji?2.3:2.7};return g;
 }
-function buildHat(h){const g=new THREE.Group();
+function buildHat(h){const g=new THREE.Group();if(h==='none')return g;
   if(h==='cap'){g.add(mesh(new THREE.SphereGeometry(.47,20,10,0,Math.PI*2,0,Math.PI/2),'#3E7BFA',0,.1,0,{r:.6}));g.add(mesh(rbox(.52,.06,.42,.025),'#3E7BFA',0,.12,.44))}
   else if(h==='flowers'){const cs=['#FF6B9A','#FFD43B','#B56BFF','#FFFFFF'];for(let k=0;k<12;k++){const a=k/12*Math.PI*2;g.add(mesh(SPH(.09,10,8),cs[k%4],Math.cos(a)*.38,.28,Math.sin(a)*.38,{r:.5}))}}
   else if(h==='crown'){g.add(mesh(CYL(.32,.32,.24,16),'#F2B705',0,.44,0,{r:.25,m:.7}));for(let k=0;k<5;k++){const a=k/5*Math.PI*2;g.add(mesh(new THREE.ConeGeometry(.075,.24,8),'#F2B705',Math.cos(a)*.29,.66,Math.sin(a)*.29,{r:.25,m:.7}));g.add(mesh(SPH(.05,8,6),'#E5333D',Math.cos(a)*.33,.44,Math.sin(a)*.33,{r:.2}))}}

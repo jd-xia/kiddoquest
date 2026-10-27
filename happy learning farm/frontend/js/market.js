@@ -12,7 +12,7 @@ function rMarket(){
   if(tab==='outfits'){
     items=SHIRTS.map(([id,nm,c,cost])=>{const own=f.owned.includes('shirt:'+id),use=f.shirt===id;
       return `<div class="item ${use?'using':''}"><div class="e"><span class="swatch" style="background:${c}"></span></div><div class="nm">${nm} shirt</div>${use?'<button class="b sm ghost" disabled>Wearing</button>':own?`<button class="b sm" data-act="wear" data-id="shirt:${id}">Wear</button>`:`<button class="b sm" data-act="buyWear" data-id="shirt:${id}" ${p.gems<cost?'disabled':''}>Buy ${cost} 🪙</button>`}</div>`}).join('')+
-    HATS.map(([id,nm,e,cost])=>{const own=f.owned.includes('hat:'+id),use=f.hat===id;
+    HATS.map(([id,nm,e,cost])=>{const own=cost===0||f.owned.includes('hat:'+id),use=f.hat===id;   // free hats (and No hat) are always yours
       return `<div class="item ${use?'using':''}"><div class="e">${ico('hat:'+id,e)}</div><div class="nm">${nm}</div>${use?'<button class="b sm ghost" disabled>Wearing</button>':own?`<button class="b sm" data-act="wear" data-id="hat:${id}">Wear</button>`:`<button class="b sm" data-act="buyWear" data-id="hat:${id}" ${p.gems<cost?'disabled':''}>Buy ${cost} 🪙</button>`}</div>`}).join('');
   }
   $('#app').innerHTML=topBar('Farm Market','toTown')+npcHTML(MERCHANT,UI.msg||`Welcome to my market! You have ${p.gems} 🪙. Need more? Every right answer at Math School earns coins.`)+`<div class="btns" style="margin:0 0 14px">${tabs}</div><div class="items">${items}</div>`;
@@ -24,6 +24,7 @@ function buyDecor(id){const p=cur(),f=farmOf(p),D=DECOR.find(d=>d.id===id);if(!D
 function wear(key,buy){const p=cur(),f=farmOf(p),[kind,id]=key.split(':');
   const item=kind==='shirt'?SHIRTS.find(s=>s[0]===id):HATS.find(h=>h[0]===id);if(!item)return;const cost=item[3];
   if(buy){if(f.owned.includes(key)||p.gems<cost)return;p.gems-=cost;f.owned.push(key)}
+  if(cost===0&&!f.owned.includes(key))f.owned.push(key);
   if(!f.owned.includes(key))return;f[kind]=id;save();UI.msg='Looking great!';rMarket()}
 
 Object.assign(ACT,{

@@ -30,36 +30,11 @@ let DATA=(()=>{try{const s=localStorage.getItem(LS);if(s){const d=JSON.parse(s);
 if((DATA.v||1)<2){DATA.players.forEach(p=>{const n=p.name.trim().toLowerCase();
   if(!p.look)p.look=n==='michelle'?'girl':'boy';if(n==='jayden'){p.look='boy';p.grade='p1'}});DATA.v=2;try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}}
 DATA.players.forEach(p=>{if(!p.look)p.look='boy'});
-let DBREF=null,dbSaving=false,dbPending=false,dbTimer=null,SYNC='device';
+/* Local-first: save() only writes this browser. Account sync runs from the Sync button in cloud.js. */
 function save(){
   DATA.updated=Date.now();
   try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}
-  clearTimeout(dbTimer);dbTimer=setTimeout(pushDb,700);
-}
-function pushDb(){
-  if(!DBREF)return;
-  if(dbSaving){dbPending=true;return}
-  dbSaving=true;
-  DBREF.set(JSON.parse(JSON.stringify(DATA))).then(()=>{SYNC='cloud'}).catch(()=>{}).finally(()=>{dbSaving=false;if(dbPending){dbPending=false;pushDb()}});
-}
-async function initDb(){
-  try{
-    if(!window.claude||!window.claude.use)return;
-    const db=await window.claude.use('db');if(!db)return;
-    const user=await window.claude.use('user');if(!user)return;
-    const uid=await user.id();if(!uid)return;
-    const ref=db.doc('data/users/'+uid+'/mathstreet');
-    const snap=await ref.get();
-    DBREF=ref;SYNC='cloud';
-    if(snap.exists){
-      const d=snap.data();
-      if(d&&d.players&&(d.updated||0)>(DATA.updated||0)){
-        DATA=JSON.parse(JSON.stringify(d));
-        try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}
-        if(!['level','result'].includes(UI.screen)&&!DLG)render();
-      }else if((DATA.updated||0)>((d&&d.updated)||0))pushDb();
-    }else if(DATA.updated)pushDb();
-  }catch(e){}
+  if(typeof cloudRememberActive==='function')cloudRememberActive();
 }
 const cur=()=>DATA.players.find(p=>p.id===DATA.current);
 const dun=(id,p)=>{const D=DUNGEONS.find(d=>d.id===id);return D&&schoolFor(D,gradeOf(p||cur()))};   // topic as the (current) player's grade sees it
@@ -102,6 +77,7 @@ function topBar(title,backAct){
   <div class="title">${title}</div>
   <span class="stat" aria-label="Stars">⭐ ${totalStars(p)}</span><span class="stat" id="coins" aria-label="Coins">🪙 ${p.gems}</span>
   ${PAGE_FILE==='studio.html'?'':'<button class="pill artpill" data-act="toStudio" aria-label="Art Studio: draw your own pictures" title="Art Studio">🎨</button>'}
+  ${typeof cloudTopActions==='function'?cloudTopActions():''}
   <button class="pill" data-act="toPlayers" aria-label="Switch player"><span class="av">${avE(p)}</span>${esc(p.name)}</button></div>`;
 }
 function npcHTML(npc,html,kind){return `<div class="npc"><div class="face" aria-hidden="true">${ico(npcKey(npc),npc.e)}</div><div class="bubble ${kind||''}"><div class="who">${npc.name}</div>${html}</div></div>`}
@@ -139,7 +115,7 @@ const DECOR=[
   {id:'scarecrow',name:'Scarecrow',e:'🎃',cost:12},{id:'apples',name:'Apple trees',e:'🍎',cost:18},
   {id:'pond',name:'Duck pond',e:'🦆',cost:25},{id:'windmill',name:'Windmill',e:'🌬️',cost:40}];
 const SHIRTS=[['red','Red','#E5484D',0],['blue','Blue','#3E7BFA',6],['green','Green','#2FA36B',6],['yellow','Yellow','#F2B705',6],['purple','Purple','#8B5CF6',8],['pink','Pink','#EC6FA9',8]];
-const HATS=[['straw','Straw hat','👒',0],['cap','Cap','🧢',10],['flowers','Flower crown','💐',15],['crown','Gold crown','👑',40]];
+const HATS=[['none','No hat','🚫',0],['straw','Straw hat','👒',0],['cap','Cap','🧢',10],['flowers','Flower crown','💐',15],['crown','Gold crown','👑',40]];
 /* ---------- the daily 10 minutes: coins, Today's Tasks, the chest and the streak (REQUIREMENTS.md §8.3) ----------
    Coins come only from learning: +2 per answer right first try, +5 the first time each level is finished
    today, +10 from the chest once every task is done. A day pays at most COIN_DAY_MAX; after that play
@@ -217,5 +193,5 @@ function startPage(screens,def){
   try{nav=JSON.parse(sessionStorage.getItem('hmf-nav')||'null');sessionStorage.removeItem('hmf-nav');LASTPOS=JSON.parse(sessionStorage.getItem('hmf-lastpos')||'null')}catch(e){}
   UI=nav&&screens[nav.screen]?Object.assign({screen:nav.screen},nav.extra||{}):def();
   $('#app').innerHTML='<div class="boot"><span class="coin">🌾</span><p>Loading Happy Learning Farm…</p></div>';
-  Promise.all([Promise.race([document.fonts?document.fonts.load('600 48px Fredoka'):Promise.resolve(),new Promise(r=>setTimeout(r,1800))]).catch(()=>{}),loadArt()]).then(()=>{render();setTimeout(initDb,0)});
+  Promise.all([Promise.race([document.fonts?document.fonts.load('600 48px Fredoka'):Promise.resolve(),new Promise(r=>setTimeout(r,1800))]).catch(()=>{}),loadArt()]).then(()=>{render()});
 }

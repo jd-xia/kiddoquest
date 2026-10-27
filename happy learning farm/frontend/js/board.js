@@ -41,7 +41,7 @@ function rProgress(){
       ${recent?`<div class="scroll"><table class="table">${recent}</table></div>`:'<p class="muted">No games played yet.</p>'}
     </div>`;
   }).join('');
-  $('#app').innerHTML=topBar('Progress Board','toTown')+`<p class="muted">“Right first try” counts questions answered correctly without losing a heart. Levels below 70% are flagged for practice. ${SYNC==='cloud'?'Progress is saved to your Claude account, so it follows you across devices.':'Progress is saved on this device.'}</p>`+sections;
+  $('#app').innerHTML=topBar('Progress Board','toTown')+`<p class="muted">“Right first try” counts questions answered correctly without losing a heart. Levels below 70% are flagged for practice. ${typeof cloudStatusLine==='function'?cloudStatusLine():'Progress is saved on this device.'}</p>`+sections;
 }
 
 Object.assign(ACT,{

@@ -65,8 +65,10 @@ function mkPanel(){
   if(t==='clothes')return `<h4>Top</h4>${mkChips('top',AV_OPTS.top)}<h4>Top colour</h4>${mkSwatches('topColor',AV_CLOTH)}
     ${MK.top==='dress'?'':`<h4>Bottom</h4>${mkChips('bottom',AV_OPTS.bottom)}`}<h4>${MK.top==='dress'?'Overalls/skirt colour':'Bottom colour'}</h4>${mkSwatches('bottomColor',AV_CLOTH)}<h4>Shoes</h4>${mkSwatches('shoes',AV_CLOTH)}`;
   return `<h4>Extras</h4><div class="mk-chips">${AV_OPTS.extras.map(([id,l])=>`<button class="mk-chip ${avHas(MK,id)?'on':''}" data-act="mkExtra" data-id="${id}" aria-pressed="${avHas(MK,id)}">${l}</button>`).join('')}</div>
-    <p class="muted" style="margin-top:10px">Hats come from the Farm Market. Your hat: ${(HATS.find(h=>h[0]===farmOf(cur()).hat)||HATS[0])[2]}</p>`;
+    <h4>Hat</h4><div class="mk-chips">${HATS.filter(h=>h[3]===0||farmOf(cur()).owned.includes('hat:'+h[0])).map(([id,nm,e])=>`<button class="mk-chip ${mkHat()===id?'on':''}" data-act="mkHat" data-id="${id}" aria-pressed="${mkHat()===id}">${e} ${nm}</button>`).join('')}</div>
+    <p class="muted" style="margin-top:10px">Buy more hats in the Farm Market.</p>`;
 }
+const mkHat=()=>MK.hat||farmOf(cur()).hat||'straw';   // the hat chosen here is worn on the farm too
 function mkRefresh(){const el=$('#mkPanel');if(el)el.innerHTML=mkPanel();makerHero()}
 function makerStage(){
   if(!engine())return null;
@@ -82,7 +84,7 @@ function makerStage(){
   return MKS;
 }
 function makerHero(){if(!MKS)return;if(MKS.hero)MKS.scene.remove(MKS.hero);
-  MKS.hero=buildChibi(MK,farmOf(cur()),{showTag:false});MKS.scene.add(MKS.hero);MKS.cheer=.7}
+  MKS.hero=buildChibi(MK,Object.assign({},farmOf(cur()),{hat:mkHat()}),{showTag:false});MKS.scene.add(MKS.hero);MKS.cheer=.7}
 /* A head-and-shoulders 3D picture of the design, for the profile card. */
 function makerPortrait(){
   if(!MKS||!G.r)return null;
@@ -319,10 +321,12 @@ Object.assign(ACT,{
   mkSet:d=>{MK[d.k]=d.id;UI.mkMsg=null;mkRefresh()},
   mkExtra:d=>{const x=MK.extras||(MK.extras=[]);MK.extras=x.includes(d.id)?x.filter(y=>y!==d.id):[...x,d.id];mkRefresh()},
   mkFace:d=>{MK.face=d.id==='1';mkRefresh()},
+  mkHat:d=>{MK.hat=d.id;mkRefresh()},
   mkRandom:()=>mkRandom(),
   mkCropUse:()=>mkCropUse(),
   mkCropCancel:()=>{MK.crop=null;rMaker()},
-  mkSave:()=>{const p=cur(),shot=makerPortrait();p.avatar3d=JSON.parse(JSON.stringify(Object.assign({},MK,{crop:undefined})));delete p.avatar3d.crop;p.look='me3d';save();
+  mkSave:()=>{const p=cur(),shot=makerPortrait();const f=farmOf(p);if(MK.hat){f.hat=MK.hat;if(!f.owned.includes('hat:'+MK.hat))f.owned.push('hat:'+MK.hat)}
+    p.avatar3d=JSON.parse(JSON.stringify(Object.assign({},MK,{crop:undefined,hat:undefined})));p.look='me3d';save();
     const done=()=>{UI.maker=false;MK=null;unmountStage();MKS=null;UI.tab='me';UI.msg=`Say hello to the new you, ${esc(p.name)}! 🎉 You will walk around the farm like this.`;rStudio()};
     if(shot)saveArt(p.id,'portrait',{url:shot,src:null,style:'3d',bg:false}).catch(()=>{}).then(done);else done()},
   pickLook:d=>{const p=cur(),L=LOOKS.find(l=>l.id===d.id);if(!L)return;p.look=L.id;save();UI.msg=`Hello, ${L.e} ${esc(p.name)}! That's you on the farm now.`;rStudio()},

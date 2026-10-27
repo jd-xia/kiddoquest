@@ -3,11 +3,13 @@
 /* ---------- players ---------- */
 let NEWGRADE=DEFAULT_GRADE,NEWLOOK='girl';
 function rPlayers(){
+  const canAdd=DATA.players.length<6&&!(typeof cloudIsAccount==='function'&&cloudIsAccount());
   $('#app').innerHTML=`
   <h1>Happy Learning Farm</h1>
   ${npcHTML(MAYOR,'Hello! Who is playing today? Tap your name.')}
   <div class="players">${DATA.players.map(p=>`<button class="player" data-act="choose" data-id="${p.id}"><div class="e">${avE(p)}</div><div class="nm">${esc(p.name)}</div><div class="muted"><span class="tag good">${gradeName(gradeOf(p))}</span> ⭐ ${totalStars(p)} · 🪙 ${p.gems}</div></button>`).join('')}</div>
-  ${DATA.players.length<6?`<h3>New player</h3><div style="display:flex;gap:8px;max-width:420px"><input type="text" id="newname" maxlength="16" placeholder="Name" aria-label="New player name">${GRADES.map(g=>`<button class="b ${NEWGRADE===g.id?'':'ghost'}" data-act="pickGrade" data-g="${g.id}" aria-pressed="${NEWGRADE===g.id}">${g.name}</button>`).join('')}${['girl','boy'].map(id=>{const L=LOOKS.find(l=>l.id===id);return `<button class="b ${NEWLOOK===id?'':'ghost'}" data-act="pickNewLook" data-id="${id}" aria-pressed="${NEWLOOK===id}" aria-label="${L.name}">${L.e}</button>`}).join('')}<button class="b" data-act="addPlayer">Add</button></div>`:''}`;
+  ${canAdd?`<h3>New player</h3><div style="display:flex;gap:8px;max-width:420px"><input type="text" id="newname" maxlength="16" placeholder="Name" aria-label="New player name">${GRADES.map(g=>`<button class="b ${NEWGRADE===g.id?'':'ghost'}" data-act="pickGrade" data-g="${g.id}" aria-pressed="${NEWGRADE===g.id}">${g.name}</button>`).join('')}${['girl','boy'].map(id=>{const L=LOOKS.find(l=>l.id===id);return `<button class="b ${NEWLOOK===id?'':'ghost'}" data-act="pickNewLook" data-id="${id}" aria-pressed="${NEWLOOK===id}" aria-label="${L.name}">${L.e}</button>`}).join('')}<button class="b" data-act="addPlayer">Add</button></div>`:''}
+  ${typeof cloudBarHtml==='function'?cloudBarHtml():''}`;
 }
 const BOUND={x:26.5,z:17.5}, PEN={x0:9,x1:16.5,z0:-6,z1:3};
 const SITES=[{id:'tricks',x:-17,z:-13},{id:'soon1',x:-6,z:-13},{id:'soon2',x:5,z:-13},{id:'soon3',x:16,z:-13}];
@@ -195,7 +197,8 @@ function cropMesh(id,stage){const g=new THREE.Group();
     else if(stage===1){for(const d of[-.07,.07]){const m=mesh(new THREE.ConeGeometry(.05,.26,6),'#5DBB4A',d,.13,0,{flat:true});m.rotation.z=d*4;s.add(m)}}
     else if(stage===2){if(id==='corn'||id==='sunflower'){s.add(mesh(CYL(.05,.06,.7,6),'#4E9A45',0,.35,0));s.add(mesh(new THREE.ConeGeometry(.2,.4,7),'#5DBB4A',0,.62,0,{flat:true}))}else leafyBush(s,.75,false)}
     else if(artOf('seed:'+id)){const sp=iconSprite('seed:'+id,'',.62);sp.position.y=.34;s.add(sp)}   // the child's own crop picture
-    else readyCrop(id,s)}
+    else readyCrop(id,s);
+    s.scale.setScalar([1,1.45,1.7,1.75][stage])}   // big, lush plants that fill the plot
   return g}
 /* A round bush of big leaves (optionally with little white flowers), for the leafy crop rows. */
 function leafyBush(s,k,flowers){const greens=['#3FA34D','#52B85A','#62C766','#48AD52'];
@@ -356,14 +359,14 @@ function rTown(){
   const quick=[['tricks','🦉 Brain Boost'],['market','🛒 Farm Market'],['barn','🌾 Barn'],['studio','🎨 Art Studio'],['board','📋 Progress Board']].map(([id,l])=>`<button class="b ghost sm" data-act="quick" data-id="${id}">${l}</button>`).join('');
   $('#app').innerHTML=farmHud()+`
   <div class="world" id="world">
-    <div class="wtop farmtop">${camCtl('<button class="wide" data-act="overview" aria-label="See the whole farm">🗺️</button>')}<div class="tasks ${tasksOpen()?'':'closed'}" id="tasks">${tasksHTML()}</div></div>
+    <div class="wtop farmtop">${camCtl(`<button class="wide" data-act="overview" aria-label="See the whole farm">🗺️</button><button class="wide ${CAM.eye?'on':''}" data-act="eyeView" aria-pressed="${!!CAM.eye}" aria-label="Eye-level view: see your face">👀</button>`)}<div class="tasks ${tasksOpen()?'':'closed'}" id="tasks">${tasksHTML()}</div></div>
     <div class="toast" id="toast" aria-live="polite"></div>
     <div class="sheet" id="sheet"></div>
     <div class="paintbar" id="paintbar">🎨 Paint mode: tap anyone or anything on the farm to draw your own!</div>
   </div>
   <p class="muted townhint">Tap the ground to walk and drag sideways to turn the camera. Tap a field patch to plant. Walk into a building to go inside. Coins 🪙 only come from Brain Boost!</p>
   <div class="places" id="places" role="menu"><b class="places-title">🗺️ Go to…</b>${quick}<button class="b ghost sm" data-act="mayorTalk">🐻 How to play</button></div>
-  <div class="sidebtns"><button class="sbtn" data-act="places" aria-label="Places" aria-expanded="false">🗺️<span>Places</span></button>
+  <div class="sidebtns">${typeof cloudIsAccount==='function'&&cloudIsAccount()?'<button class="sbtn" data-act="cloudSync" aria-label="Sync this farm">☁️<span>Sync</span></button>':''}<button class="sbtn" data-act="places" aria-label="Places" aria-expanded="false">🗺️<span>Places</span></button>
     <button class="sbtn paintbtn ${PAINT?'on':''}" data-act="paint" aria-pressed="${PAINT}" aria-label="Paint the farm">🖌️<span>Paint</span></button>
     <button class="sbtn bag" data-act="quick" data-id="barn" aria-label="Backpack: open the barn">🎒<span>Backpack</span></button></div>
   <div class="joy" id="joy" role="application" aria-label="Joystick: drag to walk"><div class="joy-ring"><i class="ja up"></i><i class="ja dn"></i><i class="ja lf"></i><i class="ja rt"></i><span class="joy-cross"></span><span class="joy-knob" id="joyKnob"></span></div>
@@ -461,6 +464,7 @@ function farmZoomMax(){
   return Math.min(7,Math.max(2.2,Math.max(hx/(tv*a),hz/tv)*1.1/1.47/(15*camFit())));
 }
 function placeCamera(snap){
+  if(CAM.eye)return placeEyeCamera(snap);
   const p=F.player.position,zmax=farmZoomMax();if(CAM.zoom>zmax)CAM.zoom=zmax;
   const o=Math.max(0,Math.min(1,(CAM.zoom-1.4)/(zmax-1.4)));   // 0 = follow the player, 1 = whole-farm overview
   const d=15*CAM.zoom*camFit(),lx=p.x*(1-o),lz=p.z*(1-o)-o,ly=1.2*(1-o);
@@ -469,6 +473,16 @@ function placeCamera(snap){
   F.camera.position.copy(F.camPos);F.camera.lookAt(lx,ly,lz);
   F.scene.fog.near=60+d*.8;F.scene.fog.far=170+d*1.6;
   F.sun.position.set(lx+28,32,lz+18);F.sun.target.position.set(lx,0,lz);
+}
+/* Eye-level view: the camera drops to the height of the player's face, so you can see it (and the farm
+   from the side). Zoom still works, the whole-farm view is not used here. */
+function placeEyeCamera(snap){
+  const p=F.player.position;CAM.zoom=Math.max(.6,Math.min(1.8,CAM.zoom));
+  const d=7.5*CAM.zoom*(F.camera.aspect<.8?1.7:1),tx=p.x+Math.sin(F.yaw)*d,tz=p.z+Math.cos(F.yaw)*d,ty=1.9+d*.16;
+  if(snap===1)F.camPos.set(tx,ty,tz);else F.camPos.lerp(new THREE.Vector3(tx,ty,tz),snap);
+  F.camera.position.copy(F.camPos);F.camera.lookAt(p.x,1.3,p.z);
+  F.scene.fog.near=60;F.scene.fog.far=170;
+  F.sun.position.set(p.x+28,32,p.z+18);F.sun.target.position.set(p.x,0,p.z);
 }
 function triggerZone(z){
   if(z.kind==='closed'){toast(`${z.name} is opening soon!`);F.target={x:z.out.x,z:z.out.z};F.pending=null;return}
@@ -496,6 +510,7 @@ function farmUpdate(dt){
     else{dx=tx/d;dz=tz/d;const st=Math.min(d,SP*dt);if(moveBy(dx*st,dz*st)){moving=true;F.stuck=0}else{F.stuck+=dt;if(F.stuck>.4){F.target=null;F.pending=null}}}
   }
   if(moving){const want=Math.atan2(dx,dz);let diff=want-me.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));me.rotation.y+=diff*Math.min(1,dt*12)}
+  else if(CAM.eye&&!F.target){let diff=F.yaw-me.rotation.y;diff=Math.atan2(Math.sin(diff),Math.cos(diff));me.rotation.y+=diff*Math.min(1,dt*3)}   // eye-level view: stand and smile at the camera
   F.walkT=(F.walkT||0)+(moving?dt:0);
   animHero(me,moving?'walk':'idle',moving?F.walkT:t,dt);
   for(const z of F.zones){const inside=Math.hypot(z.x-P.x,z.z-P.z)<z.r;if(inside&&!z.inside){z.inside=true;triggerZone(z);if(G.stage!==F)return}else z.inside=inside}
@@ -577,10 +592,13 @@ Object.assign(ACT,{
   pickNewLook:d=>{const v=$('#newname').value;NEWLOOK=d.id;rPlayers();$('#newname').value=v},
   pickGrade:d=>{const v=$('#newname').value;NEWGRADE=d.g;rPlayers();$('#newname').value=v},
   paint:()=>setPaint(!PAINT),
+  eyeView:()=>{CAM.eye=!CAM.eye;if(CAM.eye){CAM.back=null;CAM.zoom=Math.min(CAM.zoom,1.2);CAM.yaw=F.player.rotation.y}   // swing round to the front of the player
+    const b=$('[data-act="eyeView"]');if(b){b.classList.toggle('on',CAM.eye);b.setAttribute('aria-pressed',CAM.eye)}toast(CAM.eye?'👀 Eye-level view: drag to look around':'🦅 Back to the view from above')},
   openChest:()=>openChest(),
   places:()=>{const el=$('#places'),b=$('[data-act="places"]');if(!el)return;const open=el.classList.toggle('open');if(b)b.setAttribute('aria-expanded',open)},
   tasksToggle:()=>{const el=$('#tasks');if(!el)return;el.classList.toggle('closed');try{sessionStorage.setItem('hmf-tasks',el.classList.contains('closed')?'0':'1')}catch(e){}},
   overview:()=>{   // toggle the whole-farm view; on a tall screen, turn so the farm's long side runs down the screen
+    if(CAM.eye){CAM.eye=false;const b=$('[data-act="eyeView"]');if(b)b.classList.remove('on')}
     if(CAM.back){CAM.zoom=CAM.back.zoom;CAM.yaw=CAM.back.yaw;CAM.back=null;return}
     CAM.back={zoom:CAM.zoom,yaw:CAM.yaw};
     if(F.camera.aspect<1)CAM.yaw=Math.round((CAM.yaw-Math.PI/2)/Math.PI)*Math.PI+Math.PI/2;
