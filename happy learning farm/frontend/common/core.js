@@ -30,7 +30,7 @@ let DATA=(()=>{try{const s=localStorage.getItem(LS);if(s){const d=JSON.parse(s);
 if((DATA.v||1)<2){DATA.players.forEach(p=>{const n=p.name.trim().toLowerCase();
   if(!p.look)p.look=n==='michelle'?'girl':'boy';if(n==='jayden'){p.look='boy';p.grade='p1'}});DATA.v=2;try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}}
 DATA.players.forEach(p=>{if(!p.look)p.look='boy'});
-/* Local-first: save() only writes this browser. Account sync runs from the Sync button in cloud.js. */
+/* Local-first: save() only writes this browser. A linked Google child farm is also saved about once a minute by cloud.js. */
 function save(){
   DATA.updated=Date.now();
   try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}
@@ -181,7 +181,7 @@ document.addEventListener('click',e=>{
 });
 document.addEventListener('keydown',e=>{
   if(DLG){if(e.key==='Enter'||e.key===' '){e.preventDefault();ACT.dlgNext()}else if(e.key==='Escape')dlgEnd();return}
-  if(e.target.tagName==='INPUT'){if(e.key==='Enter'){if(e.target.id==='newname'&&ACT.addPlayer)ACT.addPlayer();if(e.target.id==='rename'){const b=$('[data-act="renameSave"]');if(b)b.click()}}return}
+  if(e.target.tagName==='INPUT'){if(e.key==='Enter'){if(e.target.id==='newname'){if(typeof cloudToken==='function'&&cloudToken()&&ACT.cloudAddKid)ACT.cloudAddKid();else if(ACT.addPlayer)ACT.addPlayer()}if(e.target.id==='rename'){const b=$('[data-act="renameSave"]');if(b)b.click()}}return}
   if(onPageKey)onPageKey(e);
 });
 document.addEventListener('keyup',e=>{KEYS.delete(e.key.length===1?e.key.toLowerCase():e.key)});

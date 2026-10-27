@@ -3,12 +3,16 @@
 /* ---------- players ---------- */
 let NEWGRADE=DEFAULT_GRADE,NEWLOOK='girl';
 function rPlayers(){
-  const canAdd=DATA.players.length<6&&!(typeof cloudIsAccount==='function'&&cloudIsAccount());
+  const signed=typeof cloudToken==='function'&&!!cloudToken();
+  const accountList=signed&&typeof cloudPlayersHtml==='function'?cloudPlayersHtml():null;
+  const canAdd=signed?(typeof cloudKidCount==='function'&&cloudKidCount()!=null&&cloudKidCount()<2):DATA.players.length<6;
+  const addAct=signed?'cloudAddKid':'addPlayer';
   $('#app').innerHTML=`
   <h1>Happy Learning Farm</h1>
-  ${npcHTML(MAYOR,'Hello! Who is playing today? Tap your name.')}
-  <div class="players">${DATA.players.map(p=>`<button class="player" data-act="choose" data-id="${p.id}"><div class="e">${avE(p)}</div><div class="nm">${esc(p.name)}</div><div class="muted"><span class="tag good">${gradeName(gradeOf(p))}</span> ⭐ ${totalStars(p)} · 🪙 ${p.gems}</div></button>`).join('')}</div>
-  ${canAdd?`<h3>New player</h3><div style="display:flex;gap:8px;max-width:420px"><input type="text" id="newname" maxlength="16" placeholder="Name" aria-label="New player name">${GRADES.map(g=>`<button class="b ${NEWGRADE===g.id?'':'ghost'}" data-act="pickGrade" data-g="${g.id}" aria-pressed="${NEWGRADE===g.id}">${g.name}</button>`).join('')}${['girl','boy'].map(id=>{const L=LOOKS.find(l=>l.id===id);return `<button class="b ${NEWLOOK===id?'':'ghost'}" data-act="pickNewLook" data-id="${id}" aria-pressed="${NEWLOOK===id}" aria-label="${L.name}">${L.e}</button>`}).join('')}<button class="b" data-act="addPlayer">Add</button></div>`:''}
+  ${npcHTML(MAYOR,signed?'Hello! This Google account can have 2 kids. Tap who is playing.':'Hello! Who is playing today? Tap your name.')}
+  ${accountList!=null?accountList:`<div class="players">${DATA.players.map(p=>`<button class="player" data-act="choose" data-id="${p.id}"><div class="e">${avE(p)}</div><div class="nm">${esc(p.name)}</div><div class="muted"><span class="tag good">${gradeName(gradeOf(p))}</span> ⭐ ${totalStars(p)} · 🪙 ${p.gems}</div></button>`).join('')}</div>`}
+  ${signed&&typeof cloudSaveLocalHtml==='function'?cloudSaveLocalHtml():''}
+  ${canAdd?`<h3>${signed?'Add a child':'New player'}</h3><div style="display:flex;gap:8px;flex-wrap:wrap;max-width:520px"><input type="text" id="newname" maxlength="16" placeholder="Name" aria-label="New player name">${GRADES.map(g=>`<button class="b ${NEWGRADE===g.id?'':'ghost'}" data-act="pickGrade" data-g="${g.id}" aria-pressed="${NEWGRADE===g.id}">${g.name}</button>`).join('')}${['girl','boy'].map(id=>{const L=LOOKS.find(l=>l.id===id);return `<button class="b ${NEWLOOK===id?'':'ghost'}" data-act="pickNewLook" data-id="${id}" aria-pressed="${NEWLOOK===id}" aria-label="${L.name}">${L.e}</button>`}).join('')}<button class="b" data-act="${addAct}">Add</button></div>`:''}
   ${typeof cloudBarHtml==='function'?cloudBarHtml():''}`;
 }
 const BOUND={x:26.5,z:17.5}, PEN={x0:9,x1:16.5,z0:-6,z1:3};

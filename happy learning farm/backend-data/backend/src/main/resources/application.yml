@@ -1,0 +1,51 @@
+server:
+  port: ${PORT:8081}
+
+spring:
+  application:
+    name: backend-data
+  datasource:
+    url: ${FARM_DB_URL:jdbc:h2:file:./data/farm;DB_CLOSE_DELAY=-1;AUTO_SERVER=FALSE}
+    username: ${FARM_DB_USERNAME:sa}
+    password: ${FARM_DB_PASSWORD:}
+    driver-class-name: ${FARM_DB_DRIVER:org.h2.Driver}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  sql:
+    init:
+      mode: never
+
+auth:
+  jwt:
+    # Same value as backend-openid. The farm API checks tokens; it does not sign them.
+    secret: ${AUTH_JWT_SECRET}
+    issuer: ${AUTH_JWT_ISSUER:http://localhost:8080}
+    audience: ${AUTH_JWT_AUDIENCE:kiddoquest}
+  cors-origins:
+    - http://localhost:8000
+    - http://127.0.0.1:8000
+    - http://localhost:5500
+    - http://127.0.0.1:5500
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    org.springframework.security: INFO

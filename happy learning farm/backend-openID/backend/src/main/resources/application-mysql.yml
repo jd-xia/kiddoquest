@@ -1,0 +1,12 @@
+# Activate with --spring.profiles.active=mysql
+# Set OPENID_DB_URL, OPENID_DB_USERNAME, and OPENID_DB_PASSWORD in the environment.
+spring:
+  datasource:
+    url: ${OPENID_DB_URL}
+    username: ${OPENID_DB_USERNAME}
+    password: ${OPENID_DB_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect

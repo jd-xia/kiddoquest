@@ -1,0 +1,22 @@
+auth:
+  jwt:
+    secret: test-secret-test-secret-test-secret-32
+    issuer: http://localhost:8080
+    audience: kiddoquest
+    ttl: PT12H
+  google:
+    enabled: true
+    client-id: test-client-id
+    jwk-set-uri: https://www.googleapis.com/oauth2/v3/certs
+  cors-origins:
+    - http://localhost:8000
+
+spring:
+  datasource:
+    url: jdbc:h2:mem:openid;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop

@@ -1,0 +1,57 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: backend-openid
+  datasource:
+    url: ${OPENID_DB_URL:jdbc:h2:file:./data/openid;DB_CLOSE_DELAY=-1;AUTO_SERVER=FALSE}
+    username: ${OPENID_DB_USERNAME:sa}
+    password: ${OPENID_DB_PASSWORD:}
+    driver-class-name: ${OPENID_DB_DRIVER:org.h2.Driver}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  sql:
+    init:
+      mode: never
+
+auth:
+  jwt:
+    # Required. At least 32 bytes. Shared with every game API that accepts these tokens.
+    secret: ${AUTH_JWT_SECRET}
+    issuer: ${AUTH_JWT_ISSUER:http://localhost:8080}
+    audience: ${AUTH_JWT_AUDIENCE:kiddoquest}
+    ttl: ${AUTH_JWT_TTL:PT12H}
+  google:
+    enabled: ${GOOGLE_ENABLED:true}
+    # Public OAuth client id. Not a secret. Leave empty until Google login is configured.
+    client-id: ${GOOGLE_CLIENT_ID:}
+    jwk-set-uri: ${GOOGLE_JWK_SET_URI:https://www.googleapis.com/oauth2/v3/certs}
+  cors-origins:
+    - http://localhost:8000
+    - http://127.0.0.1:8000
+    - http://localhost:5500
+    - http://127.0.0.1:5500
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    org.springframework.security: INFO

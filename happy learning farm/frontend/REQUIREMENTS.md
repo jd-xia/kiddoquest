@@ -28,8 +28,8 @@
 ### 2.2 离线与隐私
 
 - Three.js 及后期处理插件已放在 `vendor/` 里，不依赖 CDN，可以完全离线运行。页面样式会尝试加载 Google Fonts；离线时退回系统字体。
-- 打开游戏、游玩和自动存档都只写本机 `localStorage`，不会访问 `backend-openid` 或 `backend-data`。
-- 家长可以稍后用 Google 登录，并为每个孩子选择档案。只有按下 **Sync** 之后，才会把当前孩子的进度与服务器比对。同步失败不会改掉本机存档。
+- 未登录时，打开游戏、游玩和自动存档都只写本机 `localStorage`，不会访问 `backend-openid` 或 `backend-data`。
+- 家长用 Google 登录并打开一个孩子的农场后，这个农场大约每一分钟保存到服务器一次。按下 **Sync** 会立刻保存。保存失败或两边都改过时，不会默默覆盖本机或服务器的存档。
 - 孩子导入的图片只存在本机浏览器的 IndexedDB（库名 `hmf-art`）里，不会上传；换电脑或清除浏览器数据后需要重新导入。
 - 没有网、或者后端没启动时，核心玩法照常进行。登录和同步的配置见 `backend-openID/README.md` 与 `common/cloud-config.js`。
 - 旧的单文件版本（claude.ai 链接）和本地版的存档互不相通。
