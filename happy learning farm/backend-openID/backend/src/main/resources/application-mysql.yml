@@ -1,5 +1,5 @@
-# Activate with --spring.profiles.active=mysql
-# Set OPENID_DB_URL, OPENID_DB_USERNAME, and OPENID_DB_PASSWORD in the environment.
+# Optional. The main settings already use MySQL.
+# Set OPENID_DB_URL, OPENID_DB_USERNAME, and OPENID_DB_PASSWORD to point at another server.
 spring:
   datasource:
     url: ${OPENID_DB_URL}

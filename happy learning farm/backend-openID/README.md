@@ -48,13 +48,15 @@ mvn spring-boot:run
 
 Google Cloud Console 里创建一个 **Web** 客户端，把 `http://localhost:8000` 加进 Authorized JavaScript origins。把同一个 Client ID 写进游戏的 `common/cloud-config.js`（这是公开标识，不是密钥）。
 
-默认数据库是本目录下的 H2 文件 `./data/openid`。MySQL：
+数据库是 MySQL 库 `kiddoquest_openid`。`docker compose up` 会启动 MySQL，数据在卷 `mysql-data` 里。不要用 `docker compose down -v`，那会删掉这个卷。
+
+本机单独运行时，先有一个 MySQL，再设置：
 
 ```powershell
 $env:OPENID_DB_URL = "jdbc:mysql://localhost:3306/kiddoquest_openid?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
-$env:OPENID_DB_USERNAME = "kiddoquest"
-$env:OPENID_DB_PASSWORD = "change-me"
-mvn spring-boot:run "-Dspring-boot.run.arguments=--spring.profiles.active=mysql"
+$env:OPENID_DB_USERNAME = "root"
+$env:OPENID_DB_PASSWORD = "kiddoquest-local"
+mvn spring-boot:run
 ```
 
 打包：

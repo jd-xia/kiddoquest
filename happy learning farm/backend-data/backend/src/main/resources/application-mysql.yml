@@ -1,4 +1,5 @@
-# Activate with --spring.profiles.active=mysql
+# Optional. The main settings already use MySQL.
+# Set FARM_DB_URL, FARM_DB_USERNAME, and FARM_DB_PASSWORD to point at another server.
 spring:
   datasource:
     url: ${FARM_DB_URL}

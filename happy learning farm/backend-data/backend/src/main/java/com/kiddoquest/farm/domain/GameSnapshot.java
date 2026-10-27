@@ -2,10 +2,12 @@ package com.kiddoquest.farm.domain;
 
 import java.time.Instant;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 @Entity
@@ -19,7 +21,7 @@ public class GameSnapshot {
     @Column(nullable = false)
     private long revision;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Column(name = "player_json", nullable = false)
     private String playerJson;
 

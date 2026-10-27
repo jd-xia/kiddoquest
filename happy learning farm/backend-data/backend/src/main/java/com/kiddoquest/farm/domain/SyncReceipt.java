@@ -2,10 +2,12 @@ package com.kiddoquest.farm.domain;
 
 import java.time.Instant;
 
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
@@ -23,7 +25,7 @@ public class SyncReceipt {
     @Column(name = "idempotency_key", nullable = false, length = 80)
     private String idempotencyKey;
 
-    @Lob
+    @JdbcTypeCode(SqlTypes.LONG32VARCHAR)
     @Column(name = "response_json", nullable = false)
     private String responseJson;
 

@@ -72,7 +72,7 @@ mvn spring-boot:run
 
 密钥必须和认证服务相同。农场服务只验签，不能自己签发登录令牌。
 
-默认数据库是 `./data/farm`。MySQL 使用 `--spring.profiles.active=mysql`，并设置 `FARM_DB_URL`、`FARM_DB_USERNAME` 和 `FARM_DB_PASSWORD`。
+数据库是 MySQL 库 `kiddoquest_farm`。和认证服务一起用 Compose 启动时，两个库都在同一个 MySQL 卷 `mysql-data` 里。`docker compose down` 会留下这个卷；`docker compose down -v` 会删掉它。单独运行时设置 `FARM_DB_URL`、`FARM_DB_USERNAME` 和 `FARM_DB_PASSWORD`。
 
 游戏页面由 Compose 提供，地址是 `http://localhost:8000`。不启动这两个服务时，游戏仍然可以离线玩。链接 Google 并打开孩子的农场后，页面大约每一分钟把该农场保存到这里；未登录时不会上传。
 

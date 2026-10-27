@@ -5,10 +5,10 @@ spring:
   application:
     name: backend-openid
   datasource:
-    url: ${OPENID_DB_URL:jdbc:h2:file:./data/openid;DB_CLOSE_DELAY=-1;AUTO_SERVER=FALSE}
-    username: ${OPENID_DB_USERNAME:sa}
-    password: ${OPENID_DB_PASSWORD:}
-    driver-class-name: ${OPENID_DB_DRIVER:org.h2.Driver}
+    url: ${OPENID_DB_URL:jdbc:mysql://localhost:3306/kiddoquest_openid?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8}
+    username: ${OPENID_DB_USERNAME:root}
+    password: ${OPENID_DB_PASSWORD:kiddoquest-local}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     open-in-view: false
     hibernate:

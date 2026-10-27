@@ -1,9 +1,29 @@
 # Public address is http://localhost:8000 for the game, OpenID, and the farm API.
 # OpenID and the farm API stay on the Docker network (8080 and 8081).
+# Account and farm rows live in MySQL. docker compose down keeps that data.
+# docker compose down -v deletes the MySQL volume.
 # From this directory: docker compose up --build
 # Override secrets by copying .env.example to .env.
 
 services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-kiddoquest-local}
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+
   openid:
     build:
       context: ./backend-openID/backend
@@ -17,8 +37,12 @@ services:
       AUTH_JWT_AUDIENCE: kiddoquest
       AUTH_JWT_TTL: ${AUTH_JWT_TTL:-PT12H}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-    volumes:
-      - openid-data:/app/data
+      OPENID_DB_URL: jdbc:mysql://mysql:3306/kiddoquest_openid?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
+      OPENID_DB_USERNAME: root
+      OPENID_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-kiddoquest-local}
+    depends_on:
+      mysql:
+        condition: service_healthy
     restart: unless-stopped
 
   farm:
@@ -32,9 +56,12 @@ services:
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-local-dev-only-not-for-production-32b}
       AUTH_JWT_ISSUER: http://localhost:8080
       AUTH_JWT_AUDIENCE: kiddoquest
-    volumes:
-      - farm-data:/app/data
+      FARM_DB_URL: jdbc:mysql://mysql:3306/kiddoquest_farm?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
+      FARM_DB_USERNAME: root
+      FARM_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-kiddoquest-local}
     depends_on:
+      mysql:
+        condition: service_healthy
       openid:
         condition: service_healthy
     restart: unless-stopped
@@ -52,5 +79,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  openid-data:
-  farm-data:
+  mysql-data:

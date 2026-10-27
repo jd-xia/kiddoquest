@@ -5,10 +5,10 @@ spring:
   application:
     name: backend-data
   datasource:
-    url: ${FARM_DB_URL:jdbc:h2:file:./data/farm;DB_CLOSE_DELAY=-1;AUTO_SERVER=FALSE}
-    username: ${FARM_DB_USERNAME:sa}
-    password: ${FARM_DB_PASSWORD:}
-    driver-class-name: ${FARM_DB_DRIVER:org.h2.Driver}
+    url: ${FARM_DB_URL:jdbc:mysql://localhost:3306/kiddoquest_farm?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8}
+    username: ${FARM_DB_USERNAME:root}
+    password: ${FARM_DB_PASSWORD:kiddoquest-local}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     open-in-view: false
     hibernate:
