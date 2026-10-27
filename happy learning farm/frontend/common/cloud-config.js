@@ -5,6 +5,7 @@
    Leave it empty until the address exists. An https page cannot call an http service. */
 const HMF_SERVICE='https://heavily-stopping-symantec-parental.trycloudflare.com';
 const HMF_API=(location.hostname==='jd-xia.github.io'?HMF_SERVICE:'http://localhost:8000').replace(/\/$/,'');
+alert('HMF_API: '+HMF_API);
 window.HMF_CLOUD={
   googleClientId:'669511875089-psnjdrjcfl3v8pc7kktm11bu8a3aau7p.apps.googleusercontent.com',
   authBase:HMF_API,
