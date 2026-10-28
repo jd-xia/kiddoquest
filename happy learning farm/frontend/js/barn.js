@@ -4,7 +4,7 @@ function barnHTML(){
   const prods=[...SEEDS.map(s=>[s.id,ico('seed:'+s.id,s.e),s.name]),...ANIMALS.map(a=>[a.prod,ico('prod:'+a.prod,a.pe),a.pn])];
   return `<p>Farm level <b>${L.l}</b>: ${L.into} / ${L.need} XP to the next level</p><div class="pbarw"><i style="width:${Math.round(L.into/L.need*100)}%"></i></div>
   <div class="barn">${prods.map(([id,e,nm])=>`<div class="bi"><span class="e">${e}</span><b>${f.barn[id]||0}</b><small>${nm}</small></div>`).join('')}</div>
-  <p class="muted">Harvest crops and collect from animals to earn XP. Higher farm levels unlock new seeds and animals.</p>`;
+  <p class="muted">Harvest crops and collect from animals to earn XP. Higher farm levels unlock new seeds and animals. Mo buys only the crops you grew.</p>`;
 }
 function rBarn(){
   const f=farmOf(cur()),total=Object.values(f.barn).reduce((a,n)=>a+n,0);

@@ -146,21 +146,64 @@ function qTenWorksheet(){
 /* Hat and Cloak for P1: numbers just under 100. */
 function qHatsP1(count){return hatQ(Array.from({length:count},()=>100-rnd(1,4)),'Tap each number to give it a hat.')}
 function qHatWorksheetP1(){return hatQ([99,97,98,96,98],'This one is from your worksheet! Five numbers need hats.')}
-/* Distributive Property: A×B + A×C. Drag both sums into the factory, pull out the shared A, merge B and C. */
-function distQ(a,b,c,say){
-  const sum=b+c;
-  return{type:'dist',a,b,c,terms:[{a,n:b},{a,n:c}],html:`${a} × ${b} + ${a} × ${c} = ?`,answer:a*sum,
-    steps:[`${a} is in both sums`,`Pull it out: ${a} × (${b} + ${c})`,`${b} + ${c} = ${sum}`,`${a} × ${sum} = ?`],
-    say:say||'Drag both sums into the factory.'};
+/* Same Basket: A baskets of B fruit, and A baskets of C fruit. Drag one from each orchard into the
+   same big basket. A stays A. B and C join, so A×B + A×C becomes A×(B+C). No typed answer. */
+function basketQ(a,b,c,say){
+  return{type:'basket',a,b,c,html:`${a} × ${b} + ${a} × ${c}`,answer:a*(b+c),
+    say:say||'Drag one basket from each orchard into the same place in the magic basket.'};
 }
-function qDistP1(){
-  for(;;){const a=rnd(2,5),b=rnd(1,5),c=rnd(1,5);if(a!==b&&a!==c&&b!==c&&a*(b+c)<=30)return distQ(a,b,c)}
+function qBasketFruit(){
+  for(;;){const a=rnd(2,4),b=rnd(1,5),c=rnd(1,5);if(b!==c&&a*(b+c)<=24)return basketQ(a,b,c)}
 }
-function qDistSheetP1(){return distQ(3,4,2,'Drag 3 × 4 and 3 × 2 into the factory.')}
-function qDistP3(){
-  for(;;){const a=pick([4,5,6,7,8,9,12]),b=rnd(1,9),c=10-b;if(b!==c&&a!==b&&a!==c)return distQ(a,b,c,'Drag both sums into the factory. Find the number that is in both.')}
+function qBasketSheetP1(){return basketQ(3,4,2,'Three baskets of 4 red apples, and three baskets of 2 green apples. Drag one of each into the same big basket.')}
+function qBasketNums(a,b,c,say){
+  const q=basketQ(a,b,c,say||'No apples this time. Drag both numbers into the same basket. The shared count stays in front.');
+  q.hard=true;return q;
 }
-function qDistSheetP3(){return distQ(12,7,3,'Drag 12 × 7 and 12 × 3 into the factory.')}
+function qBasketP1(i){
+  if(i===0)return qBasketSheetP1();
+  if(i<3)return qBasketFruit();
+  return i===3?qBasketNums(4,12,16,'Four groups of 12 and four groups of 16. These are two-digit numbers.'):qBasketNums(3,25,15,'Three groups of 25 and three groups of 15.');
+}
+function qBasketFruitP3(){
+  for(;;){const a=rnd(3,5),b=rnd(2,6),c=rnd(2,6);if(b!==c)return basketQ(a,b,c,'Same number of baskets in each orchard. Drag one from each into the same big basket.')}
+}
+function qBasketP3(i){
+  if(i===0)return basketQ(4,6,4,'Four baskets of 6 red apples, and four baskets of 4 green apples. Drag one from each into the same big basket.');
+  if(i<3)return qBasketFruitP3();
+  return i===3?qBasketNums(4,120,105,'Four groups of 120 and four groups of 105. These are three-digit numbers.'):qBasketNums(6,200,150,'Six groups of 200 and six groups of 150.');
+}
+/* Break It Up: the other way from Same Basket. A × (B + C) = A × B + A × C.
+   Each mixed basket holds B red and C green. Drag the two kinds apart. A stays A. */
+function breakQ(a,b,c,say){
+  return{type:'break',a,b,c,html:`${a} × (${b} + ${c})`,answer:a*(b+c),
+    say:say||'Drag the red apples to the red orchard and the green apples to the green orchard.'};
+}
+function qBreakFruit(){
+  for(;;){const a=rnd(2,4),b=rnd(1,5),c=rnd(1,5);if(b!==c&&a*(b+c)<=24)return breakQ(a,b,c)}
+}
+function qBreakSheetP1(){return breakQ(3,4,2,'Three baskets. Each holds 4 red apples and 2 green apples. Break them apart.')}
+function qBreakNums(a,n,b,c,bad,say){
+  const q=breakQ(a,b,c,say||`Break ${n} so both parts are easy to multiply by ${a}.`);
+  q.hard=true;q.n=n;q.picks=[[b,c],...bad];q.html=`${a} × ${n}`;return q;
+}
+function qBreakP1(i){
+  if(i===0)return qBreakSheetP1();
+  if(i<3)return qBreakFruit();
+  return i===3
+    ?qBreakNums(4,28,20,8,[[10,18],[15,13]],'28 is a two-digit number. Pick the split with a ten.')
+    :qBreakNums(6,45,40,5,[[20,25],[30,15]],'45 is a two-digit number. Pick the split with a ten.');
+}
+function qBreakFruitP3(){
+  for(;;){const a=rnd(3,5),b=rnd(2,6),c=rnd(2,6);if(b!==c)return breakQ(a,b,c,'Break each basket into the two kinds of apples. The number of baskets stays the same.')}
+}
+function qBreakP3(i){
+  if(i===0)return breakQ(4,6,4,'Four baskets. Each holds 6 red apples and 4 green apples. Break them apart.');
+  if(i<3)return qBreakFruitP3();
+  return i===3
+    ?qBreakNums(4,225,200,25,[[180,45],[150,75]],'225 is a three-digit number. Pick the split with a hundred.')
+    :qBreakNums(6,350,300,50,[[180,170],[240,110]],'350 is a three-digit number. Pick the split with a hundred.');
+}
 
 /* ---------- grades ----------
    Each player picks a grade. Every school keeps one set of levels per grade in `grades`,
@@ -192,7 +235,7 @@ const DUNGEONS=[
    npc:{name:'Professor Hoot',e:'🦉'},blurb:'Shortcuts that make big sums tiny',
    grades:{
    p1:{
-   intro:['Hoo-hoo! Welcome to my Trick Shop.','We don\'t add numbers one by one here. We look for clever shortcuts!','Clear a level to open the next one. More levels are coming soon!'],
+   intro:['Hoo-hoo! Welcome to my Trick Shop.','We don\'t add numbers one by one here. We look for clever shortcuts!','Best Friend Pairs, Hat and Cloak, and Same Basket are open. Clear Same Basket to open Break It Up.'],
    levels:[
     {id:'c1-1',name:'Best Friend Pairs',count:5,gen:i=>i===4?qTenWorksheet():qTenFriends([2,3,3,4][i]),
      intro:['Some numbers are best friends: together they make a round ten!',
@@ -204,12 +247,16 @@ const DUNGEONS=[
             'Put a hat on 98 and it grows into 100. Its cloak remembers the 2 we added: <span class="ex">98 = 100 − 2</span>',
             'Add up the hundreds first, then take off the cloaks.',
             '<span class="ex">99 + 98 = 100 + 100 − 1 − 2 = 197</span>']},
-    {id:'c1-3',name:'Distributive Property',count:5,gen:i=>i===4?qDistSheetP1():qDistP1(),
-     intro:['Two sums can share a number. The factory pulls that number out!',
-            'Look: <span class="ex">3 × 4 + 3 × 2</span>. The 3 is in both sums.',
-            'Drag both sums into the factory, then tap the shared 3. That number is A.',
-            'Tap 4 and 2 to merge them: <span class="ex">3 × (4 + 2)</span>']},
-    {id:'c1-4',name:'Coming soon',soon:true},
+    {id:'c1-3',name:'Same Basket',count:5,gen:i=>qBasketP1(i),
+     intro:['You are a little knight on the Magic Basket Challenge!',
+            'The first three questions use apples. <span class="ex">3 × 4 + 3 × 2</span> means 3 baskets of 4, and 3 baskets of 2.',
+            'Drag one from each orchard into the same big basket. 4 and 2 join. The 3 stays 3: <span class="ex">3 × (4 + 2)</span>',
+            'The last two questions use two-digit numbers, like <span class="ex">4 × 12 + 4 × 16</span>.']},
+    {id:'c1-4',name:'Break It Up',count:5,gen:i=>qBreakP1(i),
+     intro:['Now break a full basket apart!',
+            '<span class="ex">3 × (4 + 2) = 3 × 4 + 3 × 2</span>',
+            'The first three questions are apples. Drag each kind to its own orchard. The 3 stays in front of both parts.',
+            'The last two questions are two-digit numbers. Pick the split with a ten, then drag the two parts apart.']},
     {id:'c1-5',name:'Coming soon',soon:true},
     {id:'c1-6',name:'Coming soon',soon:true},
     {id:'c1-7',name:'Coming soon',soon:true},
@@ -218,7 +265,7 @@ const DUNGEONS=[
     {id:'c1-10',name:'Coming soon',soon:true},
    ]},
    p3:{
-   intro:['Hoo-hoo! Welcome to my Trick Shop.','In here, we never add numbers one by one. We hunt for shortcuts that make big sums tiny.','Clear a level to open the next one. More levels are coming soon!'],
+   intro:['Hoo-hoo! Welcome to my Trick Shop.','In here, we never add numbers one by one. We hunt for shortcuts that make big sums tiny.','Best Friend Pairs, Hat and Cloak, and Same Basket are open. Clear Same Basket to open Break It Up.'],
    levels:[
     {id:'c3-1',name:'Best Friend Pairs',count:5,gen:i=>i===4?qFriendsWorksheet():qBestFriends([['add','same'],['add','neg'],['add','same','neg'],['add','neg','same'],null][i]),
      intro:['Some numbers are best friends: together they make a round number!',
@@ -230,12 +277,16 @@ const DUNGEONS=[
             'Put a hat on 98 and it grows into 100. Its cloak remembers the 2 we added: <span class="ex">98 = 100 − 2</span>',
             'Add up all the round numbers first, then take off the cloaks.',
             '<span class="ex">98 + 998 = 100 + 1000 − 2 − 2 = 1094</span>']},
-    {id:'c3-3',name:'Distributive Property',count:5,gen:i=>i===4?qDistSheetP3():qDistP3(),
-     intro:['A number that sits in both sums can come out in front.',
-            '<span class="ex">6 × 7 + 6 × 3 = 6 × (7 + 3)</span>',
-            'Drag both sums into the factory. Tap the shared number, then merge the other two.',
-            '7 + 3 is 10, and 6 × 10 is much easier than adding 42 and 18!']},
-    {id:'c3-4',name:'Coming soon',soon:true},
+    {id:'c3-3',name:'Same Basket',count:5,gen:i=>qBasketP3(i),
+     intro:['Same Basket starts with apples, just like the little knights.',
+            '<span class="ex">4 × 6 + 4 × 4 = 4 × (6 + 4)</span>',
+            'The first three questions are fruit. Drag one from each orchard into the same basket.',
+            'The last two use three-digit numbers: <span class="ex">4 × 120 + 4 × 105</span>.']},
+    {id:'c3-4',name:'Break It Up',count:5,gen:i=>qBreakP3(i),
+     intro:['Break the basket apart again.',
+            'The first three questions are apples. Drag each kind to its own orchard.',
+            'The last two are three-digit numbers, like <span class="ex">4 × 225</span>.',
+            'Every choice adds up. Pick the one with a hundred, then drag the two parts apart.']},
     {id:'c3-5',name:'Coming soon',soon:true},
     {id:'c3-6',name:'Coming soon',soon:true},
     {id:'c3-7',name:'Coming soon',soon:true},

@@ -82,7 +82,7 @@ function buildFarmWorld(){
   const mk=buildMarket();mk.position.set(-17,0,5);mk.rotation.y=Math.PI/2;S.add(mk);markHit(mk,{kind:'zone',id:'market'});
   F.baseObs.push({x0:-18.3,x1:-16.1,z0:2.7,z1:7.3});
   F.zones.push({id:'market',kind:'market',x:-15.2,z:5,r:.9,out:{x:-13.6,z:5},name:'Farm Market'});
-  addNPC({npc:MERCHANT,x:-15,z:8.2,line:'Animals, decor, outfits!',talk:['Mo the Merchant, at your service!','Spend your coins here on animals, decorations and new outfits. Walk up to my stall to shop.']});
+  addNPC({npc:MERCHANT,x:-15,z:8.2,line:'Animals, decor, outfits!',talk:['Mo the Merchant, at your service!','Spend your coins here on animals, decorations and new outfits.','I only buy crops you planted and harvested. A harvest of 4 sells for about 120% of the seed price.','Walk up to my stall to shop.']});
   const barn=buildBarn();barn.position.set(22.5,0,-1);barn.rotation.y=-Math.PI/2;S.add(barn);markHit(barn,{kind:'zone',id:'barn'});
   F.baseObs.push({x0:19.9,x1:25.2,z0:-4.2,z1:2.2});
   F.zones.push({id:'barn',kind:'barn',x:19.3,z:-1,r:.9,out:{x:17.8,z:-1},name:'Barn'});
@@ -370,7 +370,7 @@ function rTown(){
     <div class="sheet" id="sheet"></div>
     <div class="paintbar" id="paintbar">🎨 Paint mode: tap anyone or anything on the farm to draw your own!</div>
   </div>
-  <p class="muted townhint">Tap the ground to walk and drag sideways to turn the camera. Tap a field patch to plant. Walk into a building to go inside. Coins 🪙 only come from Brain Boost!</p>
+  <p class="muted townhint">Tap the ground to walk and drag sideways to turn the camera. Tap a field patch to plant. Walk into a building to go inside. Harvested crops can be sold at the market.</p>
   <div class="places" id="places" role="menu"><b class="places-title">🗺️ Go to…</b>${quick}<button class="b ghost sm" data-act="mayorTalk">🐻 How to play</button></div>
   <div class="sidebtns">${typeof cloudIsAccount==='function'&&cloudIsAccount()?'<button class="sbtn" data-act="cloudSync" aria-label="Sync this farm">☁️<span>Sync</span></button>':''}<button class="sbtn" data-act="places" aria-label="Places" aria-expanded="false">🗺️<span>Places</span></button>
     <button class="sbtn paintbtn ${PAINT?'on':''}" data-act="paint" aria-pressed="${PAINT}" aria-label="Paint the farm">🖌️<span>Paint</span></button>
@@ -389,7 +389,7 @@ function rTown(){
 function mayorTalk(){dialog(MAYOR,[
   'Welcome to Happy Learning Farm! I\'m Bella, the mayor.',
   'Tap the ground to walk. Drag sideways to turn the camera. On a computer, the arrow keys work too.',
-  'Seeds, animals and decorations cost coins 🪙. The only way to earn coins is at Math School: beat number monsters by answering questions! Every answer right first time earns a coin, and clearing a level earns a bonus.',
+  'Seeds, animals and decorations cost coins 🪙. Mo only buys crops you grew yourself, for about 120% of the seed price. More coins come from Math School: every answer right first time earns a coin, and clearing a level earns a bonus.',
   'Tap a field patch to plant seeds. Crops grow in real time, so come back later to harvest! Watering 💧 makes them grow faster.',
   'Harvests earn XP to level up your farm and unlock new seeds and animals. Mo\'s Farm Market sells animals, decorations and outfits.',
   'Start at Professor Hoot\'s Math School, at the top left of the farm. Good luck!'])}
@@ -581,7 +581,7 @@ function sheetBarn(){
   const prods=[...SEEDS.map(s=>[s.id,s.e,s.name]),...ANIMALS.map(a=>[a.prod,a.pe,a.pn])];
   return `<h3>🌾 Barn</h3><p>Farm level <b>${L.l}</b>: ${L.into} / ${L.need} XP to the next level</p><div class="pbarw"><i style="width:${Math.round(L.into/L.need*100)}%"></i></div>
   <div class="barn">${prods.map(([id,e,nm])=>`<div class="bi"><span class="e">${e}</span><b>${f.barn[id]||0}</b><small>${nm}</small></div>`).join('')}</div>
-  <p class="muted">Harvest crops and collect from animals to earn XP. Higher farm levels unlock new seeds and animals.</p>`;
+  <p class="muted">Harvest crops and collect from animals to earn XP. Mo buys only the crops you grew.</p>`;
 }
 function plant(i,id){const p=cur(),f=farmOf(p),S=SEEDS.find(s=>s.id===id);
   if(!S||p.gems<S.cost||farmLevel(f.xp).l<S.lv||f.plots[i]||i>=f.unlocked)return;

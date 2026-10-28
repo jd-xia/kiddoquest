@@ -183,8 +183,8 @@ function platLayout(levels){
   const boss=!!(levels.length&&levels[levels.length-1].boss),m=levels.length-(boss?1:0),rows=Math.max(1,Math.ceil(m/3)),out=[];
   const slots={1:[0],2:[-2.8,2.8],3:[-5.6,0,5.6]};
   for(let i=0;i<m;i++){const row=Math.floor(i/3),k=i%3,inRow=Math.min(3,m-row*3),xs=slots[inRow],x=xs[row%2?inRow-1-k:k];
-    const z=rows===1?3:9-row*((boss?14:18)/(rows-1));out.push([x,z,.35+i*.22])}
-  if(boss)out.push([0,-10.2,.35+m*.22+.3]);
+    const z=rows===1?3:9-row*((boss?14:18)/(rows-1));out.push([x,z,1.9+i*.22])}
+  if(boss)out.push([0,-10.2,1.9+m*.22+.35]);
   return{plats:out,boss};
 }
 function buildMap(D){
@@ -457,7 +457,8 @@ function setupQ(){
   const q=UI.qs[UI.idx];
   if(q.type==='hats'&&!q.hatsInfo){const H=q.hats;q.hatsInfo=i=>H[i]}   // generator's {R,d} list; q.hats becomes the tapped list
   q.sel=[];q.pairs=[];q.boxes=[];q.hats=[];
-  if(q.type==='dist'){q.in=[];q.picked=false}
+  if(q.type==='basket'){const n=q.hard?1:q.a;q.left=Array(n).fill(null);q.right=Array(n).fill(null);q.merged=Array(n).fill(false);q.merging=null;q.coinAt=-1}
+  if(q.type==='break'){const n=q.hard?1:q.a;q.red=Array(n).fill(false);q.green=Array(n).fill(false);q.broken=Array(n).fill(false);q.coinAt=-1;q.chosen=!q.hard;if(q.hard)q.shown=shuffle(q.picks.map(x=>x.slice()))}
   UI.phase=q.type==='input'?'answer':'work';
   UI.bubble={kind:'',html:q.say||'Type your answer.'};
   PAD=null;
@@ -465,7 +466,7 @@ function setupQ(){
 function hudHTML(){const l=dun(UI.did).levels[UI.li];
   return `<button class="bx" data-act="quitLevel" aria-label="Leave level">✕</button><div class="bmid"><div class="bname">${l.boss?'👑 ':''}${l.name}</div><div class="bprog">${UI.qs.map((_,k)=>`<i class="${k<UI.idx||(UI.screen==='result'&&UI.ok)?'ok':k===UI.idx?'on':''}"></i>`).join('')}</div></div><div class="bhearts" aria-label="${UI.hearts} hearts left">${'❤️'.repeat(Math.max(0,UI.hearts))}${'🖤'.repeat(3-Math.max(0,UI.hearts))}</div>`}
 function rLevel(){
-  if(UI.qs[UI.idx]&&UI.qs[UI.idx].type==='dist'){rFactory();return}
+  if(UI.qs[UI.idx]&&(UI.qs[UI.idx].type==='basket'||UI.qs[UI.idx].type==='break')){rFactory();return}
   ensureBattle();$('#battle').classList.remove('result','lose');
   const D=dun(UI.did),l=D.levels[UI.li],q=UI.qs[UI.idx];
   $('#bhud').innerHTML=hudHTML();
@@ -475,7 +476,7 @@ function rLevel(){
   if(q.type==='zerobox')work=zeroHTML(q);
   if(q.type==='friends')work=friendsHTML(q);
   if(q.type==='hats')work=hatsHTML(q);
-  if(q.type==='dist')work=distHTML(q);
+  if(q.type==='basket')work=basketHTML(q);
   const pad=UI.phase==='answer'?`<div class="display" id="disp" aria-live="polite"></div><div class="pad" id="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button data-k="back" aria-label="Delete">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok" aria-label="Attack">⚡</button></div>`:'';
   const next=UI.phase==='right'?`<button class="b big-next" data-act="nextQ" id="nextBtn">${UI.idx<UI.qs.length-1?(l.boss?'Attack again ▸':'Next monster ▸'):'Finish level ▸'}</button>`:'';
   $('#bpanel').innerHTML=`<div class="bnpc ${UI.bubble.kind||''}"><span class="bface">${ico(npcKey(D.npc),D.npc.e)}</span><div>${UI.bubble.html}</div></div>${work}${pad}${next}`;
@@ -574,50 +575,183 @@ function hatsHTML(q){
     sum=`<div class="livesum">🎩 ${H.map(h=>h.R).join(' + ')} = <b>${H.reduce((a,h)=>a+h.R,0)}</b><br>🧥 ${H.map(h=>h.d).join(' + ')} = <b>${H.reduce((a,h)=>a+h.d,0)}</b></div>`}
   return `<div class="row hats">${chips}</div>${sum}`;
 }
-/* ---------- Distributive Property: drag A×B and A×C into the factory, pull out A, merge B and C ---------- */
-function distTerm(t){return `<b>${t.a}</b><span>×</span><b>${t.n}</b>`}
-function distHTML(q){
-  const made=UI.phase==='answer'||UI.phase==='right';
-  const tray=q.terms.map((t,i)=>q.in.includes(i)?'':`<div class="term out" data-i="${i}" role="button" aria-label="${t.a} times ${t.n}">${distTerm(t)}</div>`).join('');
-  let body;
-  if(made)body=`<div class="made pop">${q.a} × (${q.terms[0].n} + ${q.terms[1].n})</div>`;
-  else if(!q.in.length)body='<p class="factory-hint">Drag both sums here</p>';
-  else if(q.in.length<2)body=q.terms.filter((_,i)=>q.in.includes(i)).map(t=>`<div class="term in">${distTerm(t)}</div>`).join('')+'<p class="factory-hint">One more</p>';
-  else if(!q.picked)body=q.terms.map((t,i)=>`<span class="term in"><button class="nbtn" data-act="distPick" data-i="${i}" data-part="a">${t.a}</button><span>×</span><button class="nbtn" data-act="distPick" data-i="${i}" data-part="n">${t.n}</button></span>`).join('<span class="plusjoin">+</span>');
-  else body=`<span class="factor">${q.a}</span><span class="times">×</span><span class="paren">(</span>${q.terms.map((t,i)=>`<button class="chip ${q.sel.includes(i)?'sel':''}" data-act="distMerge" data-i="${i}">${t.n}</button>`).join('<span class="plusjoin">+</span>')}<span class="paren">)</span>`;
-  return `<div class="dist"><div class="dist-tray">${tray}</div><div class="factory ${q.in.length?'hot':''} ${made?'done':''}" id="factory"><div class="factory-roof">🏭 Factory</div><div class="factory-body">${body}</div></div></div>`;
+/* ---------- Same Basket: A baskets of B, and A baskets of C. Drag one from each orchard into one big basket. ---------- */
+function fruitRow(n,emoji){const show=Math.min(n,4);return `<span class="fruits" aria-hidden="true">${Array.from({length:show},()=>`<i>${emoji}</i>`).join('')}</span>`}
+function basketEl(side,i,n,emoji,hard){
+  const color=side==='left'?'red':'green';
+  if(hard)return `<div class="bbasket ${side} numcard" data-side="${side}" data-i="${i}" role="button" aria-label="${n}"><b>${n}</b></div>`;
+  return `<div class="bbasket ${side}" data-side="${side}" data-i="${i}" role="button" aria-label="Basket of ${n} ${color} apples"><span class="bbasket-rim" aria-hidden="true">🧺</span>${fruitRow(n,emoji)}<b>${n}</b></div>`;
 }
-function distOver(f,ev){if(!f)return false;const r=f.getBoundingClientRect();return ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom}
-function distDrop(i){
-  const q=UI.qs[UI.idx];if(UI.phase!=='work'||!q||q.type!=='dist'||q.in.includes(i))return;
-  q.in.push(i);bat(batSparkle);
-  UI.bubble=q.in.length<2?{kind:'good',html:'In the factory! Drag the other sum in too.'}:{kind:'good',html:'Both sums are in. Tap the number that is in <b>both</b>. That number is A.'};
+function basketHTML(q){
+  const done=q.merged.every(Boolean),who=(cur()&&cur().name)||'Knight',hard=!!q.hard;
+  const orchard=(side,n,emoji,title,blurb)=>{
+    const bags=q[side].map((slot,i)=>slot==null?basketEl(side,i,n,emoji,hard):'').join('');
+    const head=hard?`${q.a} × ${n}`:title,sub=hard?'One group':`${q.a} baskets · ${n} in each`;
+    return `<section class="orchard ${side}" data-side="${side}"><h3>${head}</h3><p>${sub}</p><div class="baskets">${bags||'<p class="orchard-empty">All in the magic basket</p>'}</div><p class="orchard-blurb">${hard?'The shared count stays in front':blurb}</p></section>`;
+  };
+  let hinted=false;
+  const slots=q.merged.map((on,k)=>{
+    if(on){const sum=q.b+q.c,tag=hard?`${q.b} + ${q.c}`:(sum===10?`${q.b} + ${q.c} = 10`:`${q.b} + ${q.c}`);
+      const face=hard?`<b class="bign">${tag}</b>`:`${fruitRow(q.b,'🍎')}${fruitRow(q.c,'🍏')}<b>${tag}</b>`;
+      return `<div class="bslot done glow" data-k="${k}"><div class="bbasket mixed pop">${face}</div>${q.coinAt===k?'<span class="coinfly">+1 🪙</span>':''}</div>`}
+    const L=q.left.findIndex(s=>s===k),R=q.right.findIndex(s=>s===k);
+    const hold=`${L>=0?basketEl('left',L,q.b,'🍎',hard):''}${R>=0?basketEl('right',R,q.c,'🍏',hard):''}`;
+    const hint=!hold&&!hinted?(hinted=true,hard?'<span class="slot-hint">Both groups</span>':'<span class="slot-hint">One from each orchard</span>'):'';
+    return `<div class="bslot${hold?' hot':''}${q.merging===k?' merging':''}" data-k="${k}">${hold||hint}</div>`;
+  }).join('');
+  const law=done
+    ?(hard?`<p class="law done pop"><b>${q.a} × (${q.b} + ${q.c}) = ${q.a} × ${q.b+q.c}</b></p>`:`<p class="law done pop">The <b>${q.a}</b> stayed the same. <b>${q.b}</b> and <b>${q.c}</b> joined: <b>${q.a} × (${q.b} + ${q.c})</b></p>`)
+    :(hard?`<p class="law"><b>${q.a}</b> is in front of both groups, so it stays. <b>${q.b}</b> and <b>${q.c}</b> can join.</p>`:`<p class="law"><b>${q.a}</b> baskets on each side, so <b>${q.a}</b> stays. <b>${q.b}</b> and <b>${q.c}</b> can join inside one basket.</p>`);
+  return `<div class="basketgame" data-a="${q.a}"><div class="orchards">${orchard('left',q.b,'🍎','Red orchard','These baskets match the green ones')}<div class="knight ${q.coinAt>=0?'cheer':''}"><span class="knight-fig" aria-hidden="true">🛡️</span><span class="knight-name">${who}</span><small>Little Knight</small></div>${orchard('right',q.c,'🍏','Green orchard','Same number of baskets')}</div><div class="magic ${done?'done':''}"><div class="magic-title">🧺 Magic Basket</div>${law}<div class="slots">${slots}</div></div></div>`;
+}
+function basketHit(ev){
+  const n=document.elementFromPoint(ev.clientX,ev.clientY);if(!n)return null;
+  const slot=n.closest('.bslot');if(slot)return{kind:'slot',k:+slot.dataset.k};
+  const home=n.closest('.orchard');if(home)return{kind:'home',side:home.dataset.side};
+  return null;
+}
+function basketMark(ev){document.querySelectorAll('.bslot.over').forEach(s=>s.classList.remove('over'));const h=basketHit(ev);if(h&&h.kind==='slot'){const s=document.querySelector(`.bslot[data-k="${h.k}"]`);if(s)s.classList.add('over')}}
+function basketHome(side,i){
+  const q=UI.qs[UI.idx];if(!q||q[side][i]==null)return;
+  q.coinAt=-1;q[side][i]=null;UI.bubble={kind:'',html:'Back in the orchard. Drop it in a big basket when you are ready.'};rLevel();
+}
+function basketFinishMerge(q,k){
+  if(UI.screen!=='level'||!UI.qs||UI.qs[UI.idx]!==q||q.merged[k])return;
+  q.merged[k]=true;q.merging=null;
+  const got=earnCoins(cur(),1);UI.paid=true;UI.mergeCoins=(UI.mergeCoins||0)+got;q.coinAt=k;save();
+  const left=q.merged.filter(v=>!v).length,pay=got?'<span class="coinhint">+1 🪙</span>':'<span class="coinhint">⭐</span>';
+  if(left)UI.bubble={kind:'good',html:`The basket glows! <b>${q.b}</b> and <b>${q.c}</b> joined, and there are still <b>${q.a}</b> baskets. ${pay}`};
+  else{if(!q.counted){q.counted=true;UI.answered++;UI.first++}
+    UI.phase='right';
+    const ten=q.hard?` That is <b>${q.a} × ${q.b+q.c}</b>.`:(q.b+q.c===10?` <b>${q.b} + ${q.c} = 10</b>, so this is <b>${q.a} × 10</b>.`:'');
+    UI.bubble={kind:'good',html:`Every place is glowing. The <b>${q.a}</b> stayed the same, and <b>${q.b}</b> and <b>${q.c}</b> joined: <b>${q.a} × (${q.b} + ${q.c})</b>.${ten} ${pay}`}}
   rLevel();
 }
-function distPick(d){
-  const q=UI.qs[UI.idx];if(UI.phase!=='work'||q.in.length<2||q.picked)return;
-  const t=q.terms[+d.i],n=d.part==='a'?t.a:t.n;
-  if(d.part==='a'){q.picked=true;bat(batSparkle);UI.bubble={kind:'good',html:`<b>${q.a}</b> is in both sums, so it comes out in front. Now tap <b>${q.terms[0].n}</b> and <b>${q.terms[1].n}</b> to merge them.`}}
-  else UI.bubble={kind:'bad',html:`${n} is only in one sum. Look for the number you see twice.`};
-  rLevel();
+function basketDrop(side,i,k){
+  const q=UI.qs[UI.idx];if(UI.phase!=='work'||!q||q.type!=='basket'||q.merging!=null)return;
+  q.coinAt=-1;
+  if(q.merged[k]){UI.bubble={kind:'bad',html:'That basket is already glowing. Try an empty place.'};return rLevel()}
+  if(q[side][i]===k)return;
+  if(q[side].some((s,j)=>j!==i&&s===k)){UI.bubble={kind:'bad',html:'That place already has fruit from this orchard. It needs a basket from the <b>other</b> orchard.'};return rLevel()}
+  q[side][i]=k;
+  const mate=side==='left'?'right':'left';
+  if(!q[mate].some(s=>s===k)){const other=mate==='left'?q.b:q.c;UI.bubble={kind:'good',html:q.hard?`In the basket! Drag <b>${q.a} × ${other}</b> into this same place.`:'In the basket! Drag one from the other orchard into this <b>same</b> place.'};return rLevel()}
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){basketFinishMerge(q,k);return}
+  q.merging=k;UI.bubble={kind:'good',html:`<b>${q.b}</b> and <b>${q.c}</b> are joining. The <b>${q.a}</b> baskets stay <b>${q.a}</b>.`};rLevel();
+  clearTimeout(UI.basketTimer);UI.basketTimer=setTimeout(()=>basketFinishMerge(q,k),700);
 }
-function distMerge(i){
-  const q=UI.qs[UI.idx];if(UI.phase!=='work'||!q.picked)return;
-  q.sel=q.sel.includes(i)?q.sel.filter(x=>x!==i):[...q.sel,i];
-  if(q.sel.length===2){UI.phase='answer';bat(batSparkle);UI.bubble={kind:'good',html:`The factory made <b>${q.a} × (${q.terms[0].n} + ${q.terms[1].n})</b>. Work that out, then press ✓`}}
-  else UI.bubble={kind:'',html:`${q.terms[i].n} is in. Tap the other number to merge.`};
-  rLevel();
+function basketTap(side,i){
+  const q=UI.qs[UI.idx];if(q.merging!=null)return;
+  if(q[side][i]!=null){basketHome(side,i);return}
+  const k=q.merged.findIndex((m,idx)=>!m&&!q[side].some(s=>s===idx));
+  if(k<0){q.coinAt=-1;UI.bubble={kind:'bad',html:'Every place already has fruit from this orchard. Use the other orchard, or drag one back.'};return rLevel()}
+  basketDrop(side,i,k);
 }
 document.addEventListener('pointerdown',e=>{
-  const el=e.target.closest('.term.out');if(!el||!el.closest('.dist')||UI.screen!=='level'||UI.phase!=='work')return;
-  const q=UI.qs&&UI.qs[UI.idx];if(!q||q.type!=='dist')return;
-  const i=+el.dataset.i,x0=e.clientX,y0=e.clientY,ghost=el.cloneNode(true);
+  const el=e.target.closest('.bbasket');if(!el||!el.dataset.side||UI.screen!=='level'||UI.phase!=='work')return;
+  const q=UI.qs&&UI.qs[UI.idx];if(!q||q.type!=='basket'||q.merging!=null)return;
+  const side=el.dataset.side,i=+el.dataset.i,x0=e.clientX,y0=e.clientY,ghost=el.cloneNode(true);
   ghost.classList.add('ghosting');document.body.appendChild(ghost);
-  const place=ev=>{ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';const f=$('#factory');if(f)f.classList.toggle('over',distOver(f,ev))};
-  const end=ev=>{ghost.remove();const f=$('#factory');if(f)f.classList.remove('over');el.removeEventListener('pointermove',place);el.removeEventListener('pointerup',end);el.removeEventListener('pointercancel',end);if(distOver(f,ev)||Math.hypot(ev.clientX-x0,ev.clientY-y0)<12)distDrop(i)};
+  const place=ev=>{ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';basketMark(ev)};
+  const end=ev=>{ghost.remove();document.querySelectorAll('.bslot.over').forEach(s=>s.classList.remove('over'));el.removeEventListener('pointermove',place);el.removeEventListener('pointerup',end);el.removeEventListener('pointercancel',end);
+    const hit=basketHit(ev),moved=Math.hypot(ev.clientX-x0,ev.clientY-y0);
+    if(hit&&hit.kind==='slot'){if(moved<12&&q[side][i]===hit.k)basketHome(side,i);else basketDrop(side,i,hit.k)}
+    else if(hit&&hit.kind==='home'&&hit.side===side){if(moved<12)basketTap(side,i);else basketHome(side,i)}
+    else if(moved<12)basketTap(side,i)};
   place(e);try{el.setPointerCapture(e.pointerId)}catch(err){}
   el.addEventListener('pointermove',place);el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
 });
+/* ---------- Break It Up: A × (B + C). Drag the two kinds of apples into their own orchards. ---------- */
+function breakPile(part,i,n,emoji,hard){
+  const color=part==='b'?'red':'green';
+  if(hard)return `<div class="bpile numcard ${color}" data-part="${part}" data-i="${i}" role="button" aria-label="${n}"><b>${n}</b></div>`;
+  return `<div class="bpile ${color}" data-part="${part}" data-i="${i}" role="button" aria-label="${n} ${color} apples">${fruitRow(n,emoji)}<b>${n}</b></div>`;
+}
+function breakHTML(q){
+  if(q.hard&&!q.chosen){
+    const picks=q.shown.map(([x,y],i)=>`<button class="b pick" data-act="breakPick" data-i="${i}">${x} + ${y}</button>`).join('');
+    return `<div class="breakgame pickgame"><p class="law">Every split adds up to <b>${q.n}</b>. Choose the one with a ten or a hundred, so both parts are easy to multiply by <b>${q.a}</b>.</p><div class="picks">${picks}</div></div>`;
+  }
+  const done=q.broken.every(Boolean),who=(cur()&&cur().name)||'Knight',hard=!!q.hard;
+  const mixes=q.broken.map((on,i)=>{
+    if(on)return `<div class="mix done">Split</div>`;
+    const red=q.red[i]?'<span class="sent">→</span>':breakPile('b',i,q.b,'🍎',hard);
+    const green=q.green[i]?'<span class="sent">→</span>':breakPile('c',i,q.c,'🍏',hard);
+    return `<div class="mix" data-i="${i}">${red}<span class="plusjoin">+</span>${green}</div>`;
+  }).join('');
+  const bags=(flags,part,n,emoji,side)=>flags.map((on,i)=>!on?'':q.broken[i]
+    ?(hard?`<div class="bbasket show numcard ${side}${q.coinAt===i?' pairglow':''}"><b>${n}</b></div>`:`<div class="bbasket show ${side}${q.coinAt===i?' pairglow':''}">${fruitRow(n,emoji)}<b>${n}</b></div>`)
+    :breakPile(part,i,n,emoji,hard)).join('');
+  const law=done
+    ?`<p class="law done pop"><b>${q.a} × (${q.b} + ${q.c}) = ${q.a} × ${q.b} + ${q.a} × ${q.c}</b></p>`
+    :(hard?`<p class="law">The <b>${q.a}</b> stays in front of both. Drag <b>${q.b}</b> one way and <b>${q.c}</b> the other.</p>`:`<p class="law">The <b>${q.a}</b> stays <b>${q.a}</b>. Break <b>${q.b}</b> and <b>${q.c}</b> into their own baskets.</p>`);
+  const whole=hard?`<h3>${q.a} × ${q.n}</h3><p>${q.n} = ${q.b} + ${q.c}</p>`:`<h3>Mixed baskets</h3><p>${q.a} baskets · ${q.b} + ${q.c} in each</p>`;
+  const left=hard?`<h3>${q.a} × ${q.b}</h3><p>${q.b} is a ten or a hundred</p>`:`<h3>Red orchard</h3><p>${q.a} baskets of ${q.b}</p>`;
+  const right=hard?`<h3>${q.a} × ${q.c}</h3><p>the rest of ${q.n}</p>`:`<h3>Green orchard</h3><p>${q.a} baskets of ${q.c}</p>`;
+  return `<div class="breakgame"><section class="whole">${whole}<div class="mixes">${mixes}</div></section><div class="orchards"><section class="orchard left" data-side="left">${left}<div class="baskets">${bags(q.red,'b',q.b,'🍎','left')||`<p class="orchard-empty">${hard?`Drag ${q.b} here`:'Drag red apples here'}</p>`}</div></section><div class="knight"><span class="knight-fig" aria-hidden="true">🛡️</span><span class="knight-name">${who}</span><small>Little Knight</small></div><section class="orchard right" data-side="right">${right}<div class="baskets">${bags(q.green,'c',q.c,'🍏','right')||`<p class="orchard-empty">${hard?`Drag ${q.c} here`:'Drag green apples here'}</p>`}</div></section></div>${law}</div>`;
+}
+function breakHit(ev){
+  const n=document.elementFromPoint(ev.clientX,ev.clientY);if(!n)return null;
+  if(n.closest('.whole'))return{kind:'home'};
+  const orch=n.closest('.orchard');if(orch)return{kind:'orch',side:orch.dataset.side};
+  return null;
+}
+function breakMark(ev){document.querySelectorAll('.orchard.over,.whole.over').forEach(s=>s.classList.remove('over'));const h=breakHit(ev);
+  if(!h)return;const el=h.kind==='home'?document.querySelector('.whole'):document.querySelector(`.orchard.${h.side}`);if(el)el.classList.add('over')}
+function breakKey(part){return part==='b'?'red':'green'}
+function breakFinish(q,i){
+  if(UI.screen!=='level'||!UI.qs||UI.qs[UI.idx]!==q||q.broken[i])return;
+  q.broken[i]=true;
+  const got=earnCoins(cur(),1);UI.paid=true;UI.mergeCoins=(UI.mergeCoins||0)+got;q.coinAt=i;save();
+  const left=q.broken.filter(v=>!v).length,pay=got?'<span class="coinhint">+1 🪙</span>':'<span class="coinhint">⭐</span>';
+  if(left)UI.bubble={kind:'good',html:`Broken apart! The <b>${q.a}</b> stays <b>${q.a}</b>. This basket became <b>${q.b}</b> and <b>${q.c}</b>. ${pay}`};
+  else{if(!q.counted){q.counted=true;UI.answered++;UI.first++}
+    UI.phase='right';
+    const ten=q.hard?` <b>${q.a} × ${q.b} = ${q.a*q.b}</b> and <b>${q.a} × ${q.c} = ${q.a*q.c}</b>.`:(q.b+q.c===10?` <b>${q.b} + ${q.c} = 10</b>, so both sides still start with <b>${q.a}</b>.`:'');
+    UI.bubble={kind:'good',html:`<b>${q.a} × (${q.b} + ${q.c}) = ${q.a} × ${q.b} + ${q.a} × ${q.c}</b>.${ten} ${pay}`}}
+  rLevel();
+}
+function breakPlace(part,i){
+  const q=UI.qs[UI.idx];if(UI.phase!=='work'||!q||q.type!=='break'||q.broken[i])return;
+  const key=breakKey(part);if(q[key][i])return;
+  q.coinAt=-1;q[key][i]=true;
+  const other=part==='b'?'green':'red';
+  if(q[other][i]){breakFinish(q,i);return}
+  UI.bubble={kind:'good',html:q.hard
+    ?(part==='b'?`<b>${q.a} × ${q.b}</b> is set. Drag <b>${q.c}</b> to the other side.`:`<b>${q.a} × ${q.c}</b> is set. Drag <b>${q.b}</b> to the other side.`)
+    :(part==='b'?`The <b>${q.b}</b> red apples have their own basket. The green ones are still in the mixed basket.`:`The <b>${q.c}</b> green apples have their own basket. The red ones are still in the mixed basket.`)};
+  rLevel();
+}
+function breakHome(part,i){
+  const q=UI.qs[UI.idx];if(!q||q.broken[i])return;
+  const key=breakKey(part);if(!q[key][i])return;
+  q.coinAt=-1;q[key][i]=false;UI.bubble={kind:'',html:'Back in the mixed basket. Drag it to its own orchard when you are ready.'};rLevel();
+}
+document.addEventListener('pointerdown',e=>{
+  const el=e.target.closest('.bpile');if(!el||UI.screen!=='level'||UI.phase!=='work')return;
+  const q=UI.qs&&UI.qs[UI.idx];if(!q||q.type!=='break'||q.broken[+el.dataset.i])return;
+  const part=el.dataset.part,i=+el.dataset.i,x0=e.clientX,y0=e.clientY,ghost=el.cloneNode(true);
+  ghost.classList.add('ghosting');document.body.appendChild(ghost);
+  const place=ev=>{ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';breakMark(ev)};
+  const end=ev=>{ghost.remove();document.querySelectorAll('.orchard.over,.whole.over').forEach(s=>s.classList.remove('over'));el.removeEventListener('pointermove',place);el.removeEventListener('pointerup',end);el.removeEventListener('pointercancel',end);
+    const hit=breakHit(ev),moved=Math.hypot(ev.clientX-x0,ev.clientY-y0),want=part==='b'?'left':'right',placed=q[breakKey(part)][i];
+    if(hit&&hit.kind==='orch'&&hit.side!==want){q.coinAt=-1;UI.bubble={kind:'bad',html:q.hard?(part==='b'?`<b>${q.b}</b> belongs with <b>${q.a} × ${q.b}</b>.`:`<b>${q.c}</b> belongs with <b>${q.a} × ${q.c}</b>.`):(part==='b'?`Those are the <b>${q.b}</b> red apples. They belong in the <b>red</b> orchard.`:`Those are the <b>${q.c}</b> green apples. They belong in the <b>green</b> orchard.`)};rLevel()}
+    else if(hit&&hit.kind==='orch'&&hit.side===want){if(!placed)breakPlace(part,i);else if(moved<12)breakHome(part,i)}
+    else if(hit&&hit.kind==='home'){if(placed)breakHome(part,i);else if(moved<12)breakPlace(part,i)}
+    else if(moved<12){if(placed)breakHome(part,i);else breakPlace(part,i)}};
+  place(e);try{el.setPointerCapture(e.pointerId)}catch(err){}
+  el.addEventListener('pointermove',place);el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+});
+function breakPick(i){
+  const q=UI.qs[UI.idx];if(UI.phase!=='work'||!q||!q.hard||q.chosen)return;
+  const pair=q.shown[i];if(!pair)return;
+  const [x,y]=pair,ok=(x===q.b&&y===q.c)||(x===q.c&&y===q.b);
+  if(!ok){UI.bubble={kind:'bad',html:`<b>${x} + ${y}</b> does add up to ${q.n}, but <b>${q.a} × ${x}</b> and <b>${q.a} × ${y}</b> are still hard. Look for a ten or a hundred: <b>${q.b} + ${q.c}</b>.`};return rLevel()}
+  q.chosen=true;
+  const got=earnCoins(cur(),1);UI.paid=true;UI.mergeCoins=(UI.mergeCoins||0)+got;save();
+  UI.bubble={kind:'good',html:`Yes. <b>${q.n} = ${q.b} + ${q.c}</b>. Drag <b>${q.b}</b> one way and <b>${q.c}</b> the other. There are <b>${q.a}</b> of each. ${got?'<span class="coinhint">+1 🪙</span>':''}`};
+  rLevel();
+}
 function hatTap(i){
   const q=UI.qs[UI.idx];if(UI.phase!=='work'||q.hats.includes(i))return;
   q.hats.push(i);bat(batSparkle);const h=q.hatsInfo(i);
@@ -639,10 +773,6 @@ function submit(v){
     if(!q.wrong)UI.first++;
     UI.phase='right';UI.bubble={kind:'good',html:`${pick(PRAISE)} The answer is <b>${q.answer}</b>.${q.wrong?'':coinsLeft(cur())>=UI.first*COIN_RIGHT?` <span class="coinhint">+${COIN_RIGHT} 🪙</span>`:' <span class="coinhint">⭐</span>'}`};
     bat(batAttack,q.answer,UI.idx===UI.qs.length-1);rLevel();
-  }else if(q.type==='dist'){
-    q.wrong=true;if(UI.hearts>1)UI.hearts--;
-    UI.bubble={kind:'bad',html:`${v} isn't it yet. Let's go step by step:<ol>${q.steps.map(s=>`<li>${s}</li>`).join('')}</ol>The factory is still waiting. Try again!`};
-    rLevel();const d=$('#disp');if(d)d.classList.add('shake');
   }else{
     q.wrong=true;UI.hearts--;bat(batHurt);
     if(UI.hearts<=0){setTimeout(()=>finishLevel(false),650);UI.phase='wait';UI.bubble={kind:'bad',html:'Oh no, out of hearts!'};rLevel();return}
@@ -650,7 +780,7 @@ function submit(v){
     rLevel();const d=$('#disp');if(d)d.classList.add('shake');
   }
 }
-function nextQ(){if(UI.idx<UI.qs.length-1){UI.idx++;setupQ();bat(batSpawn,UI.idx,false);rLevel()}else finishLevel(true)}
+function nextQ(){clearTimeout(UI.basketTimer);if(UI.idx<UI.qs.length-1){UI.idx++;setupQ();bat(batSpawn,UI.idx,false);rLevel()}else finishLevel(true)}
 function record(ok){
   const p=cur(),D=dun(UI.did),l=D.levels[UI.li];
   const secs=Math.round((Date.now()-UI.start)/1000);
@@ -659,7 +789,7 @@ function record(ok){
   let stars=0,levelBonus=false,firstClear=false;const day=dailyOf(p);
   if(ok){stars=UI.hearts;firstClear=r.clears===0;r.clears++;r.stars=Math.max(r.stars,stars);
     if(!day.levels[l.id]){day.levels[l.id]=true;levelBonus=true;if(taskStep('lv:'+l.id))farmOf(p).xp+=TASK_XP}}   // first finish of this level today
-  const want=UI.first*COIN_RIGHT+(levelBonus?COIN_LEVEL:0),gems=earnCoins(p,want);
+  const want=(UI.paid?0:UI.first*COIN_RIGHT)+(levelBonus?COIN_LEVEL:0),gems=earnCoins(p,want);
   p.time+=secs;
   p.sessions.unshift({t:Date.now(),d:D.id,lv:l.id,stars,qs:UI.answered,first:UI.first,secs,ok});
   p.sessions=p.sessions.slice(0,60);
@@ -669,32 +799,35 @@ function record(ok){
 function finishLevel(ok){
   if(UI.screen!=='level')return;
   const r=record(ok);
-  Object.assign(UI,{screen:'result',ok,stars:r.stars,gems:r.gems,firstClear:r.firstClear,levelBonus:r.levelBonus,capped:r.capped});PAD=null;
+  Object.assign(UI,{screen:'result',ok,stars:r.stars,gems:r.gems,firstClear:r.firstClear,levelBonus:r.levelBonus,capped:r.capped,mergeCoins:UI.mergeCoins||0});PAD=null;
   render();
 }
-function quitLevel(){if(UI.answered>0)record(false);go('dungeon',{did:UI.did,mapAt:UI.li})}
+function quitLevel(){clearTimeout(UI.basketTimer);if(UI.answered>0)record(false);go('dungeon',{did:UI.did,mapAt:UI.li})}
 function shopHud(){
   const l=dun(UI.did).levels[UI.li];
   return `<button class="bx" data-act="quitLevel" aria-label="Leave level">✕</button><div class="bmid"><div class="bname">${l.name}</div><div class="bprog">${UI.qs.map((_,k)=>`<i class="${k<UI.idx||(UI.screen==='result'&&UI.ok)?'ok':k===UI.idx?'on':''}"></i>`).join('')}</div></div>`;
 }
 function rFactory(){
   const D=dun(UI.did),q=UI.qs[UI.idx];
-  const pad=UI.phase==='answer'?`<div class="display" id="disp" aria-live="polite"></div><div class="pad" id="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button data-k="back" aria-label="Delete">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok" aria-label="Check">✓</button></div>`:'';
-  const next=UI.phase==='right'?`<button class="b big-next" data-act="nextQ" id="nextBtn">${UI.idx<UI.qs.length-1?'Next sum ▸':'Finish ▸'}</button>`:'';
-  $('#app').innerHTML=`<div class="workshop"><header class="shop-hud">${shopHud()}</header><div class="shop-main"><p class="shop-kicker">Sum ${UI.idx+1} of ${UI.qs.length}</p><div class="shop-expr">${q.html}</div><div class="bnpc ${UI.bubble.kind||''}"><span class="bface">${ico(npcKey(D.npc),D.npc.e)}</span><div>${UI.bubble.html}</div></div>${distHTML(q)}</div>${pad||next?`<div class="shop-dock">${pad}${next}</div>`:''}</div>`;
+  const br=q.type==='break',done=br?q.broken.every(Boolean):q.merged&&q.merged.every(Boolean);
+  const next=UI.phase==='right'?`<button class="b big-next" data-act="nextQ" id="nextBtn">${UI.idx<UI.qs.length-1?(br?'Next basket ▸':'Next orchards ▸'):'Finish ▸'}</button>`:'';
+  const expr=br?(done?`${q.a} × ${q.b} + ${q.a} × ${q.c}`:(q.hard&&q.chosen?`${q.a} × (${q.b} + ${q.c})`:q.html)):(done?`${q.a} × (${q.b} + ${q.c})`:q.html);
+  const kicker=br?`Break It Up · ${UI.idx+1} of ${UI.qs.length}`:`The Magic Basket Challenge · ${UI.idx+1} of ${UI.qs.length}`;
+  $('#app').innerHTML=`<div class="workshop"><header class="shop-hud">${shopHud()}</header><div class="shop-main"><p class="shop-kicker">${kicker}</p><div class="shop-expr">${expr}</div><div class="bnpc ${UI.bubble.kind||''}"><span class="bface">${ico(npcKey(D.npc),D.npc.e)}</span><div>${UI.bubble.html}</div></div>${br?breakHTML(q):basketHTML(q)}</div>${next?`<div class="shop-dock">${next}</div>`:''}</div>`;
   if(UI.phase==='answer')PAD={v:''};
   if(UI.phase==='right')$('#nextBtn').focus({preventScroll:true});
 }
 function rFactoryResult(){
   const l=dun(UI.did).levels[UI.li],nx=dun(UI.did).levels[UI.li+1],hasNext=!!nx&&!nx.soon;
-  const line=UI.stars===3?'Every sum went through the factory with no mistakes.'
-    :UI.stars===2?'The factory finished them. One cleaner run would be 3 stars.'
-    :'The factory finished the job. Another visit will make the trick feel easy.';
+  const br=UI.qs&&UI.qs[0]&&UI.qs[0].type==='break';
+  const hard=!!(UI.qs&&UI.qs[0]&&UI.qs[0].hard);
+  const line=br?(hard?'You picked the easy break, then split it into two easy multiplications.':'Every mixed basket broke in two. The number of baskets stayed the same.'):(hard?'The shared count stayed in front, and the two groups joined.':'Every orchard went into the magic basket. The shared number stayed in front, and the fruit joined.');
+  const purse=(UI.mergeCoins||0)+(UI.gems||0);
   $('#app').innerHTML=`<div class="workshop"><header class="shop-hud">${shopHud()}</header><div class="shop-main"><div class="rcard">
-   <div class="rtitle">Packed!</div>
+   <div class="rtitle">${br?'Broken apart!':'Baskets glowing!'}</div>
    <p class="rsub">${l.name}</p>
    <div class="bigstars" aria-label="${UI.stars} stars">${[0,1,2].map(k=>`<span class="pop" style="animation-delay:${200+k*220}ms">${k<UI.stars?'⭐':'☆'}</span>`).join('')}</div>
-   ${UI.gems?`<div class="rcoins pop" style="animation-delay:900ms">+${UI.gems} 🪙</div><p class="rsub">${UI.levelBonus?`Includes +${COIN_LEVEL} for finishing this level today! `:''}Spend your coins on the farm.</p>`:''}
+   ${purse?`<div class="rcoins pop" style="animation-delay:900ms">+${purse} 🪙</div><p class="rsub">${UI.mergeCoins?(hard?`A coin for the easy split, and a coin when the parts land. `:`A coin for every basket you ${br?'broke':'filled'}. `):''}${UI.levelBonus?`Includes +${COIN_LEVEL} for finishing this level today! `:''}Spend your coins on the farm.</p>`:''}
    ${UI.capped?`<p class="rsub">🪙 Today's coins are full (${COIN_DAY_MAX})! Stars still count. Come back tomorrow for more coins.</p>`:''}
    <p>${line}</p>
    <div class="btns" style="justify-content:center">
@@ -706,7 +839,7 @@ function rFactoryResult(){
    </div></div></div></div>`;
 }
 function rResult(){
-  if(UI.qs&&UI.qs[0]&&UI.qs[0].type==='dist'){rFactoryResult();return}
+  if(UI.qs&&UI.qs[0]&&(UI.qs[0].type==='basket'||UI.qs[0].type==='break')){rFactoryResult();return}
   ensureBattle();
   const B=$('#battle');B.classList.add('result');B.classList.toggle('lose',!UI.ok);
   bat(UI.ok?batVictory:batDefeat);
@@ -742,11 +875,10 @@ Object.assign(ACT,{
   startLevel:d=>{const i=+d.i;if(UI.screen!=='dungeon')UI={screen:'dungeon',did:UI.did,mapAt:i};startLevel(i);if(UI.screen==='dungeon')render()},
   quitLevel:()=>quitLevel(),
   nextQ:()=>nextQ(),
+  breakPick:d=>breakPick(+d.i),
   pairTap:d=>pairTap(+d.i),
   friendTap:d=>friendTap(+d.i),
   hatTap:d=>hatTap(+d.i),
-  distPick:d=>distPick(d),
-  distMerge:d=>distMerge(+d.i),
   zeroTap:d=>zeroTap(+d.i),
   zeroBox:()=>zeroBox(),
   zeroClear:()=>{UI.qs[UI.idx].sel=[];rLevel()}

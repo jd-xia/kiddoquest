@@ -136,6 +136,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline
 .item{background:var(--surface);border:2px solid var(--line);border-radius:18px;padding:12px;text-align:center}
 .item .e{font-size:46px;line-height:1.1}
 .item .nm{font-weight:600;margin:4px 0 8px}
+.item .acts{display:flex;flex-direction:column;gap:6px;align-items:stretch}
+.item .acts .b{width:100%}
 .item.using{border-color:var(--accent)}
 
 /* players */
@@ -553,23 +555,46 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 @keyframes hatwiggle{0%,100%{transform:rotate(0)}50%{transform:rotate(-2deg) translateY(-2px)}}
 .lvchip.soon{opacity:.55}
 @media (prefers-reduced-motion:reduce){.chip.hatchip:not(.on){animation:none}}
-/* Distributive Property: drag two sums into the factory, pull out A, merge B and C */
-.dist-tray{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:72px;align-items:center}
-.term{display:inline-flex;align-items:center;gap:6px;min-height:58px;padding:8px 14px;border-radius:16px;border:3px solid var(--frame);background:linear-gradient(180deg,#22336F,#141D42);font-family:"Lilita One",sans-serif;font-size:26px;color:var(--ink);touch-action:none;user-select:none}
-.term.out{cursor:grab}.term.out:active{cursor:grabbing}
-.term.in{border-color:var(--gold);background:linear-gradient(180deg,#3A2E6F,#1E1846)}
-.term b{font-weight:400}.term span,.times,.paren{color:var(--plus);font-weight:700}
-.term.ghosting{position:fixed;z-index:40;margin:0;pointer-events:none;transform:translate(-50%,-60%) scale(1.06);box-shadow:0 12px 24px rgba(0,0,0,.45)}
-.factory{margin-top:8px;border:3px dashed rgba(245,194,76,.7);border-radius:18px;background:rgba(8,12,32,.45);min-height:108px;display:flex;flex-direction:column}
-.factory.hot{border-style:solid}.factory.over{border-color:#9DFFEA;box-shadow:0 0 18px rgba(157,255,234,.35)}.factory.done{border-style:solid;border-color:#9DFFEA}
-.factory-roof{font-family:"Lilita One",sans-serif;letter-spacing:.4px;color:var(--gold);padding:6px 12px 0;font-size:16px}
-.factory-body{flex:1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:8px 10px 12px}
-.factory-hint{margin:0;color:var(--muted);font-size:15px;font-weight:600}
-.nbtn{min-width:46px;height:48px;border-radius:14px;border:2px solid var(--frame);background:#0C1330;color:var(--ink);font:inherit;font-family:"Lilita One",sans-serif;font-size:24px;cursor:pointer}
-.nbtn:active{transform:translateY(2px)}
-.factor{font-family:"Lilita One",sans-serif;font-size:32px;color:var(--gold-hi);text-shadow:0 2px 0 rgba(0,0,0,.45)}
-.made{font-family:"Lilita One",sans-serif;font-size:30px;color:var(--gold-hi);text-shadow:0 2px 0 rgba(0,0,0,.5)}
-/* Distributive Property plays on its own factory floor, not in the monster arena */
+/* Same Basket: drag one basket from each orchard into the same magic basket */
+.basketgame{display:flex;flex-direction:column;gap:12px}
+.orchards{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:stretch}
+.orchard{padding:10px 8px;border-radius:18px;background:rgba(8,12,32,.35);border:2px solid rgba(255,255,255,.08)}
+.orchard.left{border-color:rgba(229,72,77,.55)}.orchard.right{border-color:rgba(61,220,151,.5)}
+.orchard h3{margin:0;text-align:center;font-family:"Lilita One",sans-serif;font-size:16px;font-weight:400;letter-spacing:.3px}
+.orchard p{margin:2px 0 8px;text-align:center;color:var(--muted);font-size:13px;font-weight:600}
+.orchard-blurb{margin:8px 0 0!important;font-size:12px!important}
+.orchard-empty{margin:0;color:var(--gold-hi)}
+.baskets{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;min-height:78px}
+.bbasket{display:flex;flex-direction:column;align-items:center;gap:1px;min-width:64px;padding:4px 6px 6px;border-radius:16px;border:3px solid #E5484D;background:linear-gradient(180deg,#4A2030,#241018);color:var(--ink);font-family:"Lilita One",sans-serif;touch-action:none;user-select:none;cursor:grab}
+.bbasket.right{border-color:#3DDC97;background:linear-gradient(180deg,#143528,#0C1C16)}
+.bbasket b{font-size:15px;font-weight:400;line-height:1}
+.bbasket-rim{font-size:16px;line-height:1}
+.fruits{display:flex;flex-wrap:wrap;justify-content:center;max-width:58px;font-size:13px;line-height:1.05}
+.fruits i{font-style:normal}
+.bbasket.ghosting{position:fixed;z-index:40;margin:0;pointer-events:none;transform:translate(-50%,-60%) scale(1.06);box-shadow:0 12px 24px rgba(0,0,0,.45)}
+.bbasket.mixed{border-color:var(--gold);background:linear-gradient(180deg,#4A3A16,#241808);cursor:default;flex-direction:row;flex-wrap:wrap;justify-content:center;max-width:148px}
+.knight{grid-column:1/-1;order:-1;display:flex;align-items:center;justify-content:center;gap:8px;padding:4px}
+.knight-fig{font-size:34px;line-height:1;filter:drop-shadow(0 3px 3px rgba(0,0,0,.4))}
+.knight-name{font-family:"Lilita One",sans-serif;color:var(--gold-hi);font-size:16px}
+.knight small{color:var(--muted);font-weight:700}
+.knight.cheer .knight-fig{animation:hatwiggle .55s ease}
+.magic{border:3px solid rgba(245,194,76,.85);border-radius:22px;padding:10px 10px 12px;background:linear-gradient(180deg,rgba(245,194,76,.14),rgba(8,12,32,.55));box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
+.magic.done{box-shadow:0 0 22px rgba(245,194,76,.35)}
+.magic-title{font-family:"Lilita One",sans-serif;color:var(--gold);text-align:center;letter-spacing:.4px}
+.law{margin:4px 0 8px;text-align:center;font-size:15px;font-weight:600}
+.law b{color:var(--gold-hi)}
+.law.done{font-family:"Lilita One",sans-serif;font-size:clamp(18px,3.4vw,26px);font-weight:400}
+.slots{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.bslot{position:relative;min-width:86px;min-height:84px;flex:1 1 92px;max-width:180px;border:3px dashed rgba(245,194,76,.55);border-radius:16px;display:flex;gap:4px;align-items:center;justify-content:center;padding:6px}
+.bslot.hot{border-style:solid}.bslot.over{border-color:#9DFFEA;box-shadow:0 0 16px rgba(157,255,234,.4)}
+.bslot.done{border-style:solid;border-color:#F5C24C;background:rgba(245,194,76,.14);animation:basketglow .7s ease}
+.slot-hint{color:var(--muted);font-size:12px;font-weight:700;text-align:center}
+.coinfly{position:absolute;left:50%;top:4px;z-index:2;color:#FFD43B;font-weight:800;pointer-events:none;animation:coinfly .9s ease forwards}
+@keyframes basketglow{0%{box-shadow:0 0 0 rgba(245,194,76,0);transform:scale(.94)}45%{box-shadow:0 0 22px rgba(245,194,76,.9);transform:scale(1.04)}100%{box-shadow:0 0 10px rgba(245,194,76,.35);transform:scale(1)}}
+@keyframes coinfly{to{transform:translate(-50%,-26px);opacity:0}}
+@media (min-width:800px){.orchards{grid-template-columns:1fr auto 1fr}.knight{grid-column:auto;order:0;flex-direction:column;gap:2px;align-self:center}}
+@media (prefers-reduced-motion:reduce){.bslot.done,.coinfly,.knight.cheer .knight-fig{animation:none}}
+/* Same Basket plays on its own orchard screen, not in the monster arena */
 .workshop{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;overflow:hidden;color:#EEF2FF;background:radial-gradient(ellipse at 50% -10%,#3A4E8C 0%,#121A3E 42%,#070B1E 78%);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .shop-hud{display:flex;align-items:center;gap:10px;padding:12px 14px 4px}
 .shop-main{width:min(760px,100%);margin:0 auto;padding:8px 16px 12px;display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;overflow:auto}
@@ -577,12 +602,6 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .shop-kicker{margin:0;text-align:center;font-family:"Lilita One",sans-serif;letter-spacing:.6px;color:var(--gold)}
 .shop-expr{font-family:"Lilita One",sans-serif;font-size:clamp(28px,6vw,46px);text-align:center;letter-spacing:.5px;text-shadow:0 3px 0 rgba(0,0,0,.45)}
 .workshop .bnpc{background:linear-gradient(180deg,rgba(40,56,120,.55),rgba(20,29,66,.55));border:1.5px solid var(--frame)}
-.workshop .dist{display:flex;flex-direction:column;gap:12px}
-.workshop .dist-tray{min-height:84px}
-.workshop .term{font-size:32px;min-height:72px;padding:10px 18px}
-.workshop .factory{min-height:148px;background:linear-gradient(180deg,rgba(18,28,64,.2),rgba(8,12,32,.72));box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),0 16px 40px rgba(0,0,0,.28)}
-.workshop .factory-body{min-height:84px}
-.workshop .made{font-size:clamp(28px,5vw,42px)}
 .workshop .display{max-width:none;height:56px;margin:4px 0;border:2px solid var(--gold);background:#060A1C;color:#fff;font-family:"Lilita One",sans-serif;font-size:34px}
 .workshop .pad{max-width:none;gap:8px}
 .workshop .pad button{height:52px;font-family:"Lilita One",sans-serif;font-size:26px;background:linear-gradient(180deg,#2A3D80,#16204A);border:1px solid rgba(245,194,76,.35);color:#fff;border-radius:14px;box-shadow:0 4px 0 #050817,inset 0 1px 0 rgba(255,255,255,.14)}
@@ -637,3 +656,42 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .synccard .syncwho{font-weight:700;color:var(--gold);margin-bottom:4px}
 .synccard p{margin:2px 0}
 #gsi{display:flex;justify-content:flex-start;margin:8px 0 12px}
+/* Break It Up (school.js splitHTML) */
+.row.split{align-items:center;gap:8px}
+.chip.big{min-width:74px;height:70px;font-size:30px}
+.chip.slicechip{position:relative;cursor:pointer;border-color:var(--gold);animation:hatwiggle 1.4s ease-in-out infinite}
+.chip.slicechip .knife{position:absolute;top:-16px;right:-12px;font-size:24px;transform:rotate(20deg);filter:drop-shadow(0 2px 2px rgba(0,0,0,.5))}
+.chip.piece{min-width:60px;border-color:var(--plus);animation:hatdrop .35s ease-out}
+.paren{font-size:34px;font-weight:700;color:var(--gold-hi)}
+.splitrows{display:flex;flex-direction:column;gap:6px;margin:6px 0 4px}
+.splitrow{padding:7px 12px;border-radius:12px;font-size:20px;font-weight:600;background:rgba(255,255,255,.06);border:1.5px solid transparent}
+.splitrow.now{border-color:var(--gold);background:rgba(245,194,76,.12)}
+.splitrow.done{opacity:.75}.splitrow.done b{color:var(--plus)}
+@media (prefers-reduced-motion:reduce){.chip.slicechip{animation:none}}
+.bslot.merging .bbasket.left{animation:joinL .65s ease forwards}
+.bslot.merging .bbasket.right{animation:joinR .65s ease forwards}
+@keyframes joinL{to{transform:translateX(10px) scale(.9)}}
+@keyframes joinR{to{transform:translateX(-10px) scale(.9)}}
+@media (prefers-reduced-motion:reduce){.bslot.merging .bbasket{animation:none}}
+/* Break It Up: drag the two kinds of apples out of each mixed basket */
+.breakgame{display:flex;flex-direction:column;gap:12px}
+.whole{padding:10px;border-radius:18px;border:3px solid rgba(245,194,76,.85);background:linear-gradient(180deg,rgba(245,194,76,.12),rgba(8,12,32,.5))}
+.whole h3{margin:0;text-align:center;font-family:"Lilita One",sans-serif;font-size:16px;font-weight:400}
+.whole>p{margin:2px 0 8px;text-align:center;color:var(--muted);font-size:13px;font-weight:600}
+.whole.over{box-shadow:0 0 16px rgba(157,255,234,.4)}
+.mixes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.mix{display:flex;align-items:center;gap:4px;padding:6px;border-radius:16px;border:2px dashed rgba(245,194,76,.75);min-height:70px}
+.mix.done{border-style:solid;border-color:#F5C24C;color:var(--gold-hi);font-family:"Lilita One",sans-serif;padding:8px 14px}
+.sent{color:var(--muted);font-weight:700;min-width:18px;text-align:center}
+.bpile{display:flex;flex-direction:column;align-items:center;min-width:52px;padding:4px 6px 5px;border-radius:14px;border:3px solid #E5484D;background:linear-gradient(180deg,#4A2030,#241018);cursor:grab;touch-action:none;user-select:none;font-family:"Lilita One",sans-serif}
+.bpile.green{border-color:#3DDC97;background:linear-gradient(180deg,#143528,#0C1C16)}
+.bpile b{font-size:14px;font-weight:400;line-height:1}
+.bpile.numcard,.bbasket.numcard{min-width:76px;min-height:64px;justify-content:center;padding:10px 14px}
+.bpile.numcard b,.bbasket.numcard b,.bbasket.mixed .bign{font-size:28px}
+.breakgame.pickgame .picks{display:flex;flex-direction:column;gap:12px;max-width:280px;margin:8px auto 0}
+.breakgame.pickgame .pick{font-size:26px;font-family:"Lilita One",sans-serif}
+.bpile.ghosting{position:fixed;z-index:40;margin:0;pointer-events:none;transform:translate(-50%,-60%) scale(1.06);box-shadow:0 12px 24px rgba(0,0,0,.45)}
+.bbasket.show{cursor:default}
+.bbasket.pairglow{animation:basketglow .7s ease}
+.orchard.over{box-shadow:0 0 16px rgba(157,255,234,.45)}
+@media (prefers-reduced-motion:reduce){.bbasket.pairglow{animation:none}}

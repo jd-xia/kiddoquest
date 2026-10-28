@@ -64,8 +64,8 @@ function resetEveryChild(){
   save();
 }
 let resetArmed=false;
-var HMF_JUST_RESET=0;
-if((DATA.v||1)<3){resetEveryChild();HMF_JUST_RESET=1}
+/* Older saves are marked current without wiping. A reset happens only when a grown-up taps it. */
+if((DATA.v||1)<3){DATA.v=3;try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}}
 /* Local-first: save() only writes this browser. A linked Google child farm is also saved about once a minute by cloud.js. */
 function save(){
   DATA.updated=Date.now();
@@ -77,7 +77,7 @@ const dun=(id,p)=>{const D=DUNGEONS.find(d=>d.id===id);return D&&schoolFor(D,gra
 /* A school building as the (current) player sees it: open when at least one of its topics has levels for their grade. */
 const schoolView=(id,p)=>{const S=schoolById(id);if(!S)return null;const topics=S.topics.map(t=>dun(t,p));return Object.assign({},S,{topics,open:S.open&&topics.some(t=>t.open)})};
 const totalStars=p=>Object.values(p.lv).reduce((a,r)=>a+(r.stars||0),0);
-const unlocked=(p,D,i)=>!D.levels[i].soon&&(i===0||((p.lv[D.levels[i-1].id]||{}).stars>0));   // 'soon' levels are placeholders
+const unlocked=(p,D,i)=>!D.levels[i].soon&&(i<3||((p.lv[D.levels[i-1].id]||{}).stars>0));   // first three levels are open from the start; later ones need the previous level's stars. 'soon' levels stay locked.
 const playable=D=>D.levels.filter(l=>!l.soon);
 
 /* ---------- ui state ---------- */
@@ -239,6 +239,5 @@ function startPage(screens,def){
   try{nav=JSON.parse(sessionStorage.getItem('hmf-nav')||'null');sessionStorage.removeItem('hmf-nav');LASTPOS=JSON.parse(sessionStorage.getItem('hmf-lastpos')||'null')}catch(e){}
   UI=nav&&screens[nav.screen]?Object.assign({screen:nav.screen},nav.extra||{}):def();
   $('#app').innerHTML='<div class="boot"><span class="coin">🌾</span><p>Loading Happy Learning Farm…</p></div>';
-  Promise.all([Promise.race([document.fonts?document.fonts.load('600 48px Fredoka'):Promise.resolve(),new Promise(r=>setTimeout(r,1800))]).catch(()=>{}),loadArt()]).then(()=>{render();
-    if(HMF_JUST_RESET){HMF_JUST_RESET=0;if(!DLG)notice(typeof cloudIsAccount==='function'&&cloudIsAccount()?'Every child on this device is back to 100 coins. Open Sync, then Upload, to replace the saved farm.':'Every child is back to a new farm with 100 coins.')}});
+  Promise.all([Promise.race([document.fonts?document.fonts.load('600 48px Fredoka'):Promise.resolve(),new Promise(r=>setTimeout(r,1800))]).catch(()=>{}),loadArt()]).then(()=>{render();if(typeof cloudBoot==='function')cloudBoot()});
 }
