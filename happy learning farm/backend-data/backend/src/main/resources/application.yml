@@ -1,5 +1,5 @@
 server:
-  port: ${PORT:8081}
+  port: ${PORT:8082}
 
 spring:
   application:
@@ -28,8 +28,8 @@ auth:
     issuer: ${AUTH_JWT_ISSUER:http://localhost:8080}
     audience: ${AUTH_JWT_AUDIENCE:kiddoquest}
   cors-origins:
-    - http://localhost:8000
-    - http://127.0.0.1:8000
+    - http://localhost:8080
+    - http://127.0.0.1:8080
     - http://localhost:5500
     - http://127.0.0.1:5500
     - https://jd-xia.github.io

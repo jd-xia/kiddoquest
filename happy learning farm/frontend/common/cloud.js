@@ -3,7 +3,7 @@
    Guest play never calls the server. */
 function cloudConfig(){
   const cfg=window.HMF_CLOUD||{};
-  const base=v=>v==null?'http://localhost:8000':String(v).replace(/\/$/,'');
+  const base=v=>v==null?'http://localhost:8080':String(v).replace(/\/$/,'');
   return {googleClientId:cfg.googleClientId||'',authBase:base(cfg.authBase),dataBase:base(cfg.dataBase==null?cfg.authBase:cfg.dataBase)};
 }
 function cloudDefault(){return {session:null,mode:'guest',childId:null}}
