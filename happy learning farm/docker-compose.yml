@@ -3,11 +3,21 @@
 # Account and farm rows live in MySQL. docker compose down keeps that data.
 # docker compose down -v deletes the MySQL volume.
 # From this directory: docker compose up --build
+# Push after docker login: docker compose push
 # Override secrets by copying .env.example to .env.
+#
+# Images:
+#   jiandao/kiddoquest-happy-learning-farm-backend-mysql
+#   jiandao/kiddoquest-happy-learning-farm-backend-openidsec
+#   jiandao/kiddoquest-happy-learning-farm-backend-data
+#   jiandao/kiddoquest-happy-learning-farm-frontend-html
 
 services:
   mysql:
-    image: mysql:8.4
+    build:
+      context: ./mysql
+    image: jiandao/kiddoquest-happy-learning-farm-backend-mysql
+    pull_policy: build
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-kiddoquest-local}
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
@@ -15,7 +25,6 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./mysql/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD"]
       interval: 5s
@@ -27,7 +36,8 @@ services:
   openid:
     build:
       context: ./backend-openID/backend
-    image: happy-learning-farm-openid
+    image: jiandao/kiddoquest-happy-learning-farm-backend-openidsec
+    pull_policy: build
     ports:
       - "8080:8080"
     environment:
@@ -48,7 +58,8 @@ services:
   farm:
     build:
       context: ./backend-data/backend
-    image: happy-learning-farm-farm
+    image: jiandao/kiddoquest-happy-learning-farm-backend-data
+    pull_policy: build
     ports:
       - "8081:8081"
     environment:
@@ -67,7 +78,11 @@ services:
     restart: unless-stopped
 
   frontend:
-    image: nginx:1.27-alpine
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: jiandao/kiddoquest-happy-learning-farm-frontend-html
+    pull_policy: build
     ports:
       - "8000:80"
     volumes:
