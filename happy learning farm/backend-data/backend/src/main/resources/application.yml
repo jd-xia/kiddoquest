@@ -33,6 +33,7 @@ auth:
     - http://localhost:5500
     - http://127.0.0.1:5500
     - https://jd-xia.github.io
+    - https://mvinb-2207.tail5e7276.ts.net
 
 management:
   endpoints:
