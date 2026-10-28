@@ -36,7 +36,8 @@ services:
       AUTH_JWT_ISSUER: http://localhost:8080
       AUTH_JWT_AUDIENCE: kiddoquest
       AUTH_JWT_TTL: ${AUTH_JWT_TTL:-PT12H}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      # Public OAuth client id, same value as frontend/common/cloud-config.js. Not a secret.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-669511875089-psnjdrjcfl3v8pc7kktm11bu8a3aau7p.apps.googleusercontent.com}
       OPENID_DB_URL: jdbc:mysql://mysql:3306/kiddoquest_openid?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8
       OPENID_DB_USERNAME: root
       OPENID_DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:-kiddoquest-local}
