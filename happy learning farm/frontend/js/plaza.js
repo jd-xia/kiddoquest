@@ -95,6 +95,11 @@ function buildFarmWorld(){
   F.zones.push({id:'board',kind:'board',x:-9,z:10,r:.8,out:{x:-9,z:11.6},name:'Progress Board'});
   addNPC({npc:ELLIE,x:-11.2,z:10.4,line:'Grown-ups: records here!',talk:['I\'m Ellie. I keep all the records.','Grown-ups can walk up to the board to see stars, scores and practice tips.']});
   addNPC({npc:MAYOR,x:2.6,z:11.4,line:'Welcome to the farm!',mayor:true});
+  const pondLv=fishOf(cur()).pond,pond=buildPond(pondLv>=2);pond.position.set(8,0,15);F.scene.add(pond);F.markHit(pond.children[0],{kind:'zone',id:'fish'});
+  const pw=pondLv>=2?4.2:2.8,pd=pondLv>=2?2.6:1.8;
+  F.baseObs.push({x0:8-pw+0.4,x1:8+pw-0.4,z0:15-pd+0.3,z1:15+pd-0.2});
+  F.zones.push({id:'fish',kind:'fish',x:8,z:15-pd-1.3,r:1.05,out:{x:8,z:15-pd-2.6},name:'Fishing Pond'});
+  addNPC({npc:ANGLER,x:10.2,z:15-pd-1.1,line:pondLv?'The fish are biting!':'Build a pond here!',talk:pondLv?['I\'m Finn. The pond is yours.','Buy a rod and some worms, then cast.','When a fish bites, you look under the water. Say the answer to reel it up before it pulls away.']:['I\'m Finn. This shore is empty.','Spend some coins to build a fishing pond.','Then you can buy tackle and fish.']});
   const ff=new THREE.Group();S.add(ff);   // wooden fence round the vegetable field, with a gap at the front
   for(const [ax,az,bx,bz] of[[-7,-6.6,7,-6.6],[-7,-6.6,-7,4.6],[7,-6.6,7,4.6],[-7,4.6,-1.6,4.6],[1.6,4.6,7,4.6]])fenceLine(ff,ax,az,bx,bz,'#B07A45');
   buildProps(S);
@@ -191,6 +196,17 @@ function buildStudio(){const g=new THREE.Group();
   ea.add(mesh(rbox(1,.8,.06,.02),'#FFFFFF',0,1.35,.06));ea.add(mesh(SPH(.18,10,8),'#FFD43B',-.2,1.45,.1));ea.add(mesh(BOX(.45,.1,.02),'#3E7BFA',.15,1.2,.1));
   const sign=signPlane('Art Studio','#8B5CF6',2.6);sign.position.set(0,2.95,2.2);g.add(sign);
   return g}
+function buildPond(wide){
+  const g=new THREE.Group(),w=wide?4.2:2.8,d=wide?2.6:1.8;
+  const bowl=mesh(new THREE.CircleGeometry(1,32),wide?'#2F7FD6':'#3E7BFA',0,.06,0,{r:.2});
+  bowl.rotation.x=-Math.PI/2;bowl.scale.set(w,d,1);g.add(bowl);
+  const rim=mesh(new THREE.RingGeometry(.96,1.08,32),'#7A9A55',0,.07,0);rim.rotation.x=-Math.PI/2;rim.scale.set(w,d,1);g.add(rim);
+  g.add(mesh(rbox(1.5,.16,2.4,.06),'#C68B4E',0,.18,-d-0.7));
+  for(const x of[-.55,.55])g.add(mesh(CYL(.06,.07,.7,6),'#8B5A2B',x,.35,-d-1.5));
+  const sign=signPlane(wide?'Big fishing pond':'Fishing pond','#2F7FD6',2.6);sign.position.set(0,1.35,-d+.2);g.add(sign);
+  const fish=emojiSprite(wide?'🎏':'🐟',.8);fish.position.set(.4,.5,.2);g.add(fish);
+  return g;
+}
 function buildBoard(){const g=new THREE.Group();
   for(const x of[-1.25,1.25])g.add(mesh(CYL(.08,.1,2.4,8),'#8B5A2B',x,1.2,0));
   g.add(mesh(rbox(2.8,1.6,.16,.06),'#C68B4E',0,1.55,0));
@@ -362,7 +378,7 @@ function updateHud(){
   const tk=$('#tasks');if(tk)tk.innerHTML=tasksHTML();
 }
 function rTown(){
-  const quick=[['tricks','🦉 Brain Boost'],['market','🛒 Farm Market'],['barn','🌾 Barn'],['studio','🎨 Art Studio'],['board','📋 Progress Board']].map(([id,l])=>`<button class="b ghost sm" data-act="quick" data-id="${id}">${l}</button>`).join('');
+  const quick=[['tricks','🦉 Brain Boost'],['market','🛒 Farm Market'],['barn','🌾 Barn'],['fish','🎣 Fishing Pond'],['studio','🎨 Art Studio'],['board','📋 Progress Board']].map(([id,l])=>`<button class="b ghost sm" data-act="quick" data-id="${id}">${l}</button>`).join('');
   $('#app').innerHTML=farmHud()+`
   <div class="world" id="world">
     <div class="wtop farmtop">${camCtl(`<button class="wide" data-act="overview" aria-label="See the whole farm">🗺️</button><button class="wide ${CAM.eye?'on':''}" data-act="eyeView" aria-pressed="${!!CAM.eye}" aria-label="Eye-level view: see your face">👀</button>`)}<div class="tasks ${tasksOpen()?'':'closed'}" id="tasks">${tasksHTML()}</div></div>
@@ -391,6 +407,7 @@ function mayorTalk(){dialog(MAYOR,[
   'Tap the ground to walk. Drag sideways to turn the camera. On a computer, the arrow keys work too.',
   'Seeds, animals and decorations cost coins 🪙. Mo only buys crops you grew yourself, for about 120% of the seed price. More coins come from Math School: every answer right first time earns a coin, and clearing a level earns a bonus.',
   'Tap a field patch to plant seeds. Crops grow in real time, so come back later to harvest! Watering 💧 makes them grow faster.',
+  'The fishing pond is at the bottom of the farm. Build it, buy tackle, then say the answer out loud. The question comes from a level you have already cleared.',
   'Harvests earn XP to level up your farm and unlock new seeds and animals. Mo\'s Farm Market sells animals, decorations and outfits.',
   'Start at Professor Hoot\'s Math School, at the top left of the farm. Good luck!'])}
 /* ---------- paint mode: tap anything on the farm to redraw its picture in the Art Studio ---------- */
@@ -498,6 +515,7 @@ function triggerZone(z){
   else if(z.kind==='board')go('progress');
   else if(z.kind==='barn')go('barn');
   else if(z.kind==='studio')go('studio');
+  else if(z.kind==='fish')go('fishing');
 }
 function farmUpdate(dt){
   const me=F.player,P=me.position,SP=6,t=F.t;

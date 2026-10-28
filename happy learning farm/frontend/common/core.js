@@ -1,7 +1,7 @@
 /* Happy Learning Farm — core: save data, players, router, dialog, shared farm data.
    Loaded by every page, after curriculum.js. No 3D code here. */
 const MAYOR={name:'Bella the Bear',e:'🐻'}, MERCHANT={name:'Mo the Merchant',e:'🦝'};
-const ELLIE={name:'Ellie the Elephant',e:'🐘'}, FARMER={name:'Farmer Gus',e:'🐴'}, ARTIST={name:'Polly the Parrot',e:'🦜'};
+const ELLIE={name:'Ellie the Elephant',e:'🐘'}, FARMER={name:'Farmer Gus',e:'🐴'}, ARTIST={name:'Polly the Parrot',e:'🦜'}, ANGLER={name:'Finn the Otter',e:'🦦'};
 const AVATARS=[['chick','🐣','Chick',0],['cat','🐱','Cat',15],['dog','🐶','Puppy',15],['fox','🦊','Fox',25],['panda','🐼','Panda',25],['frog','🐸','Frog',30],['tiger','🐯','Tiger',40],['koala','🐨','Koala',40],['unicorn','🦄','Unicorn',60],['dragon','🐲','Dragon',80],['robot','🤖','Robot',100],['alien','👾','Space Bug',120]];
 /* Characters a child can pick (Art Studio → Me). 'girl'/'boy' are full 3D farmers; the rest walk around
    as a stand-up cut-out of the emoji. A child's own drawing of 'me' always wins over the pick. */
@@ -89,7 +89,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
    Each screen lives on one page. go() renders locally when this page owns the screen,
    otherwise it hands the screen + extras to the next page through sessionStorage. */
 const PAGE_FILE=document.body.dataset.page||'index.html';
-const PAGES={players:'index.html',town:'index.html',market:'market.html',shop:'market.html',barn:'barn.html',progress:'board.html',studio:'studio.html'};
+const PAGES={players:'index.html',town:'index.html',market:'market.html',shop:'market.html',barn:'barn.html',progress:'board.html',studio:'studio.html',fishing:'fishing.html'};
 function pageFor(screen,extra){   // school screens live on school-<school id>.html; a topic (did) belongs to one school
   if(['school','dungeon','level','result'].includes(screen)){const e=extra||{},T=DUNGEONS.find(d=>d.id===(e.did||UI.did));return 'school-'+(e.sid||(T&&T.school)||UI.sid||'tricks')+'.html'}
   return PAGES[screen]||'index.html'}
@@ -187,6 +187,8 @@ function streakGift(p,days){const f=farmOf(p);
   return null}
 let F=null,MAP=null,BAT=null,LASTPOS=null;const KEYS=new Set();
 function farmOf(p){if(!p.farm)p.farm={plots:[],unlocked:6,animals:[],decor:[],shirt:'red',hat:'straw',owned:['shirt:red','hat:straw'],xp:0,barn:{}};return p.farm}
+function fishOf(p){const f=farmOf(p);if(!f.fish)f.fish={pond:0,owned:['rod:twig'],rod:'twig',bait:1,catches:{}};
+  if(!f.fish.owned.includes('rod:twig'))f.fish.owned.unshift('rod:twig');if(!f.fish.rod)f.fish.rod='twig';f.fish.catches=f.fish.catches||{};return f.fish}
 function farmLevel(xp){let l=1,need=20;while(xp>=need){xp-=need;l++;need=20*l}return{l,into:xp,need}}
 function plotInfo(pl){if(!pl)return null;const S=SEEDS.find(s=>s.id===pl.crop);const dur=S.mins*60000*(pl.watered?.7:1),el=Date.now()-pl.planted,prog=Math.min(1,el/dur);return{S,prog,left:Math.max(0,dur-el),stage:prog>=1?3:prog>=.5?2:prog>=.15?1:0}}
 const fmtLeft=ms=>{const s=Math.ceil(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
@@ -208,7 +210,7 @@ const ACT={
   openDungeon:d=>go('dungeon',{did:d.id}),
   openSchool:d=>go('school',{sid:d.id}),
   openProgress:()=>go('progress'),
-  quick:d=>{const s={tricks:['school',{sid:'tricks'}],market:['market'],board:['progress'],barn:['barn'],studio:['studio']}[d.id];if(s)go(s[0],s[1])},
+  quick:d=>{const s={tricks:['school',{sid:'tricks'}],market:['market'],board:['progress'],barn:['barn'],studio:['studio'],fish:['fishing']}[d.id];if(s)go(s[0],s[1])},
   camL:()=>{if(typeof G!=='undefined')G.stage&&G.stage.rotate&&G.stage.rotate(1)},camR:()=>{if(typeof G!=='undefined')G.stage&&G.stage.rotate&&G.stage.rotate(-1)},
   zoomIn:()=>{if(typeof G!=='undefined')G.stage&&G.stage.zoom&&G.stage.zoom(-1)},zoomOut:()=>{if(typeof G!=='undefined')G.stage&&G.stage.zoom&&G.stage.zoom(1)},
   dlgNext:()=>{if(!DLG)return;if(DLG.i<DLG.lines.length-1){DLG.i++;drawDlg()}else dlgEnd()},
