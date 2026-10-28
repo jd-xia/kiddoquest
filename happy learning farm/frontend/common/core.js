@@ -22,14 +22,50 @@ const PRAISE=['Hoo-ray! Spot on.','Brilliant trick work!','Exactly right!','You\
 
 /* ---------- data & saving ---------- */
 const LS='mathstreet-v1';
-function newPlayer(name,grade,look){return{id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,grade:grade||DEFAULT_GRADE,look:look||'boy',avatar:'chick',owned:['chick'],gems:0,seen:{},lv:{},sessions:[],time:0}}
-function blank(){const a=newPlayer('Jayden','p1','boy'),b=newPlayer('Michelle',null,'girl');return{v:2,updated:0,current:null,players:[a,b]}}
+const START_COINS=100;
+function newPlayer(name,grade,look){return{id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,grade:grade||DEFAULT_GRADE,look:look||'boy',avatar:'chick',owned:['chick'],gems:START_COINS,starter:1,seen:{},lv:{},sessions:[],time:0}}
+function blank(){const a=newPlayer('Jayden','p1','boy'),b=newPlayer('Michelle',null,'girl');return{v:3,updated:0,current:null,players:[a,b]}}
 let DATA=(()=>{try{const s=localStorage.getItem(LS);if(s){const d=JSON.parse(s);if(d&&d.players)return d}}catch(e){}return blank()})();
 /* Save migration v1 → v2 (runs once): Michelle is a girl, Jayden is a boy in P1. Later changes made on the
    progress board or in the Art Studio are kept, because this only runs for older saves. */
 if((DATA.v||1)<2){DATA.players.forEach(p=>{const n=p.name.trim().toLowerCase();
   if(!p.look)p.look=n==='michelle'?'girl':'boy';if(n==='jayden'){p.look='boy';p.grade='p1'}});DATA.v=2;try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}}
-DATA.players.forEach(p=>{if(!p.look)p.look='boy'});
+let coinGrant=false;
+DATA.players.forEach(p=>{
+  if(!p.look)p.look='boy';
+  if(!p.starter){if(!(Number(p.gems)>0))p.gems=START_COINS;p.starter=1;coinGrant=true}
+});
+if(coinGrant){try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}}
+/* Save v3 runs once: every child on this device goes back to a new farm with 100 coins.
+   Name, grade and look stay. The saved farm on the server stays until Sync → Upload. */
+function resetPlayer(p){
+  const fresh=newPlayer(p&&p.name||'Farmer',p&&p.grade,p&&p.look||'boy');
+  if(p&&p.id)fresh.id=p.id;
+  return fresh;
+}
+function rewriteSave(raw){
+  try{const d=JSON.parse(raw);if(!d||!Array.isArray(d.players))return null;d.players=d.players.map(resetPlayer);d.v=3;d.updated=Date.now();return JSON.stringify(d)}catch(e){return null}
+}
+function resetEveryChild(){
+  const keys=[];
+  try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k)keys.push(k)}}catch(e){}
+  DATA.players=(DATA.players||[]).map(resetPlayer);
+  if(!DATA.players.length)DATA.players=[newPlayer('Jayden','p1','boy'),newPlayer('Michelle',null,'girl')];
+  DATA.v=3;
+  keys.forEach(k=>{
+    if(k===LS)return;
+    if(k==='hmf-guest-backup'||k.indexOf('hmf-account-cache-')===0){const next=rewriteSave(localStorage.getItem(k));if(next)try{localStorage.setItem(k,next)}catch(e){}}
+    else if(k.indexOf('hmf-rev-')===0)try{localStorage.setItem(k,'0')}catch(e){}
+  });
+  if(typeof wipeArtNow==='function'){wipeArtNow();try{localStorage.removeItem('hmf-reset-art')}catch(e){}}
+  else try{localStorage.setItem('hmf-reset-art','1')}catch(e){}
+  if(typeof cloudSavedMaterial!=='undefined')cloudSavedMaterial=null;
+  if(typeof cloudAutoHold!=='undefined')cloudAutoHold=true;
+  save();
+}
+let resetArmed=false;
+var HMF_JUST_RESET=0;
+if((DATA.v||1)<3){resetEveryChild();HMF_JUST_RESET=1}
 /* Local-first: save() only writes this browser. A linked Google child farm is also saved about once a minute by cloud.js. */
 function save(){
   DATA.updated=Date.now();
@@ -157,7 +193,12 @@ const fmtLeft=ms=>{const s=Math.ceil(ms/1000);return Math.floor(s/60)+':'+String
 const plotCost=f=>12+4*(f.unlocked-6);
 const plotPos=i=>({x:-3.9+(i%4)*2.6,z:-3.6+Math.floor(i/4)*2.6});
 let toastTimer=null;
-function toast(t){const el=$('#toast');if(!el)return;el.textContent=t;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2400)}
+function toast(t,ms){const el=$('#toast');if(!el)return;el.textContent=t;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),ms||2400)}
+function notice(t){
+  const el=$('#dlg');
+  if(el&&!DLG){el.className='show';el.innerHTML=`<div class="dlg"><div style="flex:1"><div class="dlg-name">Farm</div><p>${esc(t)}</p><div class="dlg-btns"><button class="b sm" data-act="cloudClose">OK</button></div></div></div>`;return}
+  toast(t,6000);
+}
 
 /* ---------- actions shared by every page; pages add their own with Object.assign(ACT,{...}) ---------- */
 const ACT={
@@ -171,7 +212,12 @@ const ACT={
   camL:()=>{if(typeof G!=='undefined')G.stage&&G.stage.rotate&&G.stage.rotate(1)},camR:()=>{if(typeof G!=='undefined')G.stage&&G.stage.rotate&&G.stage.rotate(-1)},
   zoomIn:()=>{if(typeof G!=='undefined')G.stage&&G.stage.zoom&&G.stage.zoom(-1)},zoomOut:()=>{if(typeof G!=='undefined')G.stage&&G.stage.zoom&&G.stage.zoom(1)},
   dlgNext:()=>{if(!DLG)return;if(DLG.i<DLG.lines.length-1){DLG.i++;drawDlg()}else dlgEnd()},
-  dlgSkip:()=>dlgEnd()
+  dlgSkip:()=>dlgEnd(),
+  resetAll:()=>{
+    if(!resetArmed){resetArmed=true;render();return}
+    resetArmed=false;resetEveryChild();render();
+    if(!DLG)notice('Every child on this device is back to 100 coins. Open Sync and tap Upload to replace a saved farm.');
+  }
 };
 let onPageKey=null;
 document.addEventListener('click',e=>{
@@ -193,5 +239,6 @@ function startPage(screens,def){
   try{nav=JSON.parse(sessionStorage.getItem('hmf-nav')||'null');sessionStorage.removeItem('hmf-nav');LASTPOS=JSON.parse(sessionStorage.getItem('hmf-lastpos')||'null')}catch(e){}
   UI=nav&&screens[nav.screen]?Object.assign({screen:nav.screen},nav.extra||{}):def();
   $('#app').innerHTML='<div class="boot"><span class="coin">🌾</span><p>Loading Happy Learning Farm…</p></div>';
-  Promise.all([Promise.race([document.fonts?document.fonts.load('600 48px Fredoka'):Promise.resolve(),new Promise(r=>setTimeout(r,1800))]).catch(()=>{}),loadArt()]).then(()=>{render()});
+  Promise.all([Promise.race([document.fonts?document.fonts.load('600 48px Fredoka'):Promise.resolve(),new Promise(r=>setTimeout(r,1800))]).catch(()=>{}),loadArt()]).then(()=>{render();
+    if(HMF_JUST_RESET){HMF_JUST_RESET=0;if(!DLG)notice(typeof cloudIsAccount==='function'&&cloudIsAccount()?'Every child on this device is back to 100 coins. Open Sync, then Upload, to replace the saved farm.':'Every child is back to a new farm with 100 coins.')}});
 }

@@ -13,7 +13,9 @@ function rPlayers(){
   ${accountList!=null?accountList:`<div class="players">${DATA.players.map(p=>`<button class="player" data-act="choose" data-id="${p.id}"><div class="e">${avE(p)}</div><div class="nm">${esc(p.name)}</div><div class="muted"><span class="tag good">${gradeName(gradeOf(p))}</span> ⭐ ${totalStars(p)} · 🪙 ${p.gems}</div></button>`).join('')}</div>`}
   ${signed&&typeof cloudSaveLocalHtml==='function'?cloudSaveLocalHtml():''}
   ${canAdd?`<h3>${signed?'Add a child':'New player'}</h3><div style="display:flex;gap:8px;flex-wrap:wrap;max-width:520px"><input type="text" id="newname" maxlength="16" placeholder="Name" aria-label="New player name">${GRADES.map(g=>`<button class="b ${NEWGRADE===g.id?'':'ghost'}" data-act="pickGrade" data-g="${g.id}" aria-pressed="${NEWGRADE===g.id}">${g.name}</button>`).join('')}${['girl','boy'].map(id=>{const L=LOOKS.find(l=>l.id===id);return `<button class="b ${NEWLOOK===id?'':'ghost'}" data-act="pickNewLook" data-id="${id}" aria-pressed="${NEWLOOK===id}" aria-label="${L.name}">${L.e}</button>`}).join('')}<button class="b" data-act="${addAct}">Add</button></div>`:''}
-  ${typeof cloudBarHtml==='function'?cloudBarHtml():''}`;
+  ${typeof cloudBarHtml==='function'?cloudBarHtml():''}
+  <div class="cloudbar"><h3>Start again</h3><p class="muted">Every child on this device goes back to a new farm with 100 coins. A saved farm stays until you open Sync and tap Upload.</p>
+  <button class="b ghost" data-act="resetAll">${resetArmed?'Tap again to reset every child':'Reset every child'}</button></div>`;
 }
 const BOUND={x:26.5,z:17.5}, PEN={x0:9,x1:16.5,z0:-6,z1:3};
 const SITES=[{id:'tricks',x:-17,z:-13},{id:'soon1',x:-6,z:-13},{id:'soon2',x:5,z:-13},{id:'soon3',x:16,z:-13}];

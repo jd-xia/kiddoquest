@@ -190,7 +190,7 @@ public class ChildService {
         player.put("look", child.getLook());
         player.put("avatar", "chick");
         player.putArray("owned").add("chick");
-        player.put("gems", 0);
+        player.put("gems", 100);
         player.putObject("seen");
         player.putObject("lv");
         player.putArray("sessions");

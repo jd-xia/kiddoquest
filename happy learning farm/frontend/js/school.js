@@ -457,6 +457,7 @@ function setupQ(){
   const q=UI.qs[UI.idx];
   if(q.type==='hats'&&!q.hatsInfo){const H=q.hats;q.hatsInfo=i=>H[i]}   // generator's {R,d} list; q.hats becomes the tapped list
   q.sel=[];q.pairs=[];q.boxes=[];q.hats=[];
+  if(q.type==='dist'){q.in=[];q.picked=false}
   UI.phase=q.type==='input'?'answer':'work';
   UI.bubble={kind:'',html:q.say||'Type your answer.'};
   PAD=null;
@@ -464,6 +465,7 @@ function setupQ(){
 function hudHTML(){const l=dun(UI.did).levels[UI.li];
   return `<button class="bx" data-act="quitLevel" aria-label="Leave level">✕</button><div class="bmid"><div class="bname">${l.boss?'👑 ':''}${l.name}</div><div class="bprog">${UI.qs.map((_,k)=>`<i class="${k<UI.idx||(UI.screen==='result'&&UI.ok)?'ok':k===UI.idx?'on':''}"></i>`).join('')}</div></div><div class="bhearts" aria-label="${UI.hearts} hearts left">${'❤️'.repeat(Math.max(0,UI.hearts))}${'🖤'.repeat(3-Math.max(0,UI.hearts))}</div>`}
 function rLevel(){
+  if(UI.qs[UI.idx]&&UI.qs[UI.idx].type==='dist'){rFactory();return}
   ensureBattle();$('#battle').classList.remove('result','lose');
   const D=dun(UI.did),l=D.levels[UI.li],q=UI.qs[UI.idx];
   $('#bhud').innerHTML=hudHTML();
@@ -473,6 +475,7 @@ function rLevel(){
   if(q.type==='zerobox')work=zeroHTML(q);
   if(q.type==='friends')work=friendsHTML(q);
   if(q.type==='hats')work=hatsHTML(q);
+  if(q.type==='dist')work=distHTML(q);
   const pad=UI.phase==='answer'?`<div class="display" id="disp" aria-live="polite"></div><div class="pad" id="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button data-k="back" aria-label="Delete">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok" aria-label="Attack">⚡</button></div>`:'';
   const next=UI.phase==='right'?`<button class="b big-next" data-act="nextQ" id="nextBtn">${UI.idx<UI.qs.length-1?(l.boss?'Attack again ▸':'Next monster ▸'):'Finish level ▸'}</button>`:'';
   $('#bpanel').innerHTML=`<div class="bnpc ${UI.bubble.kind||''}"><span class="bface">${ico(npcKey(D.npc),D.npc.e)}</span><div>${UI.bubble.html}</div></div>${work}${pad}${next}`;
@@ -571,6 +574,50 @@ function hatsHTML(q){
     sum=`<div class="livesum">🎩 ${H.map(h=>h.R).join(' + ')} = <b>${H.reduce((a,h)=>a+h.R,0)}</b><br>🧥 ${H.map(h=>h.d).join(' + ')} = <b>${H.reduce((a,h)=>a+h.d,0)}</b></div>`}
   return `<div class="row hats">${chips}</div>${sum}`;
 }
+/* ---------- Distributive Property: drag A×B and A×C into the factory, pull out A, merge B and C ---------- */
+function distTerm(t){return `<b>${t.a}</b><span>×</span><b>${t.n}</b>`}
+function distHTML(q){
+  const made=UI.phase==='answer'||UI.phase==='right';
+  const tray=q.terms.map((t,i)=>q.in.includes(i)?'':`<div class="term out" data-i="${i}" role="button" aria-label="${t.a} times ${t.n}">${distTerm(t)}</div>`).join('');
+  let body;
+  if(made)body=`<div class="made pop">${q.a} × (${q.terms[0].n} + ${q.terms[1].n})</div>`;
+  else if(!q.in.length)body='<p class="factory-hint">Drag both sums here</p>';
+  else if(q.in.length<2)body=q.terms.filter((_,i)=>q.in.includes(i)).map(t=>`<div class="term in">${distTerm(t)}</div>`).join('')+'<p class="factory-hint">One more</p>';
+  else if(!q.picked)body=q.terms.map((t,i)=>`<span class="term in"><button class="nbtn" data-act="distPick" data-i="${i}" data-part="a">${t.a}</button><span>×</span><button class="nbtn" data-act="distPick" data-i="${i}" data-part="n">${t.n}</button></span>`).join('<span class="plusjoin">+</span>');
+  else body=`<span class="factor">${q.a}</span><span class="times">×</span><span class="paren">(</span>${q.terms.map((t,i)=>`<button class="chip ${q.sel.includes(i)?'sel':''}" data-act="distMerge" data-i="${i}">${t.n}</button>`).join('<span class="plusjoin">+</span>')}<span class="paren">)</span>`;
+  return `<div class="dist"><div class="dist-tray">${tray}</div><div class="factory ${q.in.length?'hot':''} ${made?'done':''}" id="factory"><div class="factory-roof">🏭 Factory</div><div class="factory-body">${body}</div></div></div>`;
+}
+function distOver(f,ev){if(!f)return false;const r=f.getBoundingClientRect();return ev.clientX>=r.left&&ev.clientX<=r.right&&ev.clientY>=r.top&&ev.clientY<=r.bottom}
+function distDrop(i){
+  const q=UI.qs[UI.idx];if(UI.phase!=='work'||!q||q.type!=='dist'||q.in.includes(i))return;
+  q.in.push(i);bat(batSparkle);
+  UI.bubble=q.in.length<2?{kind:'good',html:'In the factory! Drag the other sum in too.'}:{kind:'good',html:'Both sums are in. Tap the number that is in <b>both</b>. That number is A.'};
+  rLevel();
+}
+function distPick(d){
+  const q=UI.qs[UI.idx];if(UI.phase!=='work'||q.in.length<2||q.picked)return;
+  const t=q.terms[+d.i],n=d.part==='a'?t.a:t.n;
+  if(d.part==='a'){q.picked=true;bat(batSparkle);UI.bubble={kind:'good',html:`<b>${q.a}</b> is in both sums, so it comes out in front. Now tap <b>${q.terms[0].n}</b> and <b>${q.terms[1].n}</b> to merge them.`}}
+  else UI.bubble={kind:'bad',html:`${n} is only in one sum. Look for the number you see twice.`};
+  rLevel();
+}
+function distMerge(i){
+  const q=UI.qs[UI.idx];if(UI.phase!=='work'||!q.picked)return;
+  q.sel=q.sel.includes(i)?q.sel.filter(x=>x!==i):[...q.sel,i];
+  if(q.sel.length===2){UI.phase='answer';bat(batSparkle);UI.bubble={kind:'good',html:`The factory made <b>${q.a} × (${q.terms[0].n} + ${q.terms[1].n})</b>. Work that out, then press ✓`}}
+  else UI.bubble={kind:'',html:`${q.terms[i].n} is in. Tap the other number to merge.`};
+  rLevel();
+}
+document.addEventListener('pointerdown',e=>{
+  const el=e.target.closest('.term.out');if(!el||!el.closest('.dist')||UI.screen!=='level'||UI.phase!=='work')return;
+  const q=UI.qs&&UI.qs[UI.idx];if(!q||q.type!=='dist')return;
+  const i=+el.dataset.i,x0=e.clientX,y0=e.clientY,ghost=el.cloneNode(true);
+  ghost.classList.add('ghosting');document.body.appendChild(ghost);
+  const place=ev=>{ghost.style.left=ev.clientX+'px';ghost.style.top=ev.clientY+'px';const f=$('#factory');if(f)f.classList.toggle('over',distOver(f,ev))};
+  const end=ev=>{ghost.remove();const f=$('#factory');if(f)f.classList.remove('over');el.removeEventListener('pointermove',place);el.removeEventListener('pointerup',end);el.removeEventListener('pointercancel',end);if(distOver(f,ev)||Math.hypot(ev.clientX-x0,ev.clientY-y0)<12)distDrop(i)};
+  place(e);try{el.setPointerCapture(e.pointerId)}catch(err){}
+  el.addEventListener('pointermove',place);el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);
+});
 function hatTap(i){
   const q=UI.qs[UI.idx];if(UI.phase!=='work'||q.hats.includes(i))return;
   q.hats.push(i);bat(batSparkle);const h=q.hatsInfo(i);
@@ -592,6 +639,10 @@ function submit(v){
     if(!q.wrong)UI.first++;
     UI.phase='right';UI.bubble={kind:'good',html:`${pick(PRAISE)} The answer is <b>${q.answer}</b>.${q.wrong?'':coinsLeft(cur())>=UI.first*COIN_RIGHT?` <span class="coinhint">+${COIN_RIGHT} 🪙</span>`:' <span class="coinhint">⭐</span>'}`};
     bat(batAttack,q.answer,UI.idx===UI.qs.length-1);rLevel();
+  }else if(q.type==='dist'){
+    q.wrong=true;if(UI.hearts>1)UI.hearts--;
+    UI.bubble={kind:'bad',html:`${v} isn't it yet. Let's go step by step:<ol>${q.steps.map(s=>`<li>${s}</li>`).join('')}</ol>The factory is still waiting. Try again!`};
+    rLevel();const d=$('#disp');if(d)d.classList.add('shake');
   }else{
     q.wrong=true;UI.hearts--;bat(batHurt);
     if(UI.hearts<=0){setTimeout(()=>finishLevel(false),650);UI.phase='wait';UI.bubble={kind:'bad',html:'Oh no, out of hearts!'};rLevel();return}
@@ -622,7 +673,40 @@ function finishLevel(ok){
   render();
 }
 function quitLevel(){if(UI.answered>0)record(false);go('dungeon',{did:UI.did,mapAt:UI.li})}
+function shopHud(){
+  const l=dun(UI.did).levels[UI.li];
+  return `<button class="bx" data-act="quitLevel" aria-label="Leave level">✕</button><div class="bmid"><div class="bname">${l.name}</div><div class="bprog">${UI.qs.map((_,k)=>`<i class="${k<UI.idx||(UI.screen==='result'&&UI.ok)?'ok':k===UI.idx?'on':''}"></i>`).join('')}</div></div>`;
+}
+function rFactory(){
+  const D=dun(UI.did),q=UI.qs[UI.idx];
+  const pad=UI.phase==='answer'?`<div class="display" id="disp" aria-live="polite"></div><div class="pad" id="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button data-k="back" aria-label="Delete">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok" aria-label="Check">✓</button></div>`:'';
+  const next=UI.phase==='right'?`<button class="b big-next" data-act="nextQ" id="nextBtn">${UI.idx<UI.qs.length-1?'Next sum ▸':'Finish ▸'}</button>`:'';
+  $('#app').innerHTML=`<div class="workshop"><header class="shop-hud">${shopHud()}</header><div class="shop-main"><p class="shop-kicker">Sum ${UI.idx+1} of ${UI.qs.length}</p><div class="shop-expr">${q.html}</div><div class="bnpc ${UI.bubble.kind||''}"><span class="bface">${ico(npcKey(D.npc),D.npc.e)}</span><div>${UI.bubble.html}</div></div>${distHTML(q)}</div>${pad||next?`<div class="shop-dock">${pad}${next}</div>`:''}</div>`;
+  if(UI.phase==='answer')PAD={v:''};
+  if(UI.phase==='right')$('#nextBtn').focus({preventScroll:true});
+}
+function rFactoryResult(){
+  const l=dun(UI.did).levels[UI.li],nx=dun(UI.did).levels[UI.li+1],hasNext=!!nx&&!nx.soon;
+  const line=UI.stars===3?'Every sum went through the factory with no mistakes.'
+    :UI.stars===2?'The factory finished them. One cleaner run would be 3 stars.'
+    :'The factory finished the job. Another visit will make the trick feel easy.';
+  $('#app').innerHTML=`<div class="workshop"><header class="shop-hud">${shopHud()}</header><div class="shop-main"><div class="rcard">
+   <div class="rtitle">Packed!</div>
+   <p class="rsub">${l.name}</p>
+   <div class="bigstars" aria-label="${UI.stars} stars">${[0,1,2].map(k=>`<span class="pop" style="animation-delay:${200+k*220}ms">${k<UI.stars?'⭐':'☆'}</span>`).join('')}</div>
+   ${UI.gems?`<div class="rcoins pop" style="animation-delay:900ms">+${UI.gems} 🪙</div><p class="rsub">${UI.levelBonus?`Includes +${COIN_LEVEL} for finishing this level today! `:''}Spend your coins on the farm.</p>`:''}
+   ${UI.capped?`<p class="rsub">🪙 Today's coins are full (${COIN_DAY_MAX})! Stars still count. Come back tomorrow for more coins.</p>`:''}
+   <p>${line}</p>
+   <div class="btns" style="justify-content:center">
+    ${hasNext?`<button class="b" data-act="startLevel" data-i="${UI.li+1}">Next level ▸</button>`:''}
+    <button class="b ${hasNext?'ghost':''}" data-act="startLevel" data-i="${UI.li}">Play again</button>
+    <button class="b ghost" data-act="toDungeon">Level map</button>
+    <button class="b ghost" data-act="toSchool">🏝️ Islands</button>
+    <button class="b ghost" data-act="toTown">🌾 Farm</button>
+   </div></div></div></div>`;
+}
 function rResult(){
+  if(UI.qs&&UI.qs[0]&&UI.qs[0].type==='dist'){rFactoryResult();return}
   ensureBattle();
   const B=$('#battle');B.classList.add('result');B.classList.toggle('lose',!UI.ok);
   bat(UI.ok?batVictory:batDefeat);
@@ -661,6 +745,8 @@ Object.assign(ACT,{
   pairTap:d=>pairTap(+d.i),
   friendTap:d=>friendTap(+d.i),
   hatTap:d=>hatTap(+d.i),
+  distPick:d=>distPick(d),
+  distMerge:d=>distMerge(+d.i),
   zeroTap:d=>zeroTap(+d.i),
   zeroBox:()=>zeroBox(),
   zeroClear:()=>{UI.qs[UI.idx].sel=[];rLevel()}

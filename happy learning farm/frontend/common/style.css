@@ -553,6 +553,41 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 @keyframes hatwiggle{0%,100%{transform:rotate(0)}50%{transform:rotate(-2deg) translateY(-2px)}}
 .lvchip.soon{opacity:.55}
 @media (prefers-reduced-motion:reduce){.chip.hatchip:not(.on){animation:none}}
+/* Distributive Property: drag two sums into the factory, pull out A, merge B and C */
+.dist-tray{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;min-height:72px;align-items:center}
+.term{display:inline-flex;align-items:center;gap:6px;min-height:58px;padding:8px 14px;border-radius:16px;border:3px solid var(--frame);background:linear-gradient(180deg,#22336F,#141D42);font-family:"Lilita One",sans-serif;font-size:26px;color:var(--ink);touch-action:none;user-select:none}
+.term.out{cursor:grab}.term.out:active{cursor:grabbing}
+.term.in{border-color:var(--gold);background:linear-gradient(180deg,#3A2E6F,#1E1846)}
+.term b{font-weight:400}.term span,.times,.paren{color:var(--plus);font-weight:700}
+.term.ghosting{position:fixed;z-index:40;margin:0;pointer-events:none;transform:translate(-50%,-60%) scale(1.06);box-shadow:0 12px 24px rgba(0,0,0,.45)}
+.factory{margin-top:8px;border:3px dashed rgba(245,194,76,.7);border-radius:18px;background:rgba(8,12,32,.45);min-height:108px;display:flex;flex-direction:column}
+.factory.hot{border-style:solid}.factory.over{border-color:#9DFFEA;box-shadow:0 0 18px rgba(157,255,234,.35)}.factory.done{border-style:solid;border-color:#9DFFEA}
+.factory-roof{font-family:"Lilita One",sans-serif;letter-spacing:.4px;color:var(--gold);padding:6px 12px 0;font-size:16px}
+.factory-body{flex:1;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:center;padding:8px 10px 12px}
+.factory-hint{margin:0;color:var(--muted);font-size:15px;font-weight:600}
+.nbtn{min-width:46px;height:48px;border-radius:14px;border:2px solid var(--frame);background:#0C1330;color:var(--ink);font:inherit;font-family:"Lilita One",sans-serif;font-size:24px;cursor:pointer}
+.nbtn:active{transform:translateY(2px)}
+.factor{font-family:"Lilita One",sans-serif;font-size:32px;color:var(--gold-hi);text-shadow:0 2px 0 rgba(0,0,0,.45)}
+.made{font-family:"Lilita One",sans-serif;font-size:30px;color:var(--gold-hi);text-shadow:0 2px 0 rgba(0,0,0,.5)}
+/* Distributive Property plays on its own factory floor, not in the monster arena */
+.workshop{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;overflow:hidden;color:#EEF2FF;background:radial-gradient(ellipse at 50% -10%,#3A4E8C 0%,#121A3E 42%,#070B1E 78%);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.shop-hud{display:flex;align-items:center;gap:10px;padding:12px 14px 4px}
+.shop-main{width:min(760px,100%);margin:0 auto;padding:8px 16px 12px;display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;overflow:auto}
+.shop-dock{flex:none;width:min(760px,100%);margin:0 auto;padding:8px 16px 16px}
+.shop-kicker{margin:0;text-align:center;font-family:"Lilita One",sans-serif;letter-spacing:.6px;color:var(--gold)}
+.shop-expr{font-family:"Lilita One",sans-serif;font-size:clamp(28px,6vw,46px);text-align:center;letter-spacing:.5px;text-shadow:0 3px 0 rgba(0,0,0,.45)}
+.workshop .bnpc{background:linear-gradient(180deg,rgba(40,56,120,.55),rgba(20,29,66,.55));border:1.5px solid var(--frame)}
+.workshop .dist{display:flex;flex-direction:column;gap:12px}
+.workshop .dist-tray{min-height:84px}
+.workshop .term{font-size:32px;min-height:72px;padding:10px 18px}
+.workshop .factory{min-height:148px;background:linear-gradient(180deg,rgba(18,28,64,.2),rgba(8,12,32,.72));box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),0 16px 40px rgba(0,0,0,.28)}
+.workshop .factory-body{min-height:84px}
+.workshop .made{font-size:clamp(28px,5vw,42px)}
+.workshop .display{max-width:none;height:56px;margin:4px 0;border:2px solid var(--gold);background:#060A1C;color:#fff;font-family:"Lilita One",sans-serif;font-size:34px}
+.workshop .pad{max-width:none;gap:8px}
+.workshop .pad button{height:52px;font-family:"Lilita One",sans-serif;font-size:26px;background:linear-gradient(180deg,#2A3D80,#16204A);border:1px solid rgba(245,194,76,.35);color:#fff;border-radius:14px;box-shadow:0 4px 0 #050817,inset 0 1px 0 rgba(255,255,255,.14)}
+.workshop .pad button.ok{background:linear-gradient(180deg,#FFE793,#F7BE3E 55%,#DB921C);color:#3A2300;border-color:#FFF1B8;box-shadow:0 4px 0 #8A5A10}
+.workshop .rcard{margin-top:12px}
 /* Today's Tasks: coins today, the chest and the streak (plaza.js tasksHTML) */
 .tasks-coins{margin-top:4px;padding:6px 4px 2px;font-size:14px;font-weight:700;color:#8A5A10;border-top:1px dashed #E2C9A0}
 .tasks .b.chestbtn{display:block;width:100%;margin:6px 0 2px;min-height:44px;font-size:16px;background:linear-gradient(180deg,#FFE793,#F7BE3E);color:#3A2300;border:2px solid #A56A3B;animation:paintpulse 1.2s ease-in-out infinite}
@@ -594,5 +629,11 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .cloudbar{margin:18px 0;padding:14px 16px;border-radius:18px;border:1.5px solid var(--frame);background:rgba(8,12,32,.35)}
 .cloudbar h3{margin-top:0}
 .cloudbar .row,.dlg-btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
-.cloudpick{max-width:720px}
+.cloudpick,.syncdlg{max-width:720px}
+.syncdlg{flex-direction:column}
+.synccards{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px}
+.synccard{flex:1 1 200px;padding:12px 14px;border-radius:16px;border:1.5px solid var(--frame);background:rgba(8,12,32,.28)}
+.synccard.newer{border-color:var(--gold);box-shadow:0 0 0 2px rgba(245,194,76,.28)}
+.synccard .syncwho{font-weight:700;color:var(--gold);margin-bottom:4px}
+.synccard p{margin:2px 0}
 #gsi{display:flex;justify-content:flex-start;margin:8px 0 12px}

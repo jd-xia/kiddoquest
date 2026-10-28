@@ -146,6 +146,21 @@ function qTenWorksheet(){
 /* Hat and Cloak for P1: numbers just under 100. */
 function qHatsP1(count){return hatQ(Array.from({length:count},()=>100-rnd(1,4)),'Tap each number to give it a hat.')}
 function qHatWorksheetP1(){return hatQ([99,97,98,96,98],'This one is from your worksheet! Five numbers need hats.')}
+/* Distributive Property: A×B + A×C. Drag both sums into the factory, pull out the shared A, merge B and C. */
+function distQ(a,b,c,say){
+  const sum=b+c;
+  return{type:'dist',a,b,c,terms:[{a,n:b},{a,n:c}],html:`${a} × ${b} + ${a} × ${c} = ?`,answer:a*sum,
+    steps:[`${a} is in both sums`,`Pull it out: ${a} × (${b} + ${c})`,`${b} + ${c} = ${sum}`,`${a} × ${sum} = ?`],
+    say:say||'Drag both sums into the factory.'};
+}
+function qDistP1(){
+  for(;;){const a=rnd(2,5),b=rnd(1,5),c=rnd(1,5);if(a!==b&&a!==c&&b!==c&&a*(b+c)<=30)return distQ(a,b,c)}
+}
+function qDistSheetP1(){return distQ(3,4,2,'Drag 3 × 4 and 3 × 2 into the factory.')}
+function qDistP3(){
+  for(;;){const a=pick([4,5,6,7,8,9,12]),b=rnd(1,9),c=10-b;if(b!==c&&a!==b&&a!==c)return distQ(a,b,c,'Drag both sums into the factory. Find the number that is in both.')}
+}
+function qDistSheetP3(){return distQ(12,7,3,'Drag 12 × 7 and 12 × 3 into the factory.')}
 
 /* ---------- grades ----------
    Each player picks a grade. Every school keeps one set of levels per grade in `grades`,
@@ -189,7 +204,11 @@ const DUNGEONS=[
             'Put a hat on 98 and it grows into 100. Its cloak remembers the 2 we added: <span class="ex">98 = 100 − 2</span>',
             'Add up the hundreds first, then take off the cloaks.',
             '<span class="ex">99 + 98 = 100 + 100 − 1 − 2 = 197</span>']},
-    {id:'c1-3',name:'Coming soon',soon:true},
+    {id:'c1-3',name:'Distributive Property',count:5,gen:i=>i===4?qDistSheetP1():qDistP1(),
+     intro:['Two sums can share a number. The factory pulls that number out!',
+            'Look: <span class="ex">3 × 4 + 3 × 2</span>. The 3 is in both sums.',
+            'Drag both sums into the factory, then tap the shared 3. That number is A.',
+            'Tap 4 and 2 to merge them: <span class="ex">3 × (4 + 2)</span>']},
     {id:'c1-4',name:'Coming soon',soon:true},
     {id:'c1-5',name:'Coming soon',soon:true},
     {id:'c1-6',name:'Coming soon',soon:true},
@@ -211,7 +230,11 @@ const DUNGEONS=[
             'Put a hat on 98 and it grows into 100. Its cloak remembers the 2 we added: <span class="ex">98 = 100 − 2</span>',
             'Add up all the round numbers first, then take off the cloaks.',
             '<span class="ex">98 + 998 = 100 + 1000 − 2 − 2 = 1094</span>']},
-    {id:'c3-3',name:'Coming soon',soon:true},
+    {id:'c3-3',name:'Distributive Property',count:5,gen:i=>i===4?qDistSheetP3():qDistP3(),
+     intro:['A number that sits in both sums can come out in front.',
+            '<span class="ex">6 × 7 + 6 × 3 = 6 × (7 + 3)</span>',
+            'Drag both sums into the factory. Tap the shared number, then merge the other two.',
+            '7 + 3 is 10, and 6 × 10 is much easier than adding 42 and 18!']},
     {id:'c3-4',name:'Coming soon',soon:true},
     {id:'c3-5',name:'Coming soon',soon:true},
     {id:'c3-6',name:'Coming soon',soon:true},
