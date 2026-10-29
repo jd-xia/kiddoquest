@@ -101,7 +101,7 @@ function buildFarmWorld(){
   const pw=pondLv>=2?4.2:2.8,pd=pondLv>=2?2.6:1.8;
   F.baseObs.push({x0:8-pw+0.4,x1:8+pw-0.4,z0:15-pd+0.3,z1:15+pd-0.2});
   F.zones.push({id:'fish',kind:'fish',x:8,z:15-pd-1.3,r:1.05,out:{x:8,z:15-pd-2.6},name:'Fishing Pond'});
-  addNPC({npc:ANGLER,x:10.2,z:15-pd-1.1,line:pondLv?'The fish are biting!':'Build a pond here!',talk:pondLv?['I\'m Finn. The pond is yours.','Buy a rod and some worms, then cast.','When a fish bites, you look under the water. The question is from the 1 to 9 times table. Say the answer to reel it up before it pulls away.']:['I\'m Finn. This shore is empty.','Spend some coins to build a fishing pond.','Then you can buy tackle and fish.']});
+  addNPC({npc:ANGLER,x:10.2,z:15-pd-1.1,line:pondLv?'The fish are biting!':'Build a pond here!',talk:pondLv?['I\'m Finn. The pond is yours.','Buy a rod and some worms, then cast.','Choose the 1 to 9 times table, or tricks you have cleared. Get 2 answers right in a row. A wrong answer does not scare the fish away. The time limit starts at 30 seconds, and you can change it.']:['I\'m Finn. This shore is empty.','Spend some coins to build a fishing pond.','Then you can buy tackle and fish.']});
   const ff=new THREE.Group();S.add(ff);   // wooden fence round the vegetable field, with a gap at the front
   for(const [ax,az,bx,bz] of[[-7,-6.6,7,-6.6],[-7,-6.6,-7,4.6],[7,-6.6,7,4.6],[-7,4.6,-1.6,4.6],[1.6,4.6,7,4.6]])fenceLine(ff,ax,az,bx,bz,'#B07A45');
   buildProps(S);
@@ -531,7 +531,7 @@ function mayorTalk(){dialog(MAYOR,[
   'Tap the ground to walk. Drag sideways to turn the camera. On a computer, the arrow keys work too.',
   'Seeds, animals and decorations cost coins 🪙. Mo buys crops you grew, for about 120% of the seed price, and fish you caught. Each fish has its own price. More coins come from Math School: every answer right first time earns a coin, and clearing a level earns a bonus.',
   'Tap a field patch to plant seeds. Crops grow in real time, so come back later to harvest! Watering 💧 makes them grow faster.',
-  'The fishing pond is at the bottom of the farm. Build it, buy tackle, then say the answer out loud. Every question is from the 1 to 9 times table.',
+  'The fishing pond is at the bottom of the farm. Build it, buy tackle, then choose the 1 to 9 times table or tricks you have cleared. Get 2 answers right in a row. A wrong answer does not scare the fish away. The time limit starts at 30 seconds, and you can change it.',
   'New land is for sale up the hill on the left. The sign says Land for sale. Mo sells that meadow too, on his Land tab.',
   'Harvests earn XP to level up your farm and unlock new seeds and animals. Mo\'s Farm Market sells animals, decorations and outfits.',
   'Start at Professor Hoot\'s Math School, at the top left of the farm. Good luck!'])}

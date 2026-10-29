@@ -735,6 +735,14 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .heard{min-height:1.4em;font-weight:700}
 .heard.good{color:#d8ff9a}
 .heard.bad{color:#ffd0d0}
+.fishlog{text-align:left;margin:8px auto;max-width:460px}
+.fishlog ol{list-style:none;margin:0;padding:0}
+.fishlog li{margin:6px 0;padding:10px 12px;border-radius:12px;background:rgba(8,16,40,.35)}
+.fishlog li b{display:block}
+.fishlog li span{font-family:"Lilita One",sans-serif;font-size:22px}
+.fishlog li.good span{color:#d8ff9a}
+.fishlog li.bad span{color:#ffd0d0}
+.fishlog li small{display:block;font-weight:700}
 .verdict{margin:0 0 8px;font-family:"Lilita One",sans-serif;font-size:28px;letter-spacing:.4px}
 .verdict.good{color:#d8ff9a}
 .verdict.bad{color:#ffb4b4}

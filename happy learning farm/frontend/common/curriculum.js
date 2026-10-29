@@ -146,64 +146,62 @@ function qTenWorksheet(){
 /* Hat and Cloak for P1: numbers just under 100. */
 function qHatsP1(count){return hatQ(Array.from({length:count},()=>100-rnd(1,4)),'Tap each number to give it a hat.')}
 function qHatWorksheetP1(){return hatQ([99,97,98,96,98],'This one is from your worksheet! Five numbers need hats.')}
-/* Same Basket: A baskets of B fruit, and A baskets of C fruit. Drag one from each orchard into the
-   same big basket. A stays A. B and C join, so A×B + A×C becomes A×(B+C). Then a short demo, and the child types the product. */
+/* Same Basket: A×B + A×C becomes A×(B+C). B and C are chosen so they make a round number:
+   10 for apples, 20 or 100 for two-digit numbers, 1000 for three-digit numbers. */
 function basketQ(a,b,c,say){
   return{type:'basket',a,b,c,html:`${a} × ${b} + ${a} × ${c}`,answer:a*(b+c),
-    say:say||'Drag one basket from each orchard into the same place in the magic basket.'};
+    say:say||`Drag one basket from each orchard into the same place. ${b} and ${c} make ${b+c}.`};
 }
-function qBasketFruit(){
-  for(;;){const a=rnd(2,4),b=rnd(1,5),c=rnd(1,5);if(b!==c&&a*(b+c)<=24)return basketQ(a,b,c)}
+const BASKET_TENS=[[6,4],[7,3],[8,2],[9,1]];
+function qBasketTen(a){
+  const pair=BASKET_TENS[rnd(0,BASKET_TENS.length-1)],[b,c]=rnd(0,1)?pair:[pair[1],pair[0]];
+  return basketQ(a,b,c,`${a} baskets of ${b}, and ${a} baskets of ${c}. ${b} and ${c} make 10, so this is ${a} × 10.`);
 }
-function qBasketSheetP1(){return basketQ(3,4,2,'Three baskets of 4 red apples, and three baskets of 2 green apples. Drag one of each into the same big basket.')}
+function qBasketSheetP1(){return basketQ(4,6,4,'Four baskets of 6 red apples, and four baskets of 4 green apples. 6 and 4 make 10, so this is 4 × 10.')}
 function qBasketNums(a,b,c,say){
-  const q=basketQ(a,b,c,say||'No apples this time. Drag both numbers into the same basket. The shared count stays in front.');
+  const q=basketQ(a,b,c,say||`No apples this time. ${b} and ${c} make ${b+c}. The ${a} stays in front: ${a} × ${b+c}.`);
   q.hard=true;return q;
 }
 function qBasketP1(i){
   if(i===0)return qBasketSheetP1();
-  if(i<3)return qBasketFruit();
-  return i===3?qBasketNums(4,12,16,'Four groups of 12 and four groups of 16. These are two-digit numbers.'):qBasketNums(3,25,15,'Three groups of 25 and three groups of 15.');
-}
-function qBasketFruitP3(){
-  for(;;){const a=rnd(3,5),b=rnd(2,6),c=rnd(2,6);if(b!==c)return basketQ(a,b,c,'Same number of baskets in each orchard. Drag one from each into the same big basket.')}
+  if(i<3)return qBasketTen(rnd(2,4));
+  return i===3?qBasketNums(4,12,8,'Four groups of 12 and four groups of 8. 12 and 8 make 20, so this is 4 × 20.'):qBasketNums(3,40,60,'Three groups of 40 and three groups of 60. Together they make 100, so this is 3 × 100.');
 }
 function qBasketP3(i){
-  if(i===0)return basketQ(4,6,4,'Four baskets of 6 red apples, and four baskets of 4 green apples. Drag one from each into the same big basket.');
-  if(i<3)return qBasketFruitP3();
-  return i===3?qBasketNums(4,120,105,'Four groups of 120 and four groups of 105. These are three-digit numbers.'):qBasketNums(6,200,150,'Six groups of 200 and six groups of 150.');
+  if(i===0)return basketQ(4,6,4,'Four baskets of 6 red apples, and four baskets of 4 green apples. 6 and 4 make 10, so this is 4 × 10.');
+  if(i<3)return qBasketTen(rnd(3,5));
+  return i===3?qBasketNums(4,250,750,'Four groups of 250 and four groups of 750. Together they make 1000, so this is 4 × 1000.'):qBasketNums(6,350,650,'Six groups of 350 and six groups of 650. Together they make 1000, so this is 6 × 1000.');
 }
-/* Break It Up: the other way from Same Basket. A × (B + C) = A × B + A × C.
-   Each mixed basket holds B red and C green. Drag the two kinds apart. A stays A.
-   Then a short demo, and the child types A×B + A×C. */
+/* Break It Up: A × (B + C) = A × B + A × C. The parts must be easier than the whole,
+   or splitting would make the sum harder and the trick would be pointless.
+   Apples use 5 plus a small number. Bigger questions break off a ten or a hundred. */
 function breakQ(a,b,c,say){
   return{type:'break',a,b,c,html:`${a} × (${b} + ${c})`,answer:a*(b+c),
-    say:say||'Drag the red apples to the red orchard and the green apples to the green orchard.'};
+    say:say||`${a} × ${b} and ${a} × ${c} are easier than ${a} × ${b+c}. Drag each part to its own side.`};
 }
-function qBreakFruit(){
-  for(;;){const a=rnd(2,4),b=rnd(1,5),c=rnd(1,5);if(b!==c&&a*(b+c)<=24)return breakQ(a,b,c)}
+const BREAK_EASY=[[5,1],[5,2],[5,3],[5,4]];
+function qBreakEasy(a){
+  const [b,c]=BREAK_EASY[rnd(0,BREAK_EASY.length-1)];
+  return breakQ(a,b,c,`Each basket holds ${b} red and ${c} green. ${a} × ${b} and ${a} × ${c} are easier than ${a} × ${b+c}.`);
 }
-function qBreakSheetP1(){return breakQ(3,4,2,'Three baskets. Each holds 4 red apples and 2 green apples. Break them apart.')}
+function qBreakSheetP1(){return breakQ(4,5,3,'Four baskets. Each holds 5 red apples and 3 green apples. 4 × 5 and 4 × 3 are easier than 4 × 8.')}
 function qBreakNums(a,n,b,c,bad,say){
-  const q=breakQ(a,b,c,say||`Break ${n} so both parts are easy to multiply by ${a}.`);
+  const q=breakQ(a,b,c,say||`Break ${n} into ${b} and ${c}. ${a} × ${b} and ${a} × ${c} are easier than ${a} × ${n}.`);
   q.hard=true;q.n=n;q.picks=[[b,c],...bad];q.html=`${a} × ${n}`;return q;
 }
 function qBreakP1(i){
   if(i===0)return qBreakSheetP1();
-  if(i<3)return qBreakFruit();
+  if(i<3)return qBreakEasy(rnd(2,4));
   return i===3
-    ?qBreakNums(4,28,20,8,[[10,18],[15,13]],'28 is a two-digit number. Pick the split with a ten.')
-    :qBreakNums(6,45,40,5,[[20,25],[30,15]],'45 is a two-digit number. Pick the split with a ten.');
-}
-function qBreakFruitP3(){
-  for(;;){const a=rnd(3,5),b=rnd(2,6),c=rnd(2,6);if(b!==c)return breakQ(a,b,c,'Break each basket into the two kinds of apples. The number of baskets stays the same.')}
+    ?qBreakNums(4,28,20,8,[[10,18],[15,13]],'28 is harder than 20 and 8. Pick the split with a ten: 4 × 20 and 4 × 8.')
+    :qBreakNums(6,45,40,5,[[20,25],[30,15]],'45 is harder than 40 and 5. Pick the split with a ten: 6 × 40 and 6 × 5.');
 }
 function qBreakP3(i){
-  if(i===0)return breakQ(4,6,4,'Four baskets. Each holds 6 red apples and 4 green apples. Break them apart.');
-  if(i<3)return qBreakFruitP3();
+  if(i===0)return breakQ(4,5,4,'Four baskets. Each holds 5 red apples and 4 green apples. 4 × 5 and 4 × 4 are easier than 4 × 9.');
+  if(i<3)return qBreakEasy(rnd(3,5));
   return i===3
-    ?qBreakNums(4,225,200,25,[[180,45],[150,75]],'225 is a three-digit number. Pick the split with a hundred.')
-    :qBreakNums(6,350,300,50,[[180,170],[240,110]],'350 is a three-digit number. Pick the split with a hundred.');
+    ?qBreakNums(4,225,200,25,[[180,45],[150,75]],'225 is harder than 200 and 25. Pick the split with a hundred: 4 × 200 and 4 × 25.')
+    :qBreakNums(6,350,300,50,[[180,170],[240,110]],'350 is harder than 300 and 50. Pick the split with a hundred: 6 × 300 and 6 × 50.');
 }
 
 /* ---------- grades ----------
@@ -250,14 +248,14 @@ const DUNGEONS=[
             '<span class="ex">99 + 98 = 100 + 100 − 1 − 2 = 197</span>']},
     {id:'c1-3',name:'Same Basket',count:5,gen:i=>qBasketP1(i),
      intro:['You are a little knight on the Magic Basket Challenge!',
-            'The first three questions use apples. <span class="ex">3 × 4 + 3 × 2</span> means 3 baskets of 4, and 3 baskets of 2.',
-            'Drag one from each orchard into the same big basket. 4 and 2 join. The 3 stays 3: <span class="ex">3 × (4 + 2)</span>',
-            'The last two questions use two-digit numbers, like <span class="ex">4 × 12 + 4 × 16</span>.']},
+            'The first three questions use apples. <span class="ex">4 × 6 + 4 × 4</span> means 4 baskets of 6, and 4 baskets of 4.',
+            'Drag one from each orchard into the same big basket. 6 and 4 make 10. The 4 stays: <span class="ex">4 × 10</span>',
+            'The last two questions also make a round number, like <span class="ex">4 × 12 + 4 × 8 = 4 × 20</span>.']},
     {id:'c1-4',name:'Break It Up',count:5,gen:i=>qBreakP1(i),
-     intro:['Now break a full basket apart!',
-            '<span class="ex">3 × (4 + 2) = 3 × 4 + 3 × 2</span>',
-            'Drag each kind to its own orchard. Then watch: the number in front stays, and the basket splits in two.',
-            'Type the answer. The last two questions are two-digit numbers. Pick the split with a ten first.']},
+     intro:['Now break a hard number into easy pieces!',
+            '<span class="ex">4 × (5 + 3) = 4 × 5 + 4 × 3</span>. 4 × 5 and 4 × 3 are easier than 4 × 8.',
+            'Drag each kind to its own orchard. The number in front stays, then type the answer.',
+            'The last two questions are two-digit numbers. Pick the split with a ten, like <span class="ex">28 = 20 + 8</span>.']},
     {id:'c1-5',name:'Coming soon',soon:true},
     {id:'c1-6',name:'Coming soon',soon:true},
     {id:'c1-7',name:'Coming soon',soon:true},
@@ -280,14 +278,14 @@ const DUNGEONS=[
             '<span class="ex">98 + 998 = 100 + 1000 − 2 − 2 = 1094</span>']},
     {id:'c3-3',name:'Same Basket',count:5,gen:i=>qBasketP3(i),
      intro:['Same Basket starts with apples, just like the little knights.',
-            '<span class="ex">4 × 6 + 4 × 4 = 4 × (6 + 4)</span>',
+            '<span class="ex">4 × 6 + 4 × 4 = 4 × 10</span>. 6 and 4 make a round ten.',
             'The first three questions are fruit. Drag one from each orchard into the same basket.',
-            'The last two use three-digit numbers: <span class="ex">4 × 120 + 4 × 105</span>.']},
+            'The last two use three-digit numbers that make 1000, like <span class="ex">4 × 250 + 4 × 750</span>.']},
     {id:'c3-4',name:'Break It Up',count:5,gen:i=>qBreakP3(i),
-     intro:['Break the basket apart again.',
-            'Drag each kind to its own orchard. Then watch it split, and type the answer.',
-            'The last two are three-digit numbers, like <span class="ex">4 × 225</span>.',
-            'Every choice adds up. Pick the one with a hundred, then drag the two parts apart.']},
+     intro:['Break a hard number into easy pieces.',
+            'Apples use 5 plus a small number, because <span class="ex">4 × 5</span> and <span class="ex">4 × 4</span> are easier than <span class="ex">4 × 9</span>.',
+            'The last two are three-digit numbers, like <span class="ex">4 × 225 = 4 × 200 + 4 × 25</span>.',
+            'Every choice adds up. Pick the hundred. The other splits are harder, so they are not the trick.']},
     {id:'c3-5',name:'Coming soon',soon:true},
     {id:'c3-6',name:'Coming soon',soon:true},
     {id:'c3-7',name:'Coming soon',soon:true},
