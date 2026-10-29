@@ -229,7 +229,7 @@ function fishAim(mesh,from,to){
 function fishViewFrame(now){
   const g=fishGL;if(!g||!g.on)return;
   g.raf=requestAnimationFrame(fishViewFrame);
-  if(UI.phase!=='bite'||!UI.fight)return fishViewHide();
+  if((UI.phase!=='bite'&&UI.phase!=='land')||!UI.fight)return fishViewHide();
   if(!fishViewPlace()||!g.fish)return;
   const dt=Math.min(0.05,((now||performance.now())-(g.last||now))/1000)||0.016;g.last=now;g.t+=dt;
   const t=g.t,calm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;

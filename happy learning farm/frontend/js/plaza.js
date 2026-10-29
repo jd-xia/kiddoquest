@@ -82,7 +82,7 @@ function buildFarmWorld(){
   const mk=buildMarket();mk.position.set(-17,0,5);mk.rotation.y=Math.PI/2;S.add(mk);markHit(mk,{kind:'zone',id:'market'});
   F.baseObs.push({x0:-18.3,x1:-16.1,z0:2.7,z1:7.3});
   F.zones.push({id:'market',kind:'market',x:-15.2,z:5,r:.9,out:{x:-13.6,z:5},name:'Farm Market'});
-  addNPC({npc:MERCHANT,x:-15,z:8.2,line:'Animals, decor, outfits!',talk:['Mo the Merchant, at your service!','Spend your coins here on animals, decorations and new outfits.','I only buy crops you planted and harvested. A harvest of 4 sells for about 120% of the seed price.','Walk up to my stall to shop.']});
+  addNPC({npc:MERCHANT,x:-15,z:8.2,line:'Animals, decor, outfits!',talk:['Mo the Merchant, at your service!','Spend your coins here on animals, decorations and new outfits.','I buy crops you planted and harvested, and fish you caught. A harvest of 4 sells for about 120% of the seed price. Each fish has its own price.','Walk up to my stall to shop.']});
   const barn=buildBarn();barn.position.set(22.5,0,-1);barn.rotation.y=-Math.PI/2;S.add(barn);markHit(barn,{kind:'zone',id:'barn'});
   F.baseObs.push({x0:19.9,x1:25.2,z0:-4.2,z1:2.2});
   F.zones.push({id:'barn',kind:'barn',x:19.3,z:-1,r:.9,out:{x:17.8,z:-1},name:'Barn'});
@@ -196,15 +196,46 @@ function buildStudio(){const g=new THREE.Group();
   ea.add(mesh(rbox(1,.8,.06,.02),'#FFFFFF',0,1.35,.06));ea.add(mesh(SPH(.18,10,8),'#FFD43B',-.2,1.45,.1));ea.add(mesh(BOX(.45,.1,.02),'#3E7BFA',.15,1.2,.1));
   const sign=signPlane('Art Studio','#8B5CF6',2.6);sign.position.set(0,2.95,2.2);g.add(sign);
   return g}
+function bankFlower(petal,heart,h){
+  const g=new THREE.Group();
+  g.add(mesh(CYL(.028,.04,h,6),'#3C8C45',0,h*.5,0));
+  for(const s of[-1,1]){const leaf=mesh(SPH(.12,8,6),'#4EAE55',s*.1,h*.42,0,{r:.55});leaf.scale.set(1.9,.28,.7);leaf.rotation.z=s*.9;g.add(leaf)}
+  const head=new THREE.Group();head.position.set(0,h,.04);head.rotation.x=-.55;g.add(head);
+  for(let i=0;i<8;i++){const a=i/8*Math.PI*2,p=mesh(SPH(.085,8,6),petal,Math.cos(a)*.12,.02,Math.sin(a)*.12,{r:.4});p.scale.set(1.35,.28,.62);head.add(p)}
+  head.add(mesh(SPH(.055,8,6),heart,0,.04,0,{r:.35}));
+  return g;
+}
 function buildPond(wide){
   const g=new THREE.Group(),w=wide?4.2:2.8,d=wide?2.6:1.8;
-  const bowl=mesh(new THREE.CircleGeometry(1,32),wide?'#2F7FD6':'#3E7BFA',0,.06,0,{r:.2});
+  const bowl=mesh(new THREE.CircleGeometry(1,48),'#17679C',0,.05,0,{r:.12,m:.08});
   bowl.rotation.x=-Math.PI/2;bowl.scale.set(w,d,1);g.add(bowl);
-  const rim=mesh(new THREE.RingGeometry(.96,1.08,32),'#7A9A55',0,.07,0);rim.rotation.x=-Math.PI/2;rim.scale.set(w,d,1);g.add(rim);
-  g.add(mesh(rbox(1.5,.16,2.4,.06),'#C68B4E',0,.18,-d-0.7));
-  for(const x of[-.55,.55])g.add(mesh(CYL(.06,.07,.7,6),'#8B5A2B',x,.35,-d-1.5));
-  const sign=signPlane(wide?'Big fishing pond':'Fishing pond','#2F7FD6',2.6);sign.position.set(0,1.35,-d+.2);g.add(sign);
-  const fish=emojiSprite(wide?'🎏':'🐟',.8);fish.position.set(.4,.5,.2);g.add(fish);
+  const shine=mesh(new THREE.CircleGeometry(.62,32),'#8ED8F4',0,.065,0,{r:.08,m:.12});
+  shine.rotation.x=-Math.PI/2;shine.scale.set(w,d,1);g.add(shine);
+  const rim=mesh(new THREE.RingGeometry(.9,1.08,48),'#D9CBB4',0,.09,0,{r:.82});
+  rim.rotation.x=-Math.PI/2;rim.scale.set(w,d,1);g.add(rim);
+  const lip=mesh(new THREE.RingGeometry(.84,.92,48),'#8F8372',0,.1,0,{r:.7});
+  lip.rotation.x=-Math.PI/2;lip.scale.set(w,d,1);g.add(lip);
+  for(let k=0;k<14;k++){const a=k/14*Math.PI*2+.2,rock=mesh(ICO(.16+(k%3)*.04,0),k%2?'#C7BEB2':'#A79B8C',Math.cos(a)*w*1.02,.12,Math.sin(a)*d*1.02,{flat:true,r:.9});
+    rock.scale.y=.55;g.add(rock)}
+  [[-.35,.25,.7],[.55,-.15,.55],[-.1,-.35,.8]].forEach(([x,z,sc],i)=>{
+    const pad=mesh(new THREE.CircleGeometry(.32*sc,12),'#3E9A4A',x*w*.45,.11,z*d*.4,{r:.55});
+    pad.rotation.x=-Math.PI/2;g.add(pad);
+    if(i<2)g.add(mesh(SPH(.05,8,6),i?'#F7C6DE':'#FFF6EA',x*w*.45,.16,z*d*.4,{r:.4}));
+  });
+  [[-.72,.55],[.78,.62],[-.2,.82]].forEach(([x,z],i)=>{
+    const reed=new THREE.Group();reed.position.set(x*w*.72,0,z*d*.55);g.add(reed);
+    reed.add(mesh(CYL(.012,.018,.55+i*.12,4),'#6E9A45',0,.3,0));
+    const head=mesh(SPH(.03,6,4),'#C9A15A',0,.62+i*.1,0);head.scale.set(.55,1.5,.55);reed.add(head);
+  });
+  const dock=new THREE.Group();dock.position.set(0,0,-d-.15);g.add(dock);
+  for(let k=0;k<4;k++)dock.add(mesh(rbox(1.35,.07,.28,.02),k%2?'#C49262':'#A87548',0,.16,-.2-k*.32,{r:.75}));
+  for(const x of[-.62,.62]){dock.add(mesh(CYL(.055,.065,.55,6),'#6E4A2C',x,.28,-1.15));dock.add(mesh(SPH(.07,8,6),'#E7D3A1',x,.58,-1.15,{r:.6}))}
+  const kinds=[['#FFF8F2','#FFD56A'],['#FF8FB8','#FFE7A0'],['#E4C6FF','#FFF1C2'],['#FFE56A','#C9842A'],['#FFB08A','#FFF3C4'],['#FFFFFF','#F2C14E']];
+  [2.35,2.7,3.05,1.05,1.35,.78].forEach((a,i)=>{
+    const f=bankFlower(kinds[i][0],kinds[i][1],1.05+(i%3)*.22);
+    f.position.set(Math.cos(a)*w*1.28,0,Math.sin(a)*d*1.35);g.add(f);
+  });
+  const sign=signPlane(wide?'Big fishing pond':'Fishing pond','#1E6F9C',2.4);sign.position.set(-1.35,.95,-d-.15);sign.rotation.y=Math.PI;g.add(sign);
   return g;
 }
 function buildBoard(){const g=new THREE.Group();
@@ -245,8 +276,8 @@ function addNPC(o){const g=new THREE.Group();const sp=iconSprite(npcKey(o.npc),o
 function fenceLine(parent,ax,az,bx,bz,color){const L=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.round(L/1.4));
   for(let k=0;k<=n;k++){const t=k/n;parent.add(mesh(rbox(.2,.85,.2,.05),color,ax+(bx-ax)*t,.42,az+(bz-az)*t))}
   for(const y of[.3,.62]){const r=mesh(BOX(L,.09,.06),color,(ax+bx)/2,y,(az+bz)/2);r.rotation.y=-Math.atan2(bz-az,bx-ax);parent.add(r)}}
-/* Little farm things from the picture: a tree stump with an axe, a crate of vegetables, a barrel,
-   a red mailbox and a row of sunflowers. */
+/* Little farm things from the picture: a tree stump with an axe, a crate of vegetables, a barrel
+   and a red mailbox. The flowers sit on the banks of the fishing pond. */
 function buildProps(S){
   const stump=new THREE.Group();stump.position.set(-6.9,0,10.9);S.add(stump);
   stump.add(mesh(CYL(.55,.65,.6,14),'#8B5A2B',0,.3,0,{r:.8}));const top=mesh(CYL(.5,.5,.04,14),'#E2B97A',0,.61,0,{r:.9});stump.add(top);
@@ -259,9 +290,6 @@ function buildProps(S){
   barrel.add(mesh(CYL(.42,.42,.95,16),'#A0683A',0,.48,0,{r:.7}));for(const y of[.18,.78]){const hoop=mesh(new THREE.TorusGeometry(.43,.03,6,24),'#5A5A5A',0,y,0,{m:.6});hoop.rotation.x=Math.PI/2;barrel.add(hoop)}
   const mb=new THREE.Group();mb.position.set(1.9,0,9.4);S.add(mb);
   mb.add(mesh(CYL(.06,.07,1,8),'#8B5A2B',0,.5,0));mb.add(mesh(rbox(.36,.32,.55,.12),'#D9452F',0,1.1,0,{r:.5}));mb.add(mesh(BOX(.04,.2,.1),'#FFD43B',.2,1.25,-.15));
-  for(let k=0;k<7;k++){const x=3.4+k*.85,z=15.6+Math.sin(k)*.2,f=new THREE.Group();f.position.set(x,0,z);S.add(f);   // sunflowers
-    f.add(mesh(CYL(.035,.045,1.3,6),'#4E9A45',0,.65,0));const head=mesh(CYL(.26,.26,.05,16),'#FFC93C',0,1.32,.05,{r:.6});head.rotation.x=Math.PI/2.4;f.add(head);
-    const c=mesh(CYL(.12,.12,.07,12),'#6B3E1E',0,1.34,.08);c.rotation.x=Math.PI/2.4;f.add(c)}
   F.baseObs.push({x0:-7.6,x1:-6.2,z0:10.2,z1:11.6},{x0:-8.1,x1:-6.7,z0:12.4,z1:13.4},{x0:-9.2,x1:-8.2,z0:11.2,z1:12.2});
 }
 function buildDecor(){
@@ -405,7 +433,7 @@ function rTown(){
 function mayorTalk(){dialog(MAYOR,[
   'Welcome to Happy Learning Farm! I\'m Bella, the mayor.',
   'Tap the ground to walk. Drag sideways to turn the camera. On a computer, the arrow keys work too.',
-  'Seeds, animals and decorations cost coins 🪙. Mo only buys crops you grew yourself, for about 120% of the seed price. More coins come from Math School: every answer right first time earns a coin, and clearing a level earns a bonus.',
+  'Seeds, animals and decorations cost coins 🪙. Mo buys crops you grew, for about 120% of the seed price, and fish you caught. Each fish has its own price. More coins come from Math School: every answer right first time earns a coin, and clearing a level earns a bonus.',
   'Tap a field patch to plant seeds. Crops grow in real time, so come back later to harvest! Watering 💧 makes them grow faster.',
   'The fishing pond is at the bottom of the farm. Build it, buy tackle, then say the answer out loud. The question comes from a level you have already cleared.',
   'Harvests earn XP to level up your farm and unlock new seeds and animals. Mo\'s Farm Market sells animals, decorations and outfits.',

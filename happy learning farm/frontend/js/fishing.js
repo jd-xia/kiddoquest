@@ -93,11 +93,17 @@ function rFish(){
   if(fish.pond<1)body=`<div class="card"><h2>Empty shore</h2><p>Build a pond here. Then buy tackle and fish.</p><button class="b" data-act="fishBuild" ${p.gems<POND_COST?'disabled':''}>Build the pond · ${POND_COST} 🪙</button></div>`;
   else if(tab==='shop')body=shopHTML(p,fish);
   else body=castHTML(p,fish);
-  const caught=FISHES.filter(f=>fish.catches[f.id]).map(f=>`${f.e} ${fish.catches[f.id]}`).join('  ');
+  const caught=FISH_CATCH.filter(f=>fish.catches[f.id]).map(f=>`${f.e} ${fish.catches[f.id]} · ${f.worth}🪙`).join('  ');
   $('#app').innerHTML=topBar('Fishing Pond','toTown')+npcHTML(ANGLER,UI.msg||(fish.pond?`The water is ready. You have ${fish.bait} worm${fish.bait===1?'':'s'}.`:'This shore is waiting for a pond.'))+
-    `<div class="pond"><div class="btns" style="margin:0 0 14px">${tabs}</div>${body}${caught?`<p class="muted">Caught: ${caught}</p>`:''}</div>`;
-  if(UI.phase==='bite'&&UI.fight&&window.fishViewMount)fishViewMount();
+    `<div class="pond"><div class="btns" style="margin:0 0 14px">${tabs}</div>${body}${caught?`<p class="muted">Caught: ${caught}. Mo at the market buys each kind for a different price.</p>`:''}</div>`;
+  if((UI.phase==='bite'||UI.phase==='land')&&UI.fight&&window.fishViewMount)fishViewMount();
   else if(window.fishViewHide)fishViewHide();
+  if(UI.phase==='land'||(UI.phase==='caught'&&UI.land>=2)){
+    window.scrollTo(0,0);
+    const step=document.querySelector('.landdemo .demo-step:last-child')||document.querySelector('.landdemo');
+    if(step)step.scrollIntoView({block:'center'});
+  }
+  if(UI.phase==='wait'||UI.phase==='strike'){const water=document.querySelector('.under');if(water)water.scrollIntoView({block:'center'})}
 }
 function shopHTML(p,fish){
   const worms=`<div class="item"><div class="e">🪱</div><div class="nm">Worms</div><p class="muted" style="font-size:14px">You have ${fish.bait}<br>3 worms · one cast each</p><div class="acts"><button class="b sm" data-act="fishWorms" ${p.gems<6?'disabled':''}>Buy 3 · 6 🪙</button></div></div>`;
@@ -123,16 +129,19 @@ function fightSpot(depth){return depth<25?'near the light':depth<55?'midway':dep
 function fightHTML(){
   const f=UI.fight,y=Math.max(8,Math.min(90,f.depth));
   const lit=fishOf(cur()).owned.includes('lantern')?' lit':'';
-  return `<div class="under${lit}" aria-label="Under the pond. The ${f.fish.name} is ${fightSpot(y)}.">
+  const land=UI.phase==='land';
+  const titles=['Hooked','Pulled up','Grabbed'];
+  const over=land?`<div class="landover"><p>${titles[UI.land|0]||titles[0]}</p>${(UI.land|0)>=2?'<span class="hand">🤲</span>':''}</div>`:'';
+  return `<div class="under${lit}${land?' landing':''}" aria-label="Under the pond. The ${f.fish.name} is ${fightSpot(y)}.">
     <div class="surf"></div><div class="rays"></div>
     <div class="hook">🪝</div>
     <div class="line" id="fightLine" style="height:${y}%"></div>
     <div class="fighter" id="fightFish" style="top:${y}%"><span class="swimmer">${f.fish.e}</span></div>
     <span class="bub b1"></span><span class="bub b2"></span><span class="bub b3"></span><span class="bub b4"></span>
-    <span class="weed l">🌿</span><span class="weed r">🌿</span><div class="silt"></div>
+    <span class="weed l">🌿</span><span class="weed r">🌿</span><div class="silt"></div>${over}
   </div>
   <div class="tugbar" title="A full bar means the fish is near the light"><span id="fightMeter" style="width:${Math.round(100-y)}%"></span></div>
-  <p class="muted tugnote" id="fightNote">${f.fish.name} is ${fightSpot(y)}. Answer to reel up.</p>`;
+  <p class="muted tugnote" id="fightNote">${f.fish.name} is ${fightSpot(y)}.${land?'':' Answer to reel up.'}</p>`;
 }
 function castHTML(p,fish){
   const rod=rodOf(fish);
@@ -144,9 +153,10 @@ function castHTML(p,fish){
       <p><button class="b ghost sm" data-act="fishLang">${lang==='zh-CN'?'Hearing Chinese · tap for English':'Hearing English · tap for 中文'}</button></p></div>
       <p class="muted">Or tap it.</p><div class="display" id="fishDisp">${esc(UI.typed||'')}</div><div class="pad">${keys}<button type="button" data-act="fishKey" data-k="sign">${MINUS}</button><button type="button" data-act="fishKey" data-k="back">⌫</button><button type="button" class="ok" data-act="fishKey" data-k="ok">OK</button></div>`;
   }
-  if(UI.phase==='caught'&&UI.catch)return `<div class="pondstage"><div class="ask">${UI.catch.e}</div><p>A ${UI.catch.name}! ${UI.paid?`+${UI.paid} 🪙`:''}</p><button class="b" data-act="fishCast">Cast again</button></div>`;
+  if(UI.phase==='land'&&UI.fight&&UI.catch)return fishLandHTML()+fightHTML();
+  if(UI.phase==='caught'&&UI.catch)return fishLandHTML()+`<div class="pondstage"><div class="ask">${UI.catch.e}</div><p>A ${UI.catch.name}! ${UI.paid?`+${UI.paid} 🪙`:''}</p><button class="b" data-act="fishCast">Cast again</button></div>`;
   if(UI.phase==='lost')return `<div class="pondstage"><div class="ask">💦</div><p>It got away.</p><button class="b" data-act="fishCast">Cast again</button></div>`;
-  if(UI.phase==='wait')return `<div class="pondstage"><div class="ask">🎣</div><p>The line is in the water…</p></div>`;
+  if(UI.phase==='wait'||UI.phase==='strike')return waitWater();
   return `<div class="pondstage"><div class="ask">${fish.pond>=2?'🎏':'🐟'}</div><p>${rod.e} ${rod.name} · ${fish.bait} worm${fish.bait===1?'':'s'}</p>
     <p>${fishBlurb(p)} When it bites, you go under and reel while you answer.</p>
     <button class="b" data-act="fishCast" ${fish.bait<1?'disabled':''}>${fish.bait<1?'Need worms':'Cast'}</button></div>`;
@@ -160,16 +170,66 @@ function fishBuy(id){const p=cur(),fish=fishOf(p);
   if(!item||fish.owned.includes(id)||p.gems<item.cost)return;
   p.gems-=item.cost;fish.owned.push(id);if(rod)fish.rod=rod.id;save();UI.msg=`${item.name} is yours.`;rFish()}
 function fishEquip(id){const fish=fishOf(cur());if(!fish.owned.includes('rod:'+id))return;fish.rod=id;save();UI.msg='Rod ready.';rFish()}
+const SCHOOL_SPOTS=[[8,58],[26,32],[44,68],[64,38],[80,56]];
+function fishSchoolHTML(){
+  const pond=Math.max(1,fishOf(cur()).pond||1),pool=FISHES.filter(f=>f.pond<=pond);
+  const got=UI.phase==='strike'&&UI.fight?UI.fight.fish:null;
+  let bitten=false;
+  return `<div class="school">${SCHOOL_SPOTS.map((s,i)=>{
+    const f=pool[i%pool.length];
+    const bite=!!(got&&!bitten&&f.id===got.id);
+    if(bite)bitten=true;
+    return `<span class="schoolfish${bite?' biter':''}" data-id="${f.id}" style="left:${s[0]}%;top:${s[1]}%;animation-delay:${i*.35}s" aria-hidden="true">${f.e}</span>`;
+  }).join('')}</div>`;
+}
+function waitWater(){
+  const lit=fishOf(cur()).owned.includes('lantern')?' lit':'';
+  const strike=UI.phase==='strike';
+  return `<div class="under waiting${lit}" aria-label="The line is down. Several fish are swimming. Which one bites is still a secret.">
+    <div class="surf"></div><div class="rays"></div>
+    <div class="hook">🪝</div>
+    <div class="line${strike?' down':' dropping'}"></div>
+    ${fishSchoolHTML()}
+    <span class="bub b1"></span><span class="bub b2"></span><span class="bub b3"></span><span class="bub b4"></span>
+    <span class="weed l">🌿</span><span class="weed r">🌿</span><div class="silt"></div>
+  </div>
+  <p class="muted tugnote">${strike?'One fish is coming to the hook.':'Many fish are down there. You will not know which one bites.'}</p>`;
+}
+function fishSchoolMove(){
+  const biter=document.querySelector('.schoolfish.biter');
+  const others=[...document.querySelectorAll('.schoolfish:not(.biter)')];
+  if(!biter)return;
+  biter.style.animation='none';
+  const from={l:parseFloat(biter.style.left),t:parseFloat(biter.style.top)},start=performance.now();
+  const tick=()=>{
+    if(UI.phase!=='strike'||!biter.isConnected)return;
+    const k=Math.min(1,(performance.now()-start)/1800),e=1-Math.pow(1-k,3);
+    biter.style.left=(from.l+(46-from.l)*e)+'%';
+    biter.style.top=(from.t+(14-from.t)*e)+'%';
+    biter.style.fontSize=(36+22*e)+'px';
+    others.forEach(el=>{if(!el.isConnected)return;el.style.opacity=String(1-e)});
+    if(k<1)setTimeout(tick,40);
+  };
+  tick();
+}
 function fishCast(){
-  const p=cur(),fish=fishOf(p);if(fish.pond<1||fish.bait<1||UI.phase==='wait'||UI.phase==='bite')return;
-  fishStop();fish.bait--;save();UI.phase='wait';UI.fight=null;UI.msg='The line is in the water…';rFish();
-  fishTimer=setTimeout(()=>{if(UI.screen!=='fishing')return;fishHook(p)},rodOf(fish).wait);
+  const p=cur(),fish=fishOf(p);if(fish.pond<1||fish.bait<1||UI.phase==='wait'||UI.phase==='bite'||UI.phase==='strike')return;
+  if(UI.phase==='land')return;
+  fishStop();fish.bait--;save();UI.phase='wait';UI.fight=null;UI.msg='The line goes down. Many fish are in the pond.';rFish();
+  fishTimer=setTimeout(()=>{if(UI.screen!=='fishing'||UI.phase!=='wait')return;fishHook(p)},rodOf(fish).wait+1600);
 }
 function fishHook(p){
   const fish=fishOf(p),pool=FISHES.filter(f=>f.pond<=fish.pond),got=pool[rnd(0,pool.length-1)],rod=rodOf(fish);
   UI.fight={fish:got,depth:got.start,tug:got.tug,reel:rod.reel,dive:fish.owned.includes('net')?Math.round(got.dive/2):got.dive};
+  UI.phase='strike';UI.q=null;UI.heard='';UI.typed='';
+  UI.msg='A bite! Watch which fish takes the hook.';
+  rFish();fishSchoolMove();
+  clearTimeout(fishTimer);fishTimer=setTimeout(()=>{if(UI.screen!=='fishing'||UI.phase!=='strike')return;fishBiteStart(p)},2000);
+}
+function fishBiteStart(p){
+  if(!UI.fight)return;
   UI.phase='bite';UI.q=fishQuestion(p);UI.heard='';UI.typed='';
-  UI.msg=`A ${got.name} is hooked! Look down. Pull it up to the light.`;
+  UI.msg=`A ${UI.fight.fish.name} is hooked! Look down. Pull it up to the light.`;
   rFish();
   clearTimeout(fishTugTimer);fishTugTimer=setTimeout(fishTug,2200);
 }
@@ -180,7 +240,7 @@ function fishPaint(){
   if(fish)fish.style.top=y+'%';
   if(line)line.style.height=y+'%';
   if(meter)meter.style.width=Math.round(100-y)+'%';
-  if(note)note.textContent=`${f.fish.name} is ${fightSpot(f.depth)}. Answer to reel up.`;
+  if(note)note.textContent=UI.phase==='land'?`${f.fish.name} is ${fightSpot(f.depth)}.`:`${f.fish.name} is ${fightSpot(f.depth)}. Answer to reel up.`;
 }
 function fishTug(){
   if(UI.screen!=='fishing'||UI.phase!=='bite'||!UI.fight)return;
@@ -191,13 +251,55 @@ function fishTug(){
   if(el){el.classList.add('tug');setTimeout(()=>el.classList.remove('tug'),420)}
   fishTugTimer=setTimeout(fishTug,2200);
 }
+let fishLandTimer=null;
+function fishLandHTML(){
+  const step=UI.land|0,got=UI.catch,show=UI.phase==='caught'?2:step;
+  const block=(n,title,body)=>show>=n?`<section class="demo-step"><p class="demo-k">${n+1}. ${title}</p>${body}</section>`:'';
+  return `<div class="basketdemo landdemo step${show}" aria-live="polite">${block(0,'Hooked',`<p class="demo-note">The hook catches the <b>${esc(got.name)}</b>.</p>`)}${block(1,'Pulled up',`<p class="demo-note">The line brings the <b>${esc(got.name)}</b> up to the light.</p>`)}${block(2,'Grabbed',`<p class="demo-note">Hands close. The <b>${esc(got.name)}</b> is yours.</p><div class="grab" aria-hidden="true"><span class="hand">🤲</span><span class="catchfish">${got.e}</span></div>`)}</div>`;
+}
 function fishLand(q){
   const got=UI.fight.fish;fishStop();
   const fish=fishOf(cur());
   fish.catches[got.id]=(fish.catches[got.id]||0)+1;
   const pay=fish.pond>=2?2:1,given=earnCoins(cur(),pay);save();
-  UI.phase='caught';UI.catch=got;UI.paid=given;UI.fight=null;
-  UI.msg=given?`${q.html} = ${q.answer}. The ${got.name} is yours.`:`${q.html} = ${q.answer}. Nice catch. Today's coins are full, so the fish is the prize.`;
+  UI.catch=got;UI.paid=given;UI.landQ=q;UI.land=0;UI.phase='land';
+  UI.fight.depth=72;
+  UI.msg=`Watch once. The hook catches the ${got.name}.`;
+  rFish();
+  clearTimeout(fishLandTimer);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){UI.land=2;UI.fight.depth=8;rFish();fishLandTimer=setTimeout(fishLandDone,400);return}
+  fishLandTimer=setTimeout(()=>fishLandStep(1),2800);
+}
+function fishLandStep(step){
+  if(UI.screen!=='fishing'||UI.phase!=='land'||!UI.fight||!UI.catch)return;
+  UI.land=step;
+  if(step===1){
+    UI.msg=`The line pulls the ${UI.catch.name} up to the light.`;
+    rFish();fishLandRise();
+    clearTimeout(fishLandTimer);fishLandTimer=setTimeout(()=>fishLandStep(2),2800);return;
+  }
+  UI.fight.depth=8;
+  UI.msg=`Hands close. The ${UI.catch.name} is yours.`;
+  rFish();
+  if(window.fishViewKick)fishViewKick(1);
+  clearTimeout(fishLandTimer);fishLandTimer=setTimeout(fishLandDone,2800);
+}
+function fishLandRise(){
+  const from=UI.fight?UI.fight.depth:72,to=14,start=performance.now();
+  const tick=now=>{
+    if(UI.phase!=='land'||!UI.fight||UI.land!==1)return;
+    const t=Math.min(1,(now-start)/2600);
+    UI.fight.depth=from+(to-from)*t;
+    fishPaint();
+    if(t<1)requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+function fishLandDone(){
+  if(UI.screen!=='fishing'||UI.phase!=='land'||!UI.catch)return;
+  const q=UI.landQ,got=UI.catch;
+  UI.phase='caught';UI.land=2;UI.fight=null;
+  UI.msg=UI.paid?`${q.html} = ${q.answer}. The ${got.name} is yours.`:`${q.html} = ${q.answer}. Nice catch. Today's coins are full, so the fish is the prize.`;
   rFish();
 }
 function fishEscape(q,n){
@@ -207,7 +309,7 @@ function fishEscape(q,n){
   rFish();
 }
 function fishStopRec(){if(fishRec){try{fishRec.onresult=null;fishRec.onerror=null;fishRec.stop()}catch(e){}fishRec=null}UI.hearing=false}
-function fishStop(){clearTimeout(fishTimer);fishTimer=null;clearTimeout(fishTugTimer);fishTugTimer=null;fishStopRec()}
+function fishStop(){clearTimeout(fishTimer);fishTimer=null;clearTimeout(fishTugTimer);fishTugTimer=null;clearTimeout(fishLandTimer);fishLandTimer=null;fishStopRec()}
 function fishJudge(n){
   if(UI.phase!=='bite'||!UI.q||!UI.fight||n==null||Number.isNaN(n))return;
   fishStopRec();

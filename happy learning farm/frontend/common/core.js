@@ -187,6 +187,13 @@ function streakGift(p,days){const f=farmOf(p);
   return null}
 let F=null,MAP=null,BAT=null,LASTPOS=null;const KEYS=new Set();
 function farmOf(p){if(!p.farm)p.farm={plots:[],unlocked:6,animals:[],decor:[],shirt:'red',hat:'straw',owned:['shirt:red','hat:straw'],xp:0,barn:{}};return p.farm}
+const FISH_CATCH=[
+  {id:'minnow',name:'Minnow',e:'🐟',worth:2},
+  {id:'carp',name:'Carp',e:'🐠',worth:3},
+  {id:'bass',name:'Bass',e:'🐡',worth:5},
+  {id:'koi',name:'Koi',e:'🎏',worth:8},
+  {id:'octopus',name:'Octopus',e:'🐙',worth:12}
+];
 function fishOf(p){const f=farmOf(p);if(!f.fish)f.fish={pond:0,owned:['rod:twig'],rod:'twig',bait:1,catches:{}};
   if(!f.fish.owned.includes('rod:twig'))f.fish.owned.unshift('rod:twig');if(!f.fish.rod)f.fish.rod='twig';f.fish.catches=f.fish.catches||{};return f.fish}
 function farmLevel(xp){let l=1,need=20;while(xp>=need){xp-=need;l++;need=20*l}return{l,into:xp,need}}

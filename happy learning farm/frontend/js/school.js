@@ -620,12 +620,131 @@ function basketFinishMerge(q,k){
   q.merged[k]=true;q.merging=null;
   const got=earnCoins(cur(),1);UI.paid=true;UI.mergeCoins=(UI.mergeCoins||0)+got;q.coinAt=k;save();
   const left=q.merged.filter(v=>!v).length,pay=got?'<span class="coinhint">+1 🪙</span>':'<span class="coinhint">⭐</span>';
-  if(left)UI.bubble={kind:'good',html:`The basket glows! <b>${q.b}</b> and <b>${q.c}</b> joined, and there are still <b>${q.a}</b> baskets. ${pay}`};
-  else{if(!q.counted){q.counted=true;UI.answered++;UI.first++}
-    UI.phase='right';
-    const ten=q.hard?` That is <b>${q.a} × ${q.b+q.c}</b>.`:(q.b+q.c===10?` <b>${q.b} + ${q.c} = 10</b>, so this is <b>${q.a} × 10</b>.`:'');
-    UI.bubble={kind:'good',html:`Every place is glowing. The <b>${q.a}</b> stayed the same, and <b>${q.b}</b> and <b>${q.c}</b> joined: <b>${q.a} × (${q.b} + ${q.c})</b>.${ten} ${pay}`}}
+  if(left){UI.bubble={kind:'good',html:`The basket glows! <b>${q.b}</b> and <b>${q.c}</b> joined, and there are still <b>${q.a}</b> baskets. ${pay}`};rLevel();return}
+  basketStartDemo(q,pay);
+}
+function basketDemoHTML(q){
+  const step=q.demo|0,ask=UI.phase==='answer',solved=UI.phase==='right',show=ask||solved?2:step;
+  const piece=(n,emoji)=>q.hard?`${n}`:`${fruitRow(n,emoji)}<b>${n}</b>`;
+  const groups=`<div class="demo-row demo-scroll"><div class="demo-card left"><span class="stay">${q.a}</span><small>×</small><span class="join">${piece(q.b,'🍎')}</span></div><span class="demo-plus">+</span><div class="demo-card right"><span class="stay">${q.a}</span><small>×</small><span class="join">${piece(q.c,'🍏')}</span></div><span class="demo-pad" aria-hidden="true"></span></div>`;
+  const stay=`<p class="demo-note">The <b>${q.a}</b> is in front of both groups, so it stays. <b>${q.b}</b> and <b>${q.c}</b> move together.</p><div class="demo-stayline demo-scroll" aria-hidden="true"><span class="stay">${q.a}</span><small>stays</small><span class="join">${q.b}</span><small>+</small><span class="join">${q.c}</span><span class="demo-pad" aria-hidden="true"></span></div>`;
+  const tail=solved?`<small>=</small><span class="blank">${q.answer}</span>`:(ask?'<small>=</small><span class="blank">?</span>':'');
+  const joined=`<div class="demo-result demo-scroll"><span class="stay">${q.a}</span><small>×</small><span>(</span><span class="join">${q.b}</span><small>+</small><span class="join">${q.c}</span><span>)</span>${tail}<span class="demo-pad" aria-hidden="true"></span></div>`;
+  const block=(n,title,body)=>show>=n?`<section class="demo-step"><p class="demo-k">${n+1}. ${title}</p>${body}</section>`:'';
+  return `<div class="basketdemo step${show}${ask?' ask':''}" aria-live="polite">${block(0,'Two groups',groups)}${block(1,'The same number stays',stay)}${block(2,'They join',joined)}</div>`;
+}
+function basketStartDemo(q,pay){
+  UI.phase='demo';q.demo=0;
+  UI.bubble={kind:'good',html:`Watch slowly. Step 1: two groups, <b>${q.a} × ${q.b}</b> and <b>${q.a} × ${q.c}</b>. ${pay||''}`};
   rLevel();
+  clearTimeout(UI.basketTimer);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){UI.basketTimer=setTimeout(()=>basketDemoDone(q),400);return}
+  UI.basketTimer=setTimeout(()=>basketDemoStep(q,1),3000);
+}
+function basketDemoStep(q,step){
+  if(UI.screen!=='level'||!UI.qs||UI.qs[UI.idx]!==q||UI.phase!=='demo')return;
+  q.demo=step;
+  UI.bubble={kind:'good',html:step===1?`Step 2: the <b>${q.a}</b> stays. <b>${q.b}</b> and <b>${q.c}</b> move into one pair.`:`Step 3: now it is <b>${q.a} × (${q.b} + ${q.c})</b>.`};
+  rLevel();
+  clearTimeout(UI.basketTimer);
+  UI.basketTimer=setTimeout(()=>step>=2?basketDemoDone(q):basketDemoStep(q,step+1),3000);
+}
+function basketDemoDone(q){
+  if(UI.screen!=='level'||!UI.qs||UI.qs[UI.idx]!==q||UI.phase==='answer'||UI.phase==='right')return;
+  q.demo=2;UI.phase='answer';
+  UI.bubble={kind:'',html:`Your turn. What is <b>${q.a} × (${q.b} + ${q.c})</b>? ${basketVoiceHint(q)}`};
+  rLevel();
+}
+const BASKET_EN={zero:0,oh:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
+function basketParseEn(text){
+  const words=String(text||'').toLowerCase().replace(/-/g,' ').split(/[^a-z0-9]+/).filter(Boolean);
+  let total=0,cur=0,any=false,neg=false;
+  for(const w of words){
+    if((w==='minus'||w==='negative')&&!any){neg=true;continue}
+    if(w==='and')continue;
+    if(w==='hundred'){cur=(cur||1)*100;any=true;continue}
+    if(w==='thousand'){total+=(cur||1)*1000;cur=0;any=true;continue}
+    if(/^\d+$/.test(w)){cur+=+w;any=true;continue}
+    if(BASKET_EN[w]!=null){cur+=BASKET_EN[w];any=true}
+  }
+  return any?[neg?-(total+cur):total+cur]:[];
+}
+function basketParseZh(text){
+  const d={零:0,〇:0,一:1,二:2,两:2,兩:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9};
+  let s=String(text||'').replace(/[^\u4e00-\u9fff0-9]/g,''),neg=false;
+  if(s[0]==='负'||s[0]==='負'){neg=true;s=s.slice(1)}
+  let section=0,num=0,any=false,i=0;
+  while(i<s.length){
+    if(/\d/.test(s[i])){let n='';while(i<s.length&&/\d/.test(s[i]))n+=s[i++];num=+n;any=true;continue}
+    if(s[i]==='千'){section+=(num||1)*1000;num=0;any=true;i++;continue}
+    if(s[i]==='百'){section+=(num||1)*100;num=0;any=true;i++;continue}
+    if(s[i]==='十'){section+=(num||1)*10;num=0;any=true;i++;continue}
+    if(d[s[i]]!=null){num=d[s[i]];any=true;i++;continue}
+    i++;
+  }
+  return any?[neg?-(section+num):section+num]:[];
+}
+function basketSpoken(text){return [...basketParseEn(text),...basketParseZh(text)]}
+function basketVoiceExample(q){
+  const zh=UI.lang==='zh-CN';
+  const samples=zh?[[18,'十八'],[42,'四十二'],[112,'一百一十二']]:[[18,'eighteen'],[42,'forty-two'],[112,'one hundred twelve']];
+  return (samples.find(s=>s[0]!==q.answer)||samples[1])[1];
+}
+function basketVoiceHint(q){
+  const eg=basketVoiceExample(q);
+  return UI.lang==='zh-CN'?`说出得数。例如：「${eg}」。`:`Say the number. For example: “${eg}”.`;
+}
+function basketVoiceHTML(q){
+  const zh=UI.lang==='zh-CN',hint=basketVoiceHint(q);
+  return `<p class="voicehint">${hint}</p><div class="voicerow"><button class="b mic ${UI.hearing?'live':''}" data-act="basketHear">${UI.hearing?'Listening…':'🎙️ Say the answer'}</button><button class="b ghost sm" data-act="basketLang">${zh?'English':'中文'}</button></div>${UI.heard?`<p class="heard">${esc(UI.heard)}</p>`:''}`;
+}
+let basketRec=null;
+function basketStopRec(){if(basketRec){try{basketRec.onresult=null;basketRec.onerror=null;basketRec.stop()}catch(e){}basketRec=null}UI.hearing=false}
+function basketHear(){
+  if(UI.phase!=='answer')return;
+  const q=UI.qs[UI.idx];if(!q||q.type!=='basket')return;
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){UI.bubble={kind:'bad',html:'This browser cannot hear yet. Tap the answer instead.'};return rLevel()}
+  basketStopRec();UI.hearing=true;UI.heard='Listening…';rLevel();
+  const rec=new SR();basketRec=rec;rec.lang=UI.lang==='zh-CN'?'zh-CN':'en-US';rec.interimResults=false;rec.maxAlternatives=5;
+  rec.onresult=ev=>{
+    if(UI.phase!=='answer'||!UI.qs||UI.qs[UI.idx]!==q)return;
+    const alts=[...ev.results[0]].map(r=>r.transcript);
+    UI.heard=alts[0]||'';UI.hearing=false;
+    const nums=alts.flatMap(basketSpoken);
+    if(!nums.length){UI.bubble={kind:'bad',html:`I heard “${esc(UI.heard)}”, but not a number. ${basketVoiceHint(q)}`};return rLevel()}
+    const hit=nums.find(n=>n===q.answer);
+    basketSubmit(hit!=null?hit:nums[0]);
+  };
+  rec.onerror=()=>{UI.hearing=false;UI.bubble={kind:'bad',html:`I could not hear. ${basketVoiceHint(q)}`};rLevel()};
+  rec.onend=()=>{UI.hearing=false};
+  try{rec.start()}catch(e){UI.hearing=false;UI.bubble={kind:'bad',html:'The microphone did not start. Tap the answer instead.'};rLevel()}
+}
+function basketBindDemoScroll(){
+  document.querySelectorAll('.demo-scroll').forEach(box=>{
+    box.addEventListener('wheel',ev=>{
+      const max=box.scrollWidth-box.clientWidth;
+      if(max<=1)return;
+      const delta=Math.abs(ev.deltaX)>Math.abs(ev.deltaY)?ev.deltaX:ev.deltaY;
+      if(!delta)return;
+      const next=Math.min(max,Math.max(0,box.scrollLeft+delta));
+      if(next===box.scrollLeft)return;
+      box.scrollLeft=next;
+      ev.preventDefault();
+    },{passive:false});
+  });
+}
+function basketSubmit(v){
+  const q=UI.qs[UI.idx];if(UI.phase!=='answer'||!q||q.type!=='basket')return;
+  if(v===q.answer){
+    if(!q.counted){q.counted=true;UI.answered++;UI.first++}
+    UI.phase='right';
+    UI.bubble={kind:'good',html:`Yes. <b>${q.a} × (${q.b} + ${q.c}) = ${q.answer}</b>.`};
+    return rLevel();
+  }
+  if(PAD)PAD.v='';
+  UI.bubble={kind:'bad',html:`${v} isn't it yet. The <b>${q.a}</b> stayed, and <b>${q.b} + ${q.c} = ${q.b+q.c}</b>. Work out <b>${q.a} × ${q.b+q.c}</b>.`};
+  rLevel();const d=$('#disp');if(d)d.classList.add('shake');
 }
 function basketDrop(side,i,k){
   const q=UI.qs[UI.idx];if(UI.phase!=='work'||!q||q.type!=='basket'||q.merging!=null)return;
@@ -762,7 +881,7 @@ function hatTap(i){
 function padKey(k){
   if(!PAD||UI.screen!=='level'||UI.phase!=='answer')return;
   if(k==='back')PAD.v=PAD.v.slice(0,-1);
-  else if(k==='ok'){if(PAD.v!=='')submit(parseInt(PAD.v,10));return}
+  else if(k==='ok'){if(PAD.v==='')return;const q=UI.qs[UI.idx];if(q&&q.type==='basket'){basketSubmit(+PAD.v);return}submit(parseInt(PAD.v,10));return}
   else if(PAD.v.length<8)PAD.v=(PAD.v==='0'?'':PAD.v)+k;
   $('#disp').textContent=PAD.v;
 }
@@ -780,7 +899,7 @@ function submit(v){
     rLevel();const d=$('#disp');if(d)d.classList.add('shake');
   }
 }
-function nextQ(){clearTimeout(UI.basketTimer);if(UI.idx<UI.qs.length-1){UI.idx++;setupQ();bat(batSpawn,UI.idx,false);rLevel()}else finishLevel(true)}
+function nextQ(){basketStopRec();clearTimeout(UI.basketTimer);if(UI.idx<UI.qs.length-1){UI.idx++;setupQ();bat(batSpawn,UI.idx,false);rLevel()}else finishLevel(true)}
 function record(ok){
   const p=cur(),D=dun(UI.did),l=D.levels[UI.li];
   const secs=Math.round((Date.now()-UI.start)/1000);
@@ -802,7 +921,7 @@ function finishLevel(ok){
   Object.assign(UI,{screen:'result',ok,stars:r.stars,gems:r.gems,firstClear:r.firstClear,levelBonus:r.levelBonus,capped:r.capped,mergeCoins:UI.mergeCoins||0});PAD=null;
   render();
 }
-function quitLevel(){clearTimeout(UI.basketTimer);if(UI.answered>0)record(false);go('dungeon',{did:UI.did,mapAt:UI.li})}
+function quitLevel(){basketStopRec();clearTimeout(UI.basketTimer);if(UI.answered>0)record(false);go('dungeon',{did:UI.did,mapAt:UI.li})}
 function shopHud(){
   const l=dun(UI.did).levels[UI.li];
   return `<button class="bx" data-act="quitLevel" aria-label="Leave level">✕</button><div class="bmid"><div class="bname">${l.name}</div><div class="bprog">${UI.qs.map((_,k)=>`<i class="${k<UI.idx||(UI.screen==='result'&&UI.ok)?'ok':k===UI.idx?'on':''}"></i>`).join('')}</div></div>`;
@@ -810,11 +929,17 @@ function shopHud(){
 function rFactory(){
   const D=dun(UI.did),q=UI.qs[UI.idx];
   const br=q.type==='break',done=br?q.broken.every(Boolean):q.merged&&q.merged.every(Boolean);
+  const basketShow=q.type==='basket'&&(UI.phase==='demo'||UI.phase==='answer'||(UI.phase==='right'&&q.demo>=2));
   const next=UI.phase==='right'?`<button class="b big-next" data-act="nextQ" id="nextBtn">${UI.idx<UI.qs.length-1?(br?'Next basket ▸':'Next orchards ▸'):'Finish ▸'}</button>`:'';
-  const expr=br?(done?`${q.a} × ${q.b} + ${q.a} × ${q.c}`:(q.hard&&q.chosen?`${q.a} × (${q.b} + ${q.c})`:q.html)):(done?`${q.a} × (${q.b} + ${q.c})`:q.html);
+  const expr=br?(done?`${q.a} × ${q.b} + ${q.a} × ${q.c}`:(q.hard&&q.chosen?`${q.a} × (${q.b} + ${q.c})`:q.html)):(UI.phase==='answer'?`${q.a} × (${q.b} + ${q.c}) = ?`:(q.demo>=2?`${q.a} × (${q.b} + ${q.c})`:q.html));
+  const keys=[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('');
+  const asking=q.type==='basket'&&UI.phase==='answer';
+  const pad=asking?`${basketVoiceHTML(q)}<div class="display" id="disp" aria-live="polite">${PAD&&PAD.q===UI.idx?esc(PAD.v):''}</div><div class="pad" id="pad">${keys}<button data-k="back" aria-label="Delete">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">OK</button></div>`:'';
   const kicker=br?`Break It Up · ${UI.idx+1} of ${UI.qs.length}`:`The Magic Basket Challenge · ${UI.idx+1} of ${UI.qs.length}`;
-  $('#app').innerHTML=`<div class="workshop"><header class="shop-hud">${shopHud()}</header><div class="shop-main"><p class="shop-kicker">${kicker}</p><div class="shop-expr">${expr}</div><div class="bnpc ${UI.bubble.kind||''}"><span class="bface">${ico(npcKey(D.npc),D.npc.e)}</span><div>${UI.bubble.html}</div></div>${br?breakHTML(q):basketHTML(q)}</div>${next?`<div class="shop-dock">${next}</div>`:''}</div>`;
-  if(UI.phase==='answer')PAD={v:''};
+  const work=br?breakHTML(q):(basketShow?basketDemoHTML(q):basketHTML(q));
+  $('#app').innerHTML=`<div class="workshop${basketShow?' demoing':''}"><header class="shop-hud">${shopHud()}</header><div class="shop-main"><p class="shop-kicker">${kicker}</p><div class="shop-expr">${expr}</div><div class="bnpc ${UI.bubble.kind||''}"><span class="bface">${ico(npcKey(D.npc),D.npc.e)}</span><div>${UI.bubble.html}</div></div>${work}</div>${pad?`<div class="shop-dock">${pad}</div>`:''}${next?`<div class="shop-dock">${next}</div>`:''}</div>`;
+  if(basketShow){basketBindDemoScroll();const main=$('.shop-main'),demo=$('.basketdemo');if(main&&demo)main.scrollTop=Math.max(0,demo.offsetTop-4)}
+  if(UI.phase==='answer'){if(!PAD||PAD.q!==UI.idx)PAD={v:'',q:UI.idx}}
   if(UI.phase==='right')$('#nextBtn').focus({preventScroll:true});
 }
 function rFactoryResult(){
@@ -874,6 +999,8 @@ Object.assign(ACT,{
   toDungeon:()=>go('dungeon',{did:UI.did,mapAt:UI.li}),
   startLevel:d=>{const i=+d.i;if(UI.screen!=='dungeon')UI={screen:'dungeon',did:UI.did,mapAt:i};startLevel(i);if(UI.screen==='dungeon')render()},
   quitLevel:()=>quitLevel(),
+  basketHear:()=>basketHear(),
+  basketLang:()=>{if(UI.phase!=='answer')return;basketStopRec();UI.lang=UI.lang==='zh-CN'?'en-US':'zh-CN';UI.heard='';rLevel()},
   nextQ:()=>nextQ(),
   breakPick:d=>breakPick(+d.i),
   pairTap:d=>pairTap(+d.i),

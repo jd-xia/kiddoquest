@@ -147,7 +147,7 @@ function qTenWorksheet(){
 function qHatsP1(count){return hatQ(Array.from({length:count},()=>100-rnd(1,4)),'Tap each number to give it a hat.')}
 function qHatWorksheetP1(){return hatQ([99,97,98,96,98],'This one is from your worksheet! Five numbers need hats.')}
 /* Same Basket: A baskets of B fruit, and A baskets of C fruit. Drag one from each orchard into the
-   same big basket. A stays A. B and C join, so A×B + A×C becomes A×(B+C). No typed answer. */
+   same big basket. A stays A. B and C join, so A×B + A×C becomes A×(B+C). Then a short demo, and the child types the product. */
 function basketQ(a,b,c,say){
   return{type:'basket',a,b,c,html:`${a} × ${b} + ${a} × ${c}`,answer:a*(b+c),
     say:say||'Drag one basket from each orchard into the same place in the magic basket.'};

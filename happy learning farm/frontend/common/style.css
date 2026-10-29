@@ -594,10 +594,33 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 @keyframes coinfly{to{transform:translate(-50%,-26px);opacity:0}}
 @media (min-width:800px){.orchards{grid-template-columns:1fr auto 1fr}.knight{grid-column:auto;order:0;flex-direction:column;gap:2px;align-self:center}}
 @media (prefers-reduced-motion:reduce){.bslot.done,.coinfly,.knight.cheer .knight-fig{animation:none}}
+.workshop.demoing .shop-expr{display:none}
+.workshop.demoing .bnpc{padding:8px 10px}
+.basketdemo{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:8px}
+.demo-step{padding:6px 8px 8px;border-radius:16px;background:rgba(8,16,40,.45);border:2px solid rgba(245,194,76,.32)}
+.basketdemo .demo-step:last-child{animation:demopop .7s ease}
+.demo-k{margin:0 0 6px;text-align:center;font-family:"Lilita One",sans-serif;font-size:15px;letter-spacing:.3px;color:#FFE793}
+.demo-note{margin:0 0 8px;text-align:center;font-size:15px;font-weight:700}
+.demo-note b{color:#FFE793}
+.basketdemo,.demo-step{min-width:0;max-width:100%}
+.demo-scroll{display:flex;align-items:center;justify-content:safe center;gap:8px;flex-wrap:nowrap;width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;padding:2px 18px 10px 2px;scrollbar-width:thin;scrollbar-color:#F5C24C rgba(255,255,255,.16)}
+.demo-card{flex:none;display:flex;align-items:center;gap:6px;padding:8px 10px;border-radius:16px;background:rgba(8,16,40,.55);border:2px solid rgba(245,194,76,.45);font-family:"Lilita One",sans-serif;font-size:clamp(20px,4.4vw,30px)}
+.demo-pad{flex:none;width:8px;height:1px}
+.demo-card .stay,.demo-result .stay,.demo-stayline .stay{color:#FFE793}
+.demo-plus,.demo-stayline small,.demo-result small{font-family:"Lilita One",sans-serif;font-size:22px;color:#FFE793}
+.demo-stayline,.demo-result{font-family:"Lilita One",sans-serif;font-size:clamp(24px,5vw,36px)}
+.basketdemo.step1 .demo-step:last-child .stay{animation:demostay 1.8s ease}
+.basketdemo.step1 .demo-step:last-child .join{animation:demojoin 1.8s ease}
+.basketdemo.step2 .demo-step:last-child .demo-result{animation:demopop .7s ease}
+.demo-result .blank{min-width:1.1em;padding:0 8px;border-bottom:4px solid #FFE793;color:#FFE793;text-align:center}
+@keyframes demostay{40%{transform:scale(1.18);text-shadow:0 0 14px #FFE793}}
+@keyframes demojoin{50%{transform:translateY(-10px) scale(1.08)}}
+@keyframes demopop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.basketdemo .demo-step,.basketdemo .stay,.basketdemo .join,.basketdemo .demo-result{animation:none}}
 /* Same Basket plays on its own orchard screen, not in the monster arena */
 .workshop{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;overflow:hidden;color:#EEF2FF;background:radial-gradient(ellipse at 50% -10%,#3A4E8C 0%,#121A3E 42%,#070B1E 78%);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .shop-hud{display:flex;align-items:center;gap:10px;padding:12px 14px 4px}
-.shop-main{width:min(760px,100%);margin:0 auto;padding:8px 16px 12px;display:flex;flex-direction:column;gap:12px;flex:1;min-height:0;overflow:auto}
+.shop-main{width:min(760px,100%);margin:0 auto;padding:8px 16px 12px;display:flex;flex-direction:column;gap:12px;flex:1;min-width:0;min-height:0;overflow:auto}
 .shop-dock{flex:none;width:min(760px,100%);margin:0 auto;padding:8px 16px 16px}
 .shop-kicker{margin:0;text-align:center;font-family:"Lilita One",sans-serif;letter-spacing:.6px;color:var(--gold)}
 .shop-expr{font-family:"Lilita One",sans-serif;font-size:clamp(28px,6vw,46px);text-align:center;letter-spacing:.5px;text-shadow:0 3px 0 rgba(0,0,0,.45)}
@@ -606,6 +629,10 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .workshop .pad{max-width:none;gap:8px}
 .workshop .pad button{height:52px;font-family:"Lilita One",sans-serif;font-size:26px;background:linear-gradient(180deg,#2A3D80,#16204A);border:1px solid rgba(245,194,76,.35);color:#fff;border-radius:14px;box-shadow:0 4px 0 #050817,inset 0 1px 0 rgba(255,255,255,.14)}
 .workshop .pad button.ok{background:linear-gradient(180deg,#FFE793,#F7BE3E 55%,#DB921C);color:#3A2300;border-color:#FFF1B8;box-shadow:0 4px 0 #8A5A10}
+.workshop .voicehint{margin:0 0 6px;text-align:center;font-size:15px;font-weight:700;color:#FFE793}
+.workshop .voicerow{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.workshop .voicerow .mic{flex:1;min-height:48px;font-size:18px}
+.workshop .heard{margin:0 0 6px;text-align:center}
 .workshop .rcard{margin-top:12px}
 /* Today's Tasks: coins today, the chest and the streak (plaza.js tasksHTML) */
 .tasks-coins{margin-top:4px;padding:6px 4px 2px;font-size:14px;font-weight:700;color:#8A5A10;border-top:1px dashed #E2C9A0}
@@ -648,6 +675,7 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .cloudbar{margin:18px 0;padding:14px 16px;border-radius:18px;border:1.5px solid var(--frame);background:rgba(8,12,32,.35)}
 .cloudbar h3{margin-top:0}
 .cloudbar .row,.dlg-btns{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.syncnote{margin:0 0 10px;padding:8px 12px;border-radius:14px;border:1.5px solid var(--frame);background:rgba(245,194,76,.12);color:var(--gold-hi);font-weight:700}
 .cloudpick,.syncdlg{max-width:720px}
 .syncdlg{flex-direction:column}
 .synccards{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 12px}
@@ -707,6 +735,12 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .under .surf{position:absolute;left:0;right:0;top:0;height:42px;background:linear-gradient(180deg,rgba(255,255,255,.82),rgba(255,255,255,0));z-index:4}
 .under .rays{position:absolute;inset:-10% 0 0;background:repeating-linear-gradient(102deg,transparent 0 42px,rgba(255,255,255,.16) 42px 58px);animation:rays 9s linear infinite;pointer-events:none}
 .under .hook{position:absolute;top:2px;left:50%;transform:translateX(-50%);z-index:5;font-size:22px}
+.school{position:absolute;inset:0;z-index:3;pointer-events:none}
+.schoolfish{position:absolute;font-size:36px;line-height:1;animation:schoolswim 2.6s ease-in-out infinite;filter:drop-shadow(0 6px 2px rgba(0,20,40,.45))}
+.under.waiting .line.dropping{height:74%;animation:linedrop 1.5s ease}
+.under.waiting .line.down{height:74%}
+@keyframes schoolswim{50%{transform:translateX(16px)}}
+@keyframes linedrop{from{height:8%}to{height:74%}}
 .under.has3d .fighter,.under.has3d .line,.under.has3d .hook{visibility:hidden}
 .under .line{position:absolute;top:0;left:50%;width:3px;margin-left:-1px;border-radius:2px;background:linear-gradient(#fff,rgba(255,255,255,.25));box-shadow:0 0 8px rgba(255,255,255,.75);transition:height .45s ease;z-index:2}
 .under .fighter{position:absolute;left:50%;z-index:3;margin-left:-26px;transition:top .5s cubic-bezier(.2,.7,.2,1)}
@@ -723,6 +757,17 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .tugbar{height:12px;margin:8px 0 0;border-radius:99px;background:rgba(255,255,255,.16);overflow:hidden}
 .tugbar span{display:block;height:100%;background:linear-gradient(90deg,#7dffa6,#ffe56a);transition:width .45s ease}
 .tugnote{margin:4px 0 8px}
+.landdemo{margin:0 0 10px}
+.under.landing{box-shadow:0 0 0 3px #F5C24C,inset 0 -30px 40px rgba(0,16,32,.35)}
+.landover{position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;padding-bottom:18px;pointer-events:none}
+.landover p{margin:0;padding:4px 12px;border-radius:999px;background:rgba(8,16,32,.72);color:#FFE793;font-family:"Lilita One",sans-serif;font-size:20px}
+.landover .hand{font-size:72px;line-height:1;animation:grabclose 1.2s ease;filter:drop-shadow(0 6px 0 rgba(0,0,0,.35))}
+.landdemo .grab{display:flex;align-items:center;justify-content:center;gap:10px;font-size:48px}
+.landdemo .hand{display:inline-block;animation:grabclose 1.2s ease}
+.landdemo .catchfish{display:inline-block;animation:grabfish 1.2s ease}
+@keyframes grabclose{0%{transform:translateY(-18px) scale(1.25)}100%{transform:none}}
+@keyframes grabfish{0%{transform:translateY(16px) scale(.8)}100%{transform:none}}
+@media (prefers-reduced-motion:reduce){.landdemo .hand,.landdemo .catchfish{animation:none}}
 .fighter.tug .swimmer{animation:yank .4s ease}
 .fighter.reel .swimmer{animation:haul .45s ease}
 @keyframes swim{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(5px) rotate(10deg)}}
@@ -730,4 +775,4 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 @keyframes haul{50%{transform:translateY(-18px) scale(1.08)}}
 @keyframes rise{0%{transform:translateY(0);opacity:0}12%{opacity:.85}100%{transform:translateY(-210px);opacity:0}}
 @keyframes rays{from{transform:translateX(0)}to{transform:translateX(-48px)}}
-@media (prefers-reduced-motion:reduce){.under .swimmer,.under .bub,.under .rays,.fighter.tug .swimmer,.fighter.reel .swimmer{animation:none}}
+@media (prefers-reduced-motion:reduce){.under .swimmer,.under .bub,.under .rays,.fighter.tug .swimmer,.fighter.reel .swimmer,.schoolfish,.under.waiting .line.dropping{animation:none}}

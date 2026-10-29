@@ -52,7 +52,7 @@ function cloudPlayersHtml(){
   if(!cloudKidList){cloudLoadKids();return '<p class="muted">Loading the kids on this Google account…</p>'}
   if(!cloudKidList.length)return '<p class="muted">This Google account has no kids yet. Add the first child below.</p>';
   const active=cloudIsAccount()?cloudRead().childId:null;
-  return `<div class="players">${cloudKidList.map(ch=>`<button class="player" data-act="cloudSwitch" data-id="${esc(ch.id)}"><div class="e">${cloudLookEmoji(ch.look)}</div><div class="nm">${esc(ch.displayName)}</div><div class="muted"><span class="tag good">${esc(typeof gradeName==='function'?gradeName(ch.grade):ch.grade||'')}</span>${ch.id===active?' · Playing now':''}</div></button>`).join('')}</div>`;
+  return `<p class="syncnote">${esc(cloudSyncNotice())}</p><div class="players">${cloudKidList.map(ch=>`<button class="player" data-act="cloudSwitch" data-id="${esc(ch.id)}"><div class="e">${cloudLookEmoji(ch.look)}</div><div class="nm">${esc(ch.displayName)}</div><div class="muted"><span class="tag good">${esc(typeof gradeName==='function'?gradeName(ch.grade):ch.grade||'')}</span>${ch.id===active?' · Playing now':''}${cloudStamp(ch.updatedAt)?` · Last sync ${esc(cloudWhen(ch.updatedAt))}`:''}</div></button>`).join('')}</div>`;
 }
 function cloudSaveLocalHtml(){
   if(!cloudToken()||!cloudKidList||!cloudRoom())return '';
@@ -62,7 +62,7 @@ function cloudSaveLocalHtml(){
 }
 function cloudBarHtml(){
   const c=cloudRead(),signed=!!cloudToken(),label=c.session&&(c.session.email||c.session.displayName),who=signed&&label?`Signed in as ${esc(label)}. `:'';
-  if(c.mode==='account')return `<div class="cloudbar"><h3>Saved farm</h3><p class="muted">${who}If the copies differ, the newer one is kept. If both changed, you choose. This device then uploads about once a minute.</p><div class="row">
+  if(c.mode==='account')return `<div class="cloudbar"><h3>Saved farm</h3><p class="syncnote">${esc(cloudSyncNotice(c.childId))}</p><p class="muted">${who}If the copies differ, the newer one is kept. If both changed, you choose. This device then uploads about once a minute.</p><div class="row">
     <button class="b" data-act="cloudSync">☁️ Sync</button><button class="b ghost" data-act="cloudChildren">Saved farms</button>
     <button class="b ghost" data-act="cloudAskGuest">Guest farm</button>
     ${signed?'<button class="b ghost" data-act="cloudSwitchAccount">Switch account</button><button class="b ghost" data-act="cloudLogout">Sign out</button>':'<button class="b" data-act="cloudLogin">Sign in</button>'}</div></div>`;
@@ -100,7 +100,8 @@ function cloudLogin(){
   if(!cfg.googleClientId){dialog(MAYOR,['Sign-in is not set up on this copy of the farm yet.','You can keep playing on this device. Nothing is sent anywhere.']);return}
   if(!cfg.authBase){dialog(MAYOR,['This published farm does not have the laptop address yet.','Add the https address in cloud-config.js. You can keep playing on this device.']);return}
   cloudLoadGsi().then(()=>{const el=$('#dlg');if(!el)return;const email=cloudRead().session&&cloudRead().session.email;el.className='show';el.innerHTML=`<div class="dlg"><div style="flex:1"><div class="dlg-name">${cloudPickingAccount?'Switch account':'Sign in'}</div>
-    <p>${cloudPickingAccount?`Choose a different email.${email?` <b>${esc(email)}</b> stays on this account.`:''} An email that is already linked cannot be moved.`:'Sign in with Google when you want saved farms. Playing here stays on this device until you tap Sync.'}</p><div id="gsi"></div>
+    <p>${cloudPickingAccount?`Choose a different email.${email?` <b>${esc(email)}</b> stays on this account.`:''} An email that is already linked cannot be moved.`:'Sign in with Google when you want saved farms. Playing here stays on this device until you tap Sync.'}</p>
+    <p class="syncnote">${esc(cloudSyncNotice())}</p><div id="gsi"></div>
     <div class="dlg-btns"><button class="b ghost sm" data-act="cloudClose">Not now</button></div></div></div>`;
     google.accounts.id.initialize({client_id:cfg.googleClientId,auto_select:false,callback:resp=>{if(resp&&resp.credential)cloudExchange(resp.credential)}});
     google.accounts.id.disableAutoSelect();
@@ -151,9 +152,10 @@ function cloudDrawChildren(list){
   cloudRememberKids(list||[]);
   const c=cloudRead(),room=cloudRoom();
   const saves=cloudUnsavedLocals().slice(0,room).map(p=>`<button class="b ghost sm" data-act="cloudCreate" data-id="${esc(p.id)}">Save ${esc(p.name)} to this account</button>`).join('');
-  const rows=(cloudKidList||[]).map(ch=>`<button class="player" data-act="cloudSwitch" data-id="${esc(ch.id)}"><div class="nm">${esc(ch.displayName)}</div><div class="muted">${esc(typeof gradeName==='function'?gradeName(ch.grade):ch.grade||'')} · saved copy ${Number(ch.revision)||0}</div></button>`).join('')||'<p class="muted">No kids on this account yet.</p>';
+  const rows=(cloudKidList||[]).map(ch=>{const when=cloudStamp(ch.updatedAt)?cloudWhen(ch.updatedAt):'';return `<button class="player" data-act="cloudSwitch" data-id="${esc(ch.id)}"><div class="nm">${esc(ch.displayName)}</div><div class="muted">${esc(typeof gradeName==='function'?gradeName(ch.grade):ch.grade||'')} · saved copy ${Number(ch.revision)||0}${when?` · Last sync ${esc(when)}`:''}</div></button>`}).join('')||'<p class="muted">No kids on this account yet.</p>';
   const el=$('#dlg');if(!el)return;el.className='show';
   el.innerHTML=`<div class="dlg cloudpick"><div style="flex:1"><div class="dlg-name">Kids on this account</div>
+    <p class="syncnote">${esc(cloudSyncNotice())}</p>
     <p class="muted">One Google account keeps 2 separate kids. Opening one keeps the newer copy. If both changed, you choose. Then this device uploads about once a minute.</p><div class="players">${rows}</div>
     ${room?'':`<p class="muted">This Google account already has its 2 kids.</p>`}
     <div class="dlg-btns">${saves}${room?'<button class="b ghost sm" data-act="cloudCreateEmpty">Add a child</button>':''}
@@ -235,6 +237,21 @@ function cloudUseGuest(){
 let cloudSyncRemote=null;
 function cloudStamp(v){if(v==null||v==='')return 0;const n=typeof v==='number'?v:Date.parse(v);return Number.isFinite(n)?n:0}
 function cloudWhen(v){const n=cloudStamp(v);if(!n)return 'No time saved';return new Date(n).toLocaleString(undefined,{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}
+function cloudRememberSync(id,when){
+  const n=cloudStamp(when)||Date.now();
+  try{
+    if(id)localStorage.setItem('hmf-sync-at-'+id,String(n));
+    if(n>=cloudLastSync())localStorage.setItem('hmf-sync-at-device',String(n));
+  }catch(e){}
+}
+function cloudLastSync(id){const n=Number(localStorage.getItem('hmf-sync-at-'+(id||'device'))||'0');return Number.isFinite(n)&&n>0?n:0}
+function cloudSyncNotice(id){
+  let ms=cloudLastSync(id);
+  const kids=id&&cloudKidList?[cloudKidList.find(ch=>ch&&ch.id===id)].filter(Boolean):(cloudKidList||[]);
+  kids.forEach(ch=>{ms=Math.max(ms,cloudStamp(ch.updatedAt))});
+  if(!id)ms=Math.max(ms,cloudLastSync());
+  return ms?`Last sync ${cloudWhen(ms)}.`:'No sync yet.';
+}
 function cloudStarsOf(p){if(!p||!p.lv)return 0;return Object.values(p.lv).reduce((a,r)=>a+(r&&r.stars||0),0)}
 function cloudBaseKey(id){return 'hmf-sync-base-'+id}
 function cloudReadBase(id){try{return localStorage.getItem(cloudBaseKey(id))}catch(e){return null}}
@@ -298,6 +315,7 @@ function cloudDrawSync(remote){
 }
 function cloudMarkSynced(id,revision,material){
   if(id)cloudSetRevision(id,revision||0);
+  cloudRememberSync(id);
   const mat=material==null?cloudMaterial():material;
   cloudSavedMaterial=mat;cloudWriteBase(id,mat);cloudConflictSig=null;cloudAutoHold=false;cloudPending=null;
 }
