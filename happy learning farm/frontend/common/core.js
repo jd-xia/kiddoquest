@@ -1,10 +1,10 @@
 /* Happy Learning Farm — core: save data, players, router, dialog, shared farm data.
    Loaded by every page, after curriculum.js. No 3D code here. */
 const MAYOR={name:'Bella the Bear',e:'🐻'}, MERCHANT={name:'Mo the Merchant',e:'🦝'};
-const ELLIE={name:'Ellie the Elephant',e:'🐘'}, FARMER={name:'Farmer Gus',e:'🐴'}, ARTIST={name:'Polly the Parrot',e:'🦜'};
+const ELLIE={name:'Ellie the Elephant',e:'🐘'}, FARMER={name:'Farmer Gus',e:'🐴'}, ARTIST={name:'Polly the Parrot',e:'🦜'}, ANGLER={name:'Finn the Otter',e:'🦦'};
 const AVATARS=[['chick','🐣','Chick',0],['cat','🐱','Cat',15],['dog','🐶','Puppy',15],['fox','🦊','Fox',25],['panda','🐼','Panda',25],['frog','🐸','Frog',30],['tiger','🐯','Tiger',40],['koala','🐨','Koala',40],['unicorn','🦄','Unicorn',60],['dragon','🐲','Dragon',80],['robot','🤖','Robot',100],['alien','👾','Space Bug',120]];
-/* Characters a child can pick (Art Studio → Me). 'girl'/'boy' are full 3D farmers; the rest walk around
-   as a stand-up cut-out of the emoji. A child's own drawing of 'me' always wins over the pick. */
+/* Characters a child can pick (Art Studio → Me). Every look walks around as a 3D character.
+   A child's own drawing of 'me' stays as their portrait. */
 const LOOKS=[
   {id:'girl',e:'👧',name:'Farm girl',hero:'girl'},{id:'boy',e:'👦',name:'Farm boy',hero:'boy'},
   {id:'farmgirl',e:'👩‍🌾',name:'Farmer girl',hero:'girl'},{id:'farmboy',e:'👨‍🌾',name:'Farmer boy',hero:'boy'},
@@ -22,14 +22,50 @@ const PRAISE=['Hoo-ray! Spot on.','Brilliant trick work!','Exactly right!','You\
 
 /* ---------- data & saving ---------- */
 const LS='mathstreet-v1';
-function newPlayer(name,grade,look){return{id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,grade:grade||DEFAULT_GRADE,look:look||'boy',avatar:'chick',owned:['chick'],gems:0,seen:{},lv:{},sessions:[],time:0}}
-function blank(){const a=newPlayer('Jayden','p1','boy'),b=newPlayer('Michelle',null,'girl');return{v:2,updated:0,current:null,players:[a,b]}}
+const START_COINS=100;
+function newPlayer(name,grade,look){return{id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,grade:grade||DEFAULT_GRADE,look:look||'boy',avatar:'chick',owned:['chick'],gems:START_COINS,starter:1,seen:{},lv:{},sessions:[],time:0}}
+function blank(){const a=newPlayer('Jayden','p1','boy'),b=newPlayer('Michelle',null,'girl');return{v:3,updated:0,current:null,players:[a,b]}}
 let DATA=(()=>{try{const s=localStorage.getItem(LS);if(s){const d=JSON.parse(s);if(d&&d.players)return d}}catch(e){}return blank()})();
 /* Save migration v1 → v2 (runs once): Michelle is a girl, Jayden is a boy in P1. Later changes made on the
    progress board or in the Art Studio are kept, because this only runs for older saves. */
 if((DATA.v||1)<2){DATA.players.forEach(p=>{const n=p.name.trim().toLowerCase();
   if(!p.look)p.look=n==='michelle'?'girl':'boy';if(n==='jayden'){p.look='boy';p.grade='p1'}});DATA.v=2;try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}}
-DATA.players.forEach(p=>{if(!p.look)p.look='boy'});
+let coinGrant=false;
+DATA.players.forEach(p=>{
+  if(!p.look)p.look='boy';
+  if(!p.starter){if(!(Number(p.gems)>0))p.gems=START_COINS;p.starter=1;coinGrant=true}
+});
+if(coinGrant){try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}}
+/* Save v3 runs once: every child on this device goes back to a new farm with 100 coins.
+   Name, grade and look stay. The saved farm on the server stays until Sync → Upload. */
+function resetPlayer(p){
+  const fresh=newPlayer(p&&p.name||'Farmer',p&&p.grade,p&&p.look||'boy');
+  if(p&&p.id)fresh.id=p.id;
+  return fresh;
+}
+function rewriteSave(raw){
+  try{const d=JSON.parse(raw);if(!d||!Array.isArray(d.players))return null;d.players=d.players.map(resetPlayer);d.v=3;d.updated=Date.now();return JSON.stringify(d)}catch(e){return null}
+}
+function resetEveryChild(){
+  const keys=[];
+  try{for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k)keys.push(k)}}catch(e){}
+  DATA.players=(DATA.players||[]).map(resetPlayer);
+  if(!DATA.players.length)DATA.players=[newPlayer('Jayden','p1','boy'),newPlayer('Michelle',null,'girl')];
+  DATA.v=3;
+  keys.forEach(k=>{
+    if(k===LS)return;
+    if(k==='hmf-guest-backup'||k.indexOf('hmf-account-cache-')===0){const next=rewriteSave(localStorage.getItem(k));if(next)try{localStorage.setItem(k,next)}catch(e){}}
+    else if(k.indexOf('hmf-rev-')===0)try{localStorage.setItem(k,'0')}catch(e){}
+  });
+  if(typeof wipeArtNow==='function'){wipeArtNow();try{localStorage.removeItem('hmf-reset-art')}catch(e){}}
+  else try{localStorage.setItem('hmf-reset-art','1')}catch(e){}
+  if(typeof cloudSavedMaterial!=='undefined')cloudSavedMaterial=null;
+  if(typeof cloudAutoHold!=='undefined')cloudAutoHold=true;
+  save();
+}
+let resetArmed=false;
+/* Older saves are marked current without wiping. A reset happens only when a grown-up taps it. */
+if((DATA.v||1)<3){DATA.v=3;try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}}
 /* Local-first: save() only writes this browser. A linked Google child farm is also saved about once a minute by cloud.js. */
 function save(){
   DATA.updated=Date.now();
@@ -41,7 +77,7 @@ const dun=(id,p)=>{const D=DUNGEONS.find(d=>d.id===id);return D&&schoolFor(D,gra
 /* A school building as the (current) player sees it: open when at least one of its topics has levels for their grade. */
 const schoolView=(id,p)=>{const S=schoolById(id);if(!S)return null;const topics=S.topics.map(t=>dun(t,p));return Object.assign({},S,{topics,open:S.open&&topics.some(t=>t.open)})};
 const totalStars=p=>Object.values(p.lv).reduce((a,r)=>a+(r.stars||0),0);
-const unlocked=(p,D,i)=>!D.levels[i].soon&&(i===0||((p.lv[D.levels[i-1].id]||{}).stars>0));   // 'soon' levels are placeholders
+const unlocked=(p,D,i)=>!D.levels[i].soon&&(i<3||((p.lv[D.levels[i-1].id]||{}).stars>0));   // first three levels are open from the start; later ones need the previous level's stars. 'soon' levels stay locked.
 const playable=D=>D.levels.filter(l=>!l.soon);
 
 /* ---------- ui state ---------- */
@@ -53,7 +89,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
    Each screen lives on one page. go() renders locally when this page owns the screen,
    otherwise it hands the screen + extras to the next page through sessionStorage. */
 const PAGE_FILE=document.body.dataset.page||'index.html';
-const PAGES={players:'index.html',town:'index.html',market:'market.html',shop:'market.html',barn:'barn.html',progress:'board.html',studio:'studio.html'};
+const PAGES={players:'index.html',town:'index.html',market:'market.html',shop:'market.html',barn:'barn.html',progress:'board.html',studio:'studio.html',fishing:'fishing.html'};
 function pageFor(screen,extra){   // school screens live on school-<school id>.html; a topic (did) belongs to one school
   if(['school','dungeon','level','result'].includes(screen)){const e=extra||{},T=DUNGEONS.find(d=>d.id===(e.did||UI.did));return 'school-'+(e.sid||(T&&T.school)||UI.sid||'tricks')+'.html'}
   return PAGES[screen]||'index.html'}
@@ -151,13 +187,39 @@ function streakGift(p,days){const f=farmOf(p);
   return null}
 let F=null,MAP=null,BAT=null,LASTPOS=null;const KEYS=new Set();
 function farmOf(p){if(!p.farm)p.farm={plots:[],unlocked:6,animals:[],decor:[],shirt:'red',hat:'straw',owned:['shirt:red','hat:straw'],xp:0,barn:{}};return p.farm}
+const FISH_CATCH=[
+  {id:'minnow',name:'Minnow',e:'🐟',worth:2},
+  {id:'carp',name:'Carp',e:'🐠',worth:3},
+  {id:'bass',name:'Bass',e:'🐡',worth:5},
+  {id:'koi',name:'Koi',e:'🎏',worth:8},
+  {id:'octopus',name:'Octopus',e:'🐙',worth:12}
+];
+function fishOf(p){const f=farmOf(p);if(!f.fish)f.fish={pond:0,owned:['rod:twig'],rod:'twig',bait:1,catches:{}};
+  if(!f.fish.owned.includes('rod:twig'))f.fish.owned.unshift('rod:twig');if(!f.fish.rod)f.fish.rod='twig';f.fish.catches=f.fish.catches||{};return f.fish}
 function farmLevel(xp){let l=1,need=20;while(xp>=need){xp-=need;l++;need=20*l}return{l,into:xp,need}}
 function plotInfo(pl){if(!pl)return null;const S=SEEDS.find(s=>s.id===pl.crop);const dur=S.mins*60000*(pl.watered?.7:1),el=Date.now()-pl.planted,prog=Math.min(1,el/dur);return{S,prog,left:Math.max(0,dur-el),stage:prog>=1?3:prog>=.5?2:prog>=.15?1:0}}
 const fmtLeft=ms=>{const s=Math.ceil(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const HOME_PLOTS=12;
+const LANDS=[
+  {id:'meadow',name:'West Meadow',e:'🌿',cost:40,n:6,blurb:'A fenced field up the hill, on the left.'}
+];
+const hasLand=(f,id)=>(f.lands||[]).includes(id);
+const plotOpen=(f,i)=>i<HOME_PLOTS?i<(f.unlocked||0):LANDS.some((L,n)=>{const from=HOME_PLOTS+LANDS.slice(0,n).reduce((a,x)=>a+x.n,0);return i>=from&&i<from+L.n&&hasLand(f,L.id)});
 const plotCost=f=>12+4*(f.unlocked-6);
-const plotPos=i=>({x:-3.9+(i%4)*2.6,z:-3.6+Math.floor(i/4)*2.6});
+const plotPos=i=>{
+  if(i<HOME_PLOTS)return {x:-3.9+(i%4)*2.6,z:-3.6+Math.floor(i/4)*2.6};
+  const k=i-HOME_PLOTS;
+  return {x:-21.6+(k%3)*2.55,z:12.8+Math.floor(k/3)*2.55};
+};
+function purchasePlot(){const p=cur(),f=farmOf(p),c=plotCost(f);if(p.gems<c||f.unlocked>=HOME_PLOTS)return false;p.gems-=c;f.unlocked++;save();return c}
+function purchaseLand(id){const p=cur(),f=farmOf(p),L=LANDS.find(x=>x.id===id);if(!L||hasLand(f,id)||p.gems<L.cost)return false;p.gems-=L.cost;f.lands=f.lands||[];f.lands.push(id);save();return true}
 let toastTimer=null;
-function toast(t){const el=$('#toast');if(!el)return;el.textContent=t;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),2400)}
+function toast(t,ms){const el=$('#toast');if(!el)return;el.textContent=t;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),ms||2400)}
+function notice(t){
+  const el=$('#dlg');
+  if(el&&!DLG){el.className='show';el.innerHTML=`<div class="dlg"><div style="flex:1"><div class="dlg-name">Farm</div><p>${esc(t)}</p><div class="dlg-btns"><button class="b sm" data-act="cloudClose">OK</button></div></div></div>`;return}
+  toast(t,6000);
+}
 
 /* ---------- actions shared by every page; pages add their own with Object.assign(ACT,{...}) ---------- */
 const ACT={
@@ -167,11 +229,16 @@ const ACT={
   openDungeon:d=>go('dungeon',{did:d.id}),
   openSchool:d=>go('school',{sid:d.id}),
   openProgress:()=>go('progress'),
-  quick:d=>{const s={tricks:['school',{sid:'tricks'}],market:['market'],board:['progress'],barn:['barn'],studio:['studio']}[d.id];if(s)go(s[0],s[1])},
+  quick:d=>{const s={tricks:['school',{sid:'tricks'}],market:['market'],board:['progress'],barn:['barn'],studio:['studio'],fish:['fishing']}[d.id];if(s)go(s[0],s[1])},
   camL:()=>{if(typeof G!=='undefined')G.stage&&G.stage.rotate&&G.stage.rotate(1)},camR:()=>{if(typeof G!=='undefined')G.stage&&G.stage.rotate&&G.stage.rotate(-1)},
   zoomIn:()=>{if(typeof G!=='undefined')G.stage&&G.stage.zoom&&G.stage.zoom(-1)},zoomOut:()=>{if(typeof G!=='undefined')G.stage&&G.stage.zoom&&G.stage.zoom(1)},
   dlgNext:()=>{if(!DLG)return;if(DLG.i<DLG.lines.length-1){DLG.i++;drawDlg()}else dlgEnd()},
-  dlgSkip:()=>dlgEnd()
+  dlgSkip:()=>dlgEnd(),
+  resetAll:()=>{
+    if(!resetArmed){resetArmed=true;render();return}
+    resetArmed=false;resetEveryChild();render();
+    if(!DLG)notice('Every child on this device is back to 100 coins. Open Sync and tap Upload to replace a saved farm.');
+  }
 };
 let onPageKey=null;
 document.addEventListener('click',e=>{
@@ -193,5 +260,5 @@ function startPage(screens,def){
   try{nav=JSON.parse(sessionStorage.getItem('hmf-nav')||'null');sessionStorage.removeItem('hmf-nav');LASTPOS=JSON.parse(sessionStorage.getItem('hmf-lastpos')||'null')}catch(e){}
   UI=nav&&screens[nav.screen]?Object.assign({screen:nav.screen},nav.extra||{}):def();
   $('#app').innerHTML='<div class="boot"><span class="coin">🌾</span><p>Loading Happy Learning Farm…</p></div>';
-  Promise.all([Promise.race([document.fonts?document.fonts.load('600 48px Fredoka'):Promise.resolve(),new Promise(r=>setTimeout(r,1800))]).catch(()=>{}),loadArt()]).then(()=>{render()});
+  Promise.all([Promise.race([document.fonts?document.fonts.load('600 48px Fredoka'):Promise.resolve(),new Promise(r=>setTimeout(r,1800))]).catch(()=>{}),loadArt()]).then(()=>{render();if(typeof cloudBoot==='function')cloudBoot()});
 }

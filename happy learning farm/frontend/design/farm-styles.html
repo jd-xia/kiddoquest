@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Farm Style Board</title>
+<!-- Style reference only: three cute farm looks for Happy Learning Farm, side by side.
+     Each theme is a set of CSS variables on .theme-*, so a look can be copied into common/style.css. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Lilita+One&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#F4EFE3;color:#3B2A1A;font-family:"Fredoka","ZCOOL KuaiLe",ui-rounded,system-ui,sans-serif;font-size:17px;line-height:1.45}
+header{max-width:1200px;margin:0 auto;padding:28px 16px 8px}
+header h1{font-family:"Lilita One","ZCOOL KuaiLe",sans-serif;font-weight:400;font-size:34px;margin:0 0 4px}
+header p{margin:0;color:#7A6550}
+.grid{max-width:1200px;margin:0 auto;padding:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px}
+
+/* ---------- one board per theme ---------- */
+.board{border-radius:26px;overflow:hidden;background:var(--bg);color:var(--ink);box-shadow:0 10px 30px rgba(60,40,10,.18);display:flex;flex-direction:column}
+.scene{position:relative;height:210px;background:var(--sky);overflow:hidden}
+.scene .hill{position:absolute;left:-10%;right:-10%;bottom:-60px;height:150px;border-radius:50% 50% 0 0;background:var(--grass);box-shadow:inset 0 10px 0 var(--grass-hi)}
+.scene .hill.back{bottom:-30px;left:30%;right:-30%;background:var(--grass-hi);opacity:.7}
+.scene .sun{position:absolute;top:20px;right:28px;width:54px;height:54px;border-radius:50%;background:var(--sun);box-shadow:0 0 0 10px color-mix(in srgb,var(--sun) 30%,transparent)}
+.scene .cloud{position:absolute;top:34px;left:30px;width:90px;height:28px;border-radius:20px;background:#fff;opacity:.92}
+.scene .cloud::before{content:"";position:absolute;left:16px;top:-16px;width:44px;height:36px;border-radius:50%;background:#fff}
+.scene .props{position:absolute;bottom:22px;left:0;right:0;display:flex;justify-content:space-around;font-size:40px;filter:drop-shadow(0 4px 0 rgba(0,0,0,.12))}
+.scene .coins{position:absolute;top:12px;left:12px;display:flex;gap:8px}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 6px;border-radius:999px;background:var(--panel);border:3px solid var(--edge);font-family:"Lilita One",sans-serif;font-size:16px;color:var(--ink);box-shadow:0 3px 0 var(--edge-dk)}
+.pill i{font-style:normal;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-size:14px;background:var(--accent-soft)}
+
+.body{padding:18px;display:flex;flex-direction:column;gap:14px}
+.name{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.name h2{margin:0;font-family:"Lilita One","ZCOOL KuaiLe",sans-serif;font-weight:400;font-size:24px;color:var(--title)}
+.name span{font-size:14px;color:var(--muted)}
+.swatches{display:flex;gap:6px}
+.swatches b{flex:1;height:34px;border-radius:10px;border:2px solid rgba(0,0,0,.08)}
+
+.card{background:var(--panel);border:3px solid var(--edge);border-radius:var(--radius);padding:12px 14px;box-shadow:0 4px 0 var(--edge-dk)}
+.card h3{margin:0 0 8px;font-family:"Lilita One","ZCOOL KuaiLe",sans-serif;font-weight:400;font-size:18px;color:var(--title)}
+.task{display:flex;align-items:center;gap:10px;padding:5px 0}
+.task .ic{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;background:var(--accent-soft);font-size:17px}
+.task .lbl{flex:1;font-size:15px}
+.bar{flex:0 0 74px;height:12px;border-radius:999px;background:var(--track);overflow:hidden}
+.bar u{display:block;height:100%;border-radius:inherit;background:var(--good)}
+.task .n{font-family:"Lilita One",sans-serif;font-size:14px;width:30px;text-align:right}
+
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btn{font:inherit;font-family:"Lilita One","ZCOOL KuaiLe",sans-serif;font-size:17px;padding:10px 18px;border-radius:var(--radius);border:3px solid var(--btn-edge);background:var(--btn);color:var(--btn-ink);box-shadow:0 5px 0 var(--btn-edge);cursor:pointer;transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--btn-edge)}
+.btn.alt{background:var(--btn2);border-color:var(--btn2-edge);box-shadow:0 5px 0 var(--btn2-edge);color:var(--btn2-ink)}
+
+.talk{display:flex;gap:10px;align-items:flex-end}
+.talk .who{flex:0 0 52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:30px;background:var(--accent-soft);border:3px solid var(--edge)}
+.bubble{position:relative;flex:1;background:var(--bubble);border:3px solid var(--edge);border-radius:18px;padding:10px 14px;font-size:15px}
+.bubble::before{content:"";position:absolute;left:-11px;bottom:12px;border:8px solid transparent;border-right-color:var(--edge)}
+.q{font-family:"Lilita One",sans-serif;font-size:26px;text-align:center;letter-spacing:.5px;padding:6px 0;color:var(--title)}
+.pad{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.pad span{display:grid;place-items:center;height:40px;border-radius:12px;background:var(--key);border:2px solid var(--edge);box-shadow:0 3px 0 var(--edge-dk);font-family:"Lilita One",sans-serif;font-size:18px}
+.notes{font-size:14px;color:var(--muted);margin:0;padding-left:18px}
+.notes li{margin:2px 0}
+
+/* ---------- Theme 1: Cozy Wood (close to the current farm HUD) ---------- */
+.theme-wood{
+  --bg:#FBF3E2;--ink:#4A2F17;--muted:#8A6B4C;--title:#6B3E14;
+  --sky:linear-gradient(180deg,#9FD7F2,#DDF2F7);--grass:#7CC35A;--grass-hi:#A6DB6A;--sun:#FFD25E;
+  --panel:#FFF8E8;--edge:#B9783D;--edge-dk:#7E4C21;--radius:16px;--bubble:#FFFDF6;
+  --accent-soft:#FFE6B8;--track:#EBD9BB;--good:#69B84A;--key:#FFF1D6;
+  --btn:linear-gradient(180deg,#8CD15F,#5FAE3A);--btn-edge:#3F7D24;--btn-ink:#fff;
+  --btn2:linear-gradient(180deg,#F8C065,#E39A32);--btn2-edge:#A9661B;--btn2-ink:#4A2B08}
+.theme-wood .card{background:var(--panel) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='18'%3E%3Cpath d='M0 9 Q30 4 60 9 T120 9' fill='none' stroke='%23E9D3AE' stroke-width='1.5'/%3E%3C/svg%3E")}
+
+/* ---------- Theme 2: Pastel Candy ---------- */
+.theme-candy{
+  --bg:#FFF4F7;--ink:#5A3A55;--muted:#9B7A96;--title:#D15A8C;
+  --sky:linear-gradient(180deg,#FFD6E7,#E7F0FF);--grass:#9EE3B5;--grass-hi:#C7F2D2;--sun:#FFE08A;
+  --panel:#FFFFFF;--edge:#F5B5CF;--edge-dk:#E58FB3;--radius:22px;--bubble:#FFF9FC;
+  --accent-soft:#FFE3EE;--track:#F7E1EA;--good:linear-gradient(90deg,#FF9EC4,#B79CFF);--key:#FFF0F6;
+  --btn:linear-gradient(180deg,#FFA9CB,#FF7EB1);--btn-edge:#D9578E;--btn-ink:#fff;
+  --btn2:linear-gradient(180deg,#BFE8FF,#8DD0FA);--btn2-edge:#4FA2D6;--btn2-ink:#21506E}
+
+/* ---------- Theme 3: Storybook (soft paper and watercolour) ---------- */
+.theme-book{
+  --bg:#F7F1E1;--ink:#3E3A2E;--muted:#7D7563;--title:#2F6B4F;
+  --sky:linear-gradient(180deg,#CFE6E0,#F4EEDA);--grass:#9DBF7A;--grass-hi:#C5D99A;--sun:#F2C46D;
+  --panel:#FFFCF2;--edge:#5E7A55;--edge-dk:#3F5838;--radius:12px;--bubble:#FFFCF2;
+  --accent-soft:#E6EDD3;--track:#E7E0CA;--good:#6F9E5B;--key:#FBF6E6;
+  --btn:linear-gradient(180deg,#F0A07A,#DF7A55);--btn-edge:#9C4A2C;--btn-ink:#fff;
+  --btn2:linear-gradient(180deg,#FFF6DD,#F1E3B8);--btn2-edge:#A68E55;--btn2-ink:#4A3C1A}
+.theme-book .card,.theme-book .bubble{border-style:dashed;border-width:2px;box-shadow:3px 4px 0 rgba(63,88,56,.18)}
+.theme-book .scene{background-image:var(--sky)}
+.theme-book .scene::after{content:"";position:absolute;inset:0;background:radial-gradient(transparent 60%,rgba(120,100,60,.18));pointer-events:none}
+
+@media (prefers-reduced-motion:no-preference){
+  .scene .cloud{animation:drift 14s ease-in-out infinite alternate}
+  @keyframes drift{to{transform:translateX(40px)}}
+}
+footer{max-width:1200px;margin:0 auto;padding:4px 16px 32px;color:#7A6550;font-size:14px}
+code{background:#EDE3CD;border-radius:6px;padding:1px 5px}
+</style>
+</head>
+<body>
+<header>
+  <h1>🌻 开心学习农场 · Style Board</h1>
+  <p>三种可爱农场风格，同一套组件对比。挑一个喜欢的，再把它的颜色变量搬进 <code>common/style.css</code>。</p>
+</header>
+
+<main class="grid">
+  <!-- the three boards share one markup; only the theme class changes -->
+  <template id="tpl">
+    <section class="board">
+      <div class="scene">
+        <div class="sun"></div><div class="cloud"></div>
+        <div class="hill back"></div><div class="hill"></div>
+        <div class="coins"><span class="pill"><i>🪙</i>128</span><span class="pill"><i>⭐</i>12</span></div>
+        <div class="props"><span>🏡</span><span>🌽</span><span>🐔</span><span>🌳</span></div>
+      </div>
+      <div class="body">
+        <div class="name"><h2></h2><span></span></div>
+        <div class="swatches"></div>
+        <div class="card">
+          <h3>📋 今日任务 Today's tasks</h3>
+          <div class="task"><span class="ic">🌱</span><span class="lbl">Plant seeds</span><span class="bar"><u style="width:66%"></u></span><span class="n">2/3</span></div>
+          <div class="task"><span class="ic">💧</span><span class="lbl">Water crops</span><span class="bar"><u style="width:100%"></u></span><span class="n">3/3</span></div>
+          <div class="task"><span class="ic">🧠</span><span class="lbl">Brain Boost answers</span><span class="bar"><u style="width:33%"></u></span><span class="n">1/3</span></div>
+        </div>
+        <div class="talk"><span class="who">🦉</span><div class="bubble">Find the best friends! Which two numbers make 100?</div></div>
+        <div class="card"><div class="q">785 + 215 = ?</div>
+          <div class="pad"><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>0</span></div></div>
+        <div class="btns"><button class="btn">▶ 开始 Play</button><button class="btn alt">🎒 背包</button></div>
+        <ul class="notes"></ul>
+      </div>
+    </section>
+  </template>
+</main>
+
+<footer>
+  <b>Where to find more cute farm art (free to use):</b> Kenney.nl (CC0 UI packs and 3D farm models),
+  Quaternius (CC0 low-poly farm and animals), Poly Pizza (free low-poly models), and itch.io searches for
+  “cozy farm UI” or “farm GUI pack”. Check each pack's licence before using it.
+</footer>
+
+<script>
+const THEMES=[
+  {cls:'theme-wood',name:'Cozy Wood 木质温馨',tag:'像现在的农场 HUD',
+   sw:['#FBF3E2','#B9783D','#7CC35A','#F8C065','#9FD7F2'],
+   notes:['木板边框 + 厚阴影，像 Stardew / 动森的牌子','最适合 3D 农场，和现在的画面最接近','标题用 Lilita One，按钮是绿色/橙色']},
+  {cls:'theme-candy',name:'Pastel Candy 糖果粉彩',tag:'软萌，适合 Michelle',
+   sw:['#FFF4F7','#F5B5CF','#9EE3B5','#FF7EB1','#8DD0FA'],
+   notes:['粉、薄荷、天蓝，大圆角 22px','进度条用粉紫渐变，奖励感强','白底卡片，干净，答题界面也很清楚']},
+  {cls:'theme-book',name:'Storybook 绘本水彩',tag:'安静，像图画书',
+   sw:['#F7F1E1','#5E7A55','#9DBF7A','#DF7A55','#CFE6E0'],
+   notes:['米色纸张 + 虚线边框，像手绘绘本','颜色低饱和，长时间看眼睛舒服','适合学习页和家长进度页']}];
+const tpl=document.getElementById('tpl'),grid=document.querySelector('.grid');
+THEMES.forEach(t=>{
+  const b=tpl.content.firstElementChild.cloneNode(true);b.classList.add(t.cls);
+  b.querySelector('h2').textContent=t.name;b.querySelector('.name span').textContent=t.tag;
+  b.querySelector('.swatches').innerHTML=t.sw.map(c=>`<b style="background:${c}" title="${c}"></b>`).join('');
+  b.querySelector('.notes').innerHTML=t.notes.map(n=>`<li>${n}</li>`).join('');
+  grid.appendChild(b);
+});
+</script>
+</body>
+</html>

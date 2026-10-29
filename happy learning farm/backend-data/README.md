@@ -74,7 +74,7 @@ mvn spring-boot:run
 
 数据库是 MySQL 库 `kiddoquest_farm`。和认证服务一起用 Compose 启动时，两个库都在同一个 MySQL 卷 `mysql-data` 里。`docker compose down` 会留下这个卷；`docker compose down -v` 会删掉它。单独运行时设置 `FARM_DB_URL`、`FARM_DB_USERNAME` 和 `FARM_DB_PASSWORD`。
 
-游戏页面由 Compose 提供，地址是 `http://localhost:8000`。不启动这两个服务时，游戏仍然可以离线玩。链接 Google 并打开孩子的农场后，页面大约每一分钟把该农场保存到这里；未登录时不会上传。
+游戏页面在 GitHub Pages 上，不在 Nginx 里。不启动这两个服务时，游戏仍然可以离线玩。链接 Google 并打开孩子的农场后，页面大约每一分钟把该农场保存到这里；未登录时不会上传。
 
 和认证服务一起启动：
 
@@ -82,7 +82,7 @@ mvn spring-boot:run
 docker compose up --build
 ```
 
-农场 API 与认证服务共用 `http://localhost:8000`。Nginx 把 `/api/v1/children` 转到农场服务。它会等认证服务健康检查通过后再启动，并使用同一个 `AUTH_JWT_SECRET`。
+农场 API 与认证服务共用 `http://localhost:8000`。Nginx 只把 `/api/v1/children` 转到农场服务。它会等认证服务健康检查通过后再启动，并使用同一个 `AUTH_JWT_SECRET`。
 
 打包：
 

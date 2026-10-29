@@ -46,7 +46,7 @@ mvn spring-boot:run
 
 `AUTH_JWT_SECRET` 至少 32 字节，并且必须和 `backend-data` 使用同一个值。未设置时进程会拒绝启动。
 
-Google Cloud Console 里创建一个 **Web** 客户端，把 `http://localhost:8000` 加进 Authorized JavaScript origins。把同一个 Client ID 写进游戏的 `common/cloud-config.js`（这是公开标识，不是密钥）。
+Google Cloud Console 里创建一个 **Web** 客户端，把 `https://jd-xia.github.io` 加进 Authorized JavaScript origins。把同一个 Client ID 写进游戏的 `common/cloud-config.js`（这是公开标识，不是密钥）。
 
 数据库是 MySQL 库 `kiddoquest_openid`。`docker compose up` 会启动 MySQL，数据在卷 `mysql-data` 里。不要用 `docker compose down -v`，那会删掉这个卷。
 
@@ -74,7 +74,7 @@ java -jar target/backend-openid-1.0.0-SNAPSHOT.jar
 docker compose up --build
 ```
 
-游戏、登录和农场 API 都从 `http://localhost:8000` 进入。Nginx 把 `/api/v1/auth/` 转到认证服务。密钥和 Google Client ID 可写在游戏目录的 `.env`（见 `.env.example`）。未提供密钥时，Compose 使用仅供本机的默认值。
+游戏页面在 GitHub Pages 上。登录和农场 API 从 `http://localhost:8000` 进入。Nginx 只把 `/api/v1/auth/` 转到认证服务，不提供页面。密钥和 Google Client ID 可写在游戏目录的 `.env`（见 `.env.example`）。未提供密钥时，Compose 使用仅供本机的默认值。
 
 ## 测试
 

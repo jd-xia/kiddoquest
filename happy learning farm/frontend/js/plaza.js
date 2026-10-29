@@ -13,13 +13,16 @@ function rPlayers(){
   ${accountList!=null?accountList:`<div class="players">${DATA.players.map(p=>`<button class="player" data-act="choose" data-id="${p.id}"><div class="e">${avE(p)}</div><div class="nm">${esc(p.name)}</div><div class="muted"><span class="tag good">${gradeName(gradeOf(p))}</span> ⭐ ${totalStars(p)} · 🪙 ${p.gems}</div></button>`).join('')}</div>`}
   ${signed&&typeof cloudSaveLocalHtml==='function'?cloudSaveLocalHtml():''}
   ${canAdd?`<h3>${signed?'Add a child':'New player'}</h3><div style="display:flex;gap:8px;flex-wrap:wrap;max-width:520px"><input type="text" id="newname" maxlength="16" placeholder="Name" aria-label="New player name">${GRADES.map(g=>`<button class="b ${NEWGRADE===g.id?'':'ghost'}" data-act="pickGrade" data-g="${g.id}" aria-pressed="${NEWGRADE===g.id}">${g.name}</button>`).join('')}${['girl','boy'].map(id=>{const L=LOOKS.find(l=>l.id===id);return `<button class="b ${NEWLOOK===id?'':'ghost'}" data-act="pickNewLook" data-id="${id}" aria-pressed="${NEWLOOK===id}" aria-label="${L.name}">${L.e}</button>`}).join('')}<button class="b" data-act="${addAct}">Add</button></div>`:''}
-  ${typeof cloudBarHtml==='function'?cloudBarHtml():''}`;
+  ${typeof cloudBarHtml==='function'?cloudBarHtml():''}
+  <div class="cloudbar"><h3>Start again</h3><p class="muted">Every child on this device goes back to a new farm with 100 coins. A saved farm stays until you open Sync and tap Upload.</p>
+  <button class="b ghost" data-act="resetAll">${resetArmed?'Tap again to reset every child':'Reset every child'}</button></div>`;
 }
 const BOUND={x:26.5,z:17.5}, PEN={x0:9,x1:16.5,z0:-6,z1:3};
 const SITES=[{id:'tricks',x:-17,z:-13},{id:'soon1',x:-6,z:-13},{id:'soon2',x:5,z:-13},{id:'soon3',x:16,z:-13}];
 
 /* ===================== FARM ===================== */
 function inField(x,z){return Math.abs(x)<6.7&&z>-6.2&&z<4.2}
+function inMeadow(x,z){return x>-23.4&&x<-14.7&&z>11.1&&z<17.2}
 function onPath(x,z){return (Math.abs(z+9.2)<1.9&&Math.abs(x)<26)||(Math.abs(x+11)<1.9&&z>-9.5&&z<9)||(Math.abs(z-7.2)<1.9&&x>-18&&x<22)||(Math.abs(x)<1.9&&z>7&&z<13.4)||(Math.abs(z-9.2)<1.9&&x>19&&x<22.5)}
 function farmHeight(x,z){const d=Math.max(Math.abs(x)/29,Math.abs(z)/20);return smooth(1.05,1.9,d)*(3.2+2.6*noise2(x*.07,z*.07))+smooth(1.9,3.2,d)*6}
 function buildFarm(){
@@ -29,7 +32,7 @@ function buildFarm(){
     update:farmUpdate,onTap:farmTap,hover:farmHover,unhover:hideMarks,onDrag:dx=>{CAM.yaw-=dx*.008},rotate:d=>{CAM.yaw+=d*Math.PI/4},zoom:d=>{CAM.zoom=Math.max(.6,Math.min(farmZoomMax(),CAM.zoom*Math.pow(1.22,d)))},
     leave(){if(F.player&&!LASTPOS)LASTPOS={x:F.player.position.x,z:F.player.position.z};KEYS.clear()}};
   scene.add(skyDome('#4E95E0','#FFE7C4','#BFD9A2'));scene.fog=new THREE.Fog(col('#F5E3C6'),60,170);
-  F.sun=addLights(scene,{sky:'#E2F0FF',ground:'#6E9A4A',hemi:.7,sun:'#FFE6C2',si:2,pos:[28,30,18],range:34});F.rim=new THREE.Color(1,.9,.72);F.bloom=.3;F.vig=.14;F.sat=1.16;F.con=.12;   // bright, clean picture-book look
+  F.sun=addLights(scene,{sky:'#E4EEF6',ground:'#6A8A52',hemi:.62,sun:'#FFF1DE',si:1.65,pos:[28,30,18],range:34});F.rim=new THREE.Color(.95,.93,.9);F.bloom=.14;F.vig=.2;F.sat=1.02;F.con=.05;
   buildFarmWorld();return F;
 }
 /* The farm's ground is painted onto one canvas like an illustration: mottled grass, little flowers,
@@ -61,7 +64,8 @@ function buildFarmWorld(){
   F.ground=terrain(S,{size:240,seg:120,height:farmHeight,c1:'#7CC753',c2:'#68B946',c3:'#8BD45E',c4:'#5AA03F'});
   const flat=(w,d,color,x,z,y)=>{const m=new THREE.Mesh(rbox(w,d,.06,.03),mat(color,{r:.95}));m.rotation.x=-Math.PI/2;m.position.set(x,y,z);m.receiveShadow=true;S.add(m);return m};
   paintGround(S);
-  flat(13.4,10.4,'#7A5030',0,-1,.018);
+  const yard=new THREE.Mesh(new THREE.PlaneGeometry(13.4,10.4),earthMat('yard'));
+  yard.rotation.x=-Math.PI/2;yard.position.set(0,.02,-1);yard.receiveShadow=true;S.add(yard);
   for(let k=0;k<22;k++){const a=k/22*Math.PI*2+Math.sin(k)*.15,R=100+(k%4)*12,h=20+((k*37)%25);
     const m=mesh(new THREE.ConeGeometry(16+(k%3)*6,h,7),k%2?'#7FA2C2':'#90B2D0',Math.cos(a)*R,h/2+4,Math.sin(a)*R,{flat:true,r:1});m.castShadow=false;S.add(m);
     if(h>34){const c=mesh(new THREE.ConeGeometry((16+(k%3)*6)*.32,h*.32,7),'#F4F7FB',Math.cos(a)*R,h+4-h*.16,Math.sin(a)*R,{flat:true,r:1});c.castShadow=false;S.add(c)}}
@@ -80,7 +84,7 @@ function buildFarmWorld(){
   const mk=buildMarket();mk.position.set(-17,0,5);mk.rotation.y=Math.PI/2;S.add(mk);markHit(mk,{kind:'zone',id:'market'});
   F.baseObs.push({x0:-18.3,x1:-16.1,z0:2.7,z1:7.3});
   F.zones.push({id:'market',kind:'market',x:-15.2,z:5,r:.9,out:{x:-13.6,z:5},name:'Farm Market'});
-  addNPC({npc:MERCHANT,x:-15,z:8.2,line:'Animals, decor, outfits!',talk:['Mo the Merchant, at your service!','Spend your coins here on animals, decorations and new outfits. Walk up to my stall to shop.']});
+  addNPC({npc:MERCHANT,x:-15,z:8.2,line:'Animals, decor, outfits!',talk:['Mo the Merchant, at your service!','Spend your coins here on animals, decorations, new outfits and new land.','I buy crops you planted and harvested, and fish you caught. A harvest of 4 sells for about 120% of the seed price. Each fish has its own price.','Walk up to my stall to shop. The West Meadow is also for sale up the hill on the left.']});
   const barn=buildBarn();barn.position.set(22.5,0,-1);barn.rotation.y=-Math.PI/2;S.add(barn);markHit(barn,{kind:'zone',id:'barn'});
   F.baseObs.push({x0:19.9,x1:25.2,z0:-4.2,z1:2.2});
   F.zones.push({id:'barn',kind:'barn',x:19.3,z:-1,r:.9,out:{x:17.8,z:-1},name:'Barn'});
@@ -93,6 +97,11 @@ function buildFarmWorld(){
   F.zones.push({id:'board',kind:'board',x:-9,z:10,r:.8,out:{x:-9,z:11.6},name:'Progress Board'});
   addNPC({npc:ELLIE,x:-11.2,z:10.4,line:'Grown-ups: records here!',talk:['I\'m Ellie. I keep all the records.','Grown-ups can walk up to the board to see stars, scores and practice tips.']});
   addNPC({npc:MAYOR,x:2.6,z:11.4,line:'Welcome to the farm!',mayor:true});
+  const pondLv=fishOf(cur()).pond,pond=buildPond(pondLv>=2);pond.position.set(8,0,15);F.scene.add(pond);F.markHit(pond,{kind:'zone',id:'fish'});
+  const pw=pondLv>=2?4.2:2.8,pd=pondLv>=2?2.6:1.8;
+  F.baseObs.push({x0:8-pw+0.4,x1:8+pw-0.4,z0:15-pd+0.3,z1:15+pd-0.2});
+  F.zones.push({id:'fish',kind:'fish',x:8,z:15-pd-1.3,r:1.05,out:{x:8,z:15-pd-2.6},name:'Fishing Pond'});
+  addNPC({npc:ANGLER,x:10.2,z:15-pd-1.1,line:pondLv?'The fish are biting!':'Build a pond here!',talk:pondLv?['I\'m Finn. The pond is yours.','Buy a rod and some worms, then cast.','Choose the 1 to 9 times table, or tricks you have cleared. Get 2 answers right in a row. A wrong answer does not scare the fish away. The time limit starts at 30 seconds, and you can change it.']:['I\'m Finn. This shore is empty.','Spend some coins to build a fishing pond.','Then you can buy tackle and fish.']});
   const ff=new THREE.Group();S.add(ff);   // wooden fence round the vegetable field, with a gap at the front
   for(const [ax,az,bx,bz] of[[-7,-6.6,7,-6.6],[-7,-6.6,-7,4.6],[7,-6.6,7,4.6],[-7,4.6,-1.6,4.6],[1.6,4.6,7,4.6]])fenceLine(ff,ax,az,bx,bz,'#B07A45');
   buildProps(S);
@@ -103,14 +112,16 @@ function buildFarmWorld(){
   const penFloor=new THREE.Mesh(rbox(PEN.x1-PEN.x0-.3,PEN.z1-PEN.z0-.3,.05,.02),mat('#C9B07A',{r:1}));penFloor.rotation.x=-Math.PI/2;penFloor.position.set((PEN.x0+PEN.x1)/2,.02,(PEN.z0+PEN.z1)/2);penFloor.receiveShadow=true;S.add(penFloor);
   F.baseObs.push({x0:PEN.x0,x1:PEN.x1,z0:PEN.z0,z1:PEN.z1});
   F.animalGroup=new THREE.Group();S.add(F.animalGroup);
-  for(let i=0;i<12;i++){const {x,z}=plotPos(i),g=new THREE.Group();g.position.set(x,0,z);S.add(g);
-    const soil=mesh(rbox(2.25,.3,2.25,.09),'#6E4426',0,.12,0,{r:1});g.add(soil);markHit(soil,{kind:'plot',i});
-    const ridges=new THREE.Group();for(const dz of[-.6,0,.6])ridges.add(mesh(rbox(1.9,.12,.3,.05),'#7B4D2B',0,.29,dz,{r:1}));g.add(ridges);
+  for(let i=0;i<HOME_PLOTS+LANDS.reduce((n,L)=>n+L.n,0);i++){const {x,z}=plotPos(i),g=new THREE.Group();g.position.set(x,0,z);S.add(g);
+    const lip=new THREE.Mesh(new THREE.PlaneGeometry(2.32,2.32),earthMat('lip'));lip.rotation.x=-Math.PI/2;lip.position.y=.04;g.add(lip);
+    const soil=new THREE.Mesh(tilledGeo(),earthMat('dry'));soil.rotation.x=-Math.PI/2;soil.position.y=.1;soil.receiveShadow=true;soil.castShadow=true;g.add(soil);markHit(soil,{kind:'plot',i});
+    const ridges=new THREE.Group();g.add(ridges);
     const crop=new THREE.Group();g.add(crop);const spark=emojiSprite('✨',.9);spark.position.y=1.9;spark.visible=false;g.add(spark);
     const lock=emojiSprite('🔒',.8);lock.position.y=.8;lock.visible=false;g.add(lock);
-    F.plots.push({g,soil,ridges,crop,spark,lock,key:''})}
+    F.plots.push({g,soil,lip,ridges,crop,spark,lock,key:''})}
+  buildMeadow(S,markHit);
   // nature scatter
-  const okIn=(x,z)=>!inField(x,z)&&!onPath(x,z)&&!F.baseObs.some(o=>x>o.x0-.6&&x<o.x1+.6&&z>o.z0-.6&&z<o.z1+.6)&&Math.hypot(x-(-3),z-14)>3.2&&Math.hypot(x+23,z+2)>2&&!(z>3&&z<7.4&&x>-19&&x<-12);
+  const okIn=(x,z)=>!inField(x,z)&&!inMeadow(x,z)&&!onPath(x,z)&&!F.baseObs.some(o=>x>o.x0-.6&&x<o.x1+.6&&z>o.z0-.6&&z<o.z1+.6)&&Math.hypot(x-(-3),z-14)>3.2&&Math.hypot(x+23,z+2)>2&&!(z>3&&z<7.4&&x>-19&&x<-12);
   scatter(S,new THREE.ConeGeometry(.06,.38,3).translate(0,.19,0),['#5DA544','#6DB650','#7CC35A','#4F9A3D'],2600,()=>{const x=(Math.random()-.5)*54,z=(Math.random()-.5)*36;return okIn(x,z)?{x,z}:null},.8,1.4,false,{wind:.5});
   scatter(S,new THREE.ConeGeometry(.08,.5,3).translate(0,.25,0),['#5DA544','#6DB650','#4F9A3D'],2200,()=>{const x=(Math.random()-.5)*110,z=(Math.random()-.5)*80;if(Math.abs(x)<28.5&&Math.abs(z)<19.5)return null;return{x,z,y:farmHeight(x,z)}},.9,1.6,false,{wind:.45});
   scatter(S,SPH(.09,6,5).translate(0,.28,0),['#FF7AA8','#FFD43B','#FFFFFF','#B98CFF','#FF9F45'],320,()=>{const x=(Math.random()-.5)*54,z=(Math.random()-.5)*36;return okIn(x,z)&&(Math.abs(x)>8||Math.abs(z)>8)?{x,z}:null},.8,1.3,false,{flatShading:false,roughness:.6});
@@ -189,6 +200,138 @@ function buildStudio(){const g=new THREE.Group();
   ea.add(mesh(rbox(1,.8,.06,.02),'#FFFFFF',0,1.35,.06));ea.add(mesh(SPH(.18,10,8),'#FFD43B',-.2,1.45,.1));ea.add(mesh(BOX(.45,.1,.02),'#3E7BFA',.15,1.2,.1));
   const sign=signPlane('Art Studio','#8B5CF6',2.6);sign.position.set(0,2.95,2.2);g.add(sign);
   return g}
+function paintTex(draw,w=128,h=128){
+  const c=document.createElement('canvas');c.width=w;c.height=h;draw(c.getContext('2d'),w,h);
+  const t=ctex(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;return t;
+}
+const EARTH={};
+function earthMat(kind){
+  if(EARTH[kind])return EARTH[kind];
+    const map=paintTex((g,w,h)=>{
+    const sod=kind==='sod'||kind==='yard';
+    const base=sod?(kind==='yard'?'#4C8636':'#5A9040'):kind==='wet'?'#3A2616':kind==='lip'?'#4A301C':kind==='ridge'?'#5C3A22':'#6E4528';
+    g.fillStyle=base;g.fillRect(0,0,w,h);
+      if(kind==='dry'||kind==='wet'){for(let row=0;row<3;row++){const y=h*((row+.25)/3),grd=g.createLinearGradient(0,y-h*.09,0,y+h*.09);
+      grd.addColorStop(0,'rgba(0,0,0,0)');grd.addColorStop(.5,kind==='wet'?'rgba(16,8,4,.6)':'rgba(36,20,10,.45)');grd.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=grd;g.fillRect(0,y-h*.09,w,h*.18)}}
+    const specks=sod?['#6AAA46','#3C6E2A','#86B456','#2E5820','#8A7044']:kind==='wet'?['#2A1A10','#5A3A24','#1A100C','#6A4A30','#24160E']:['#8C5C36','#3E2616','#A66C40','#2A1A10','#C4A078','#5A3822'];
+    for(let i=0;i<260;i++){g.globalAlpha=.2+((i*17)%10)/32;g.fillStyle=specks[i%specks.length];
+      g.beginPath();g.ellipse((i*97)%w,(i*53)%h,2+(i*7)%16,1.4+(i*5)%10,(i%7)*.45,0,7);g.fill()}
+    g.globalAlpha=.5;
+    for(let i=0;i<30;i++){g.fillStyle=i%3?'#C8B496':'#24160E';
+      g.beginPath();g.ellipse((i*61+20)%w,(i*47+11)%h,1.1+(i%3),.7+(i%2),i,0,7);g.fill()}
+    if(!sod){g.globalAlpha=kind==='wet'?.32:.18;g.strokeStyle=kind==='wet'?'#1A100A':'#3A2416';g.lineWidth=1.1;
+      for(let i=0;i<16;i++){const x=(i*29)%w,y=(i*41)%h;g.beginPath();g.moveTo(x,y);g.quadraticCurveTo(x+16,y-4,x+30,y+2);g.stroke()}}
+    g.globalAlpha=1;
+  },256,256);
+  if(kind==='yard')map.repeat.set(3.2,2.5);
+  const wet=kind==='wet';
+  return EARTH[kind]=new THREE.MeshStandardMaterial({map,roughness:wet?.42:.97,metalness:wet?.04:0});
+}
+function tilledGeo(){
+  if(EARTH.tilled)return EARTH.tilled;
+  const geo=new THREE.PlaneGeometry(2.05,2.05,10,40),pos=geo.attributes.position;
+  for(let i=0;i<pos.count;i++){const x=pos.getX(i),y=pos.getY(i),v=y/2.05+.5;
+    pos.setZ(i,Math.sin(v*Math.PI*6)*.072+Math.sin(x*8.4+y*2.2)*.012+Math.sin(x*3.1-y*6.5)*.008)}
+  geo.computeVertexNormals();geo.userData.keep=true;return EARTH.tilled=geo;
+}
+function flatSoil(){
+  if(EARTH.flatSoil)return EARTH.flatSoil;
+  const geo=new THREE.PlaneGeometry(2.05,2.05);geo.userData.keep=true;return EARTH.flatSoil=geo;
+}
+function waterMat(){
+  if(EARTH.water)return EARTH.water;
+  const map=paintTex((g,w,h)=>{
+    const grd=g.createRadialGradient(w*.46,h*.44,w*.02,w*.5,h*.52,w*.64);
+    grd.addColorStop(0,'#6EB4C6');grd.addColorStop(.4,'#217090');grd.addColorStop(.78,'#0E455C');grd.addColorStop(1,'#082838');
+    g.fillStyle=grd;g.fillRect(0,0,w,h);
+    g.strokeStyle='rgba(198,230,236,.22)';g.lineWidth=1.3;
+    for(let i=0;i<11;i++){g.beginPath();g.ellipse(w*(.28+(i*17)%50/100),h*(.26+(i*23)%48/100),w*(.06+(i%4)*.035),h*(.025+(i%3)*.018),i*.7,.2,4.4);g.stroke()}
+    g.globalAlpha=.45;g.fillStyle='#D7F1F6';g.beginPath();g.ellipse(w*.4,h*.36,w*.055,h*.016,-.55,0,7);g.fill();
+    g.globalAlpha=.16;g.fillStyle='#041E2C';
+    for(let i=0;i<12;i++){g.beginPath();g.ellipse(w*(.16+(i*29)%68/100),h*(.18+(i*21)%64/100),w*.045,h*.02,i,0,7);g.fill()}
+    g.globalAlpha=1;
+  },256,256);
+  const mat=new THREE.MeshStandardMaterial({map,roughness:.14,metalness:.1,transparent:true,opacity:.97,emissive:col('#0C3A4C'),emissiveIntensity:.08});
+  mat.onBeforeCompile=shader=>{shader.uniforms.uTime=TIME;shader.fragmentShader='uniform float uTime;\n'+shader.fragmentShader.replace('#include <map_fragment>','#include <map_fragment>\nfloat ripple=sin(vUv.x*42.0+uTime*1.2)*sin(vUv.y*36.0-uTime*.85);\ndiffuseColor.rgb+=vec3(.045,.07,.08)*ripple;');};
+  mat.customProgramCacheKey=()=>'pondwater';
+  return EARTH.water=mat;
+}
+function pondSurface(){
+  if(EARTH.pondGeo)return EARTH.pondGeo;
+  const rings=14,segs=40,pos=[],uv=[],idx=[],row=segs+1;
+  for(let r=0;r<=rings;r++){const t=r/rings;for(let s=0;s<=segs;s++){const a=s/segs*Math.PI*2,x=Math.cos(a)*t,y=Math.sin(a)*t;
+    pos.push(x,y,Math.sin(a*5+t*9)*.012*(1-t));uv.push(x*.5+.5,y*.5+.5)}}
+  for(let r=0;r<rings;r++)for(let s=0;s<segs;s++){const i=r*row+s;idx.push(i,i+row,i+1,i+1,i+row,i+row+1)}
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));
+  geo.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  geo.setIndex(idx);geo.computeVertexNormals();geo.userData.keep=true;
+  return EARTH.pondGeo=geo;
+}
+function lilyPad(x,z,sc,bloom){
+  const g=new THREE.Group();g.position.set(x,.1,z);
+  const pad=new THREE.Mesh(new THREE.CircleGeometry(.3*sc,14,0.35,5.6),new THREE.MeshStandardMaterial({color:col(bloom?'#3E8A44':'#2F7A38'),roughness:.72}));
+  pad.rotation.x=-Math.PI/2;g.add(pad);
+  const vein=new THREE.Mesh(new THREE.BoxGeometry(.02,.004,.42*sc),new THREE.MeshStandardMaterial({color:col('#1E5A28'),roughness:.8}));
+  vein.rotation.x=-Math.PI/2;g.add(vein);
+  if(bloom){const f=new THREE.Group();f.position.set(0,.04,0);g.add(f);
+    for(let i=0;i<6;i++){const a=i/6*Math.PI*2,p=mesh(SPH(.045,8,6),'#F6D5E4',Math.cos(a)*.06,.02,Math.sin(a)*.06,{r:.45});p.scale.set(1.2,.35,.6);f.add(p)}
+    f.add(mesh(SPH(.03,8,6),'#F2C14E',0,.04,0,{r:.4}))}
+  return g;
+}
+function bankFlower(petal,heart,h){
+  const g=new THREE.Group();
+  g.add(mesh(CYL(.028,.04,h,6),'#3C8C45',0,h*.5,0));
+  for(const s of[-1,1]){const leaf=mesh(SPH(.12,8,6),'#4EAE55',s*.1,h*.42,0,{r:.55});leaf.scale.set(1.9,.28,.7);leaf.rotation.z=s*.9;g.add(leaf)}
+  const head=new THREE.Group();head.position.set(0,h,.04);head.rotation.x=-.55;g.add(head);
+  for(let i=0;i<8;i++){const a=i/8*Math.PI*2,p=mesh(SPH(.085,8,6),petal,Math.cos(a)*.12,.02,Math.sin(a)*.12,{r:.4});p.scale.set(1.35,.28,.62);head.add(p)}
+  head.add(mesh(SPH(.055,8,6),heart,0,.04,0,{r:.35}));
+  return g;
+}
+function buildPond(wide){
+  const g=new THREE.Group(),w=wide?4.2:2.8,d=wide?2.6:1.8;
+  const bank=new THREE.Mesh(new THREE.CircleGeometry(1.16,48),earthMat('lip'));
+  bank.rotation.x=-Math.PI/2;bank.scale.set(w,d,1);bank.position.y=.035;g.add(bank);
+  const bowl=new THREE.Mesh(pondSurface(),waterMat());
+  bowl.rotation.x=-Math.PI/2;bowl.scale.set(w,d,1);bowl.position.y=.06;g.add(bowl);
+  for(let k=0;k<16;k++){const a=k/16*Math.PI*2+.15,rock=mesh(SPH(.13+(k%3)*.035,10,8),k%3?'#C4B6A4':'#8E8478',Math.cos(a)*w*1.06,.07,Math.sin(a)*d*1.06,{r:.9});
+    rock.scale.set(1.25+(k%3)*.15,.38,.85);rock.rotation.y=a;g.add(rock)}
+  [[-.32,.22,.85,1],[.5,-.12,.6,0],[-.08,-.32,.75,1],[.22,.4,.5,0]].forEach(([x,z,sc,bloom])=>g.add(lilyPad(x*w*.4,.0+z*d*.35,sc,bloom)));
+  [[-.7,.5],[.75,.58],[-.15,.78],[.4,-.55]].forEach(([x,z],i)=>{
+    const clump=new THREE.Group();clump.position.set(x*w*.7,0,z*d*.5);g.add(clump);
+    for(let s=0;s<3;s++){const reed=mesh(CYL(.01,.016,.5+((i+s)%3)*.16,5),'#5E8A3C',(s-1)*.06,.28,s*.04,{r:.8});clump.add(reed);
+      const head=mesh(CYL(.012,.02,.12,5),'#C4A15A',(s-1)*.06,.58+((i+s)%3)*.08,s*.04,{r:.7});clump.add(head)}
+  });
+  const dock=new THREE.Group();dock.position.set(0,0,-d-.15);g.add(dock);
+  for(let k=0;k<4;k++)dock.add(mesh(rbox(1.35,.07,.28,.02),k%2?'#C49262':'#A87548',0,.16,-.2-k*.32,{r:.75}));
+  for(const x of[-.62,.62]){dock.add(mesh(CYL(.055,.065,.55,6),'#6E4A2C',x,.28,-1.15));dock.add(mesh(SPH(.07,8,6),'#E7D3A1',x,.58,-1.15,{r:.6}))}
+  const kinds=[['#FFF8F2','#FFD56A'],['#FF8FB8','#FFE7A0'],['#E4C6FF','#FFF1C2'],['#FFE56A','#C9842A'],['#FFB08A','#FFF3C4'],['#FFFFFF','#F2C14E']];
+  [2.35,2.7,3.05,1.05,1.35,.78].forEach((a,i)=>{
+    const f=bankFlower(kinds[i][0],kinds[i][1],1.05+(i%3)*.22);
+    f.position.set(Math.cos(a)*w*1.28,0,Math.sin(a)*d*1.35);g.add(f);
+  });
+  const sign=signPlane(wide?'Big fishing pond':'Fishing pond','#1E6F9C',2.4);sign.position.set(-1.35,.95,-d-.15);sign.rotation.y=Math.PI;g.add(sign);
+  return g;
+}
+function buildMeadow(S,markHit){
+  const lot=new THREE.Mesh(new THREE.PlaneGeometry(8.6,6.1),earthMat('sod'));
+  lot.rotation.x=-Math.PI/2;lot.position.set(-19.05,.03,14.08);lot.receiveShadow=true;S.add(lot);F.meadowLot=lot;
+  const fence=new THREE.Group();S.add(fence);F.meadowFence=fence;
+  const x0=-23.1,x1=-15,z0=11.45,z1=16.9;
+  fenceLine(fence,x0,z0,-20.3,z0,'#B07A45');fenceLine(fence,-17.9,z0,x1,z0,'#B07A45');
+  fenceLine(fence,x0,z0,x0,z1,'#B07A45');fenceLine(fence,x1,z0,x1,z1,'#B07A45');fenceLine(fence,x0,z1,x1,z1,'#B07A45');
+  const sign=new THREE.Group();sign.position.set(-19.1,0,10.55);S.add(sign);F.landSign=sign;
+  sign.add(mesh(CYL(.06,.07,1.15,6),'#8B5A2B',-.72,.55,0));sign.add(mesh(CYL(.06,.07,1.15,6),'#8B5A2B',.72,.55,0));
+  const board=signPlane('Land for sale','#2FA36B',2.5);board.position.set(0,1.15,0);board.rotation.y=Math.PI;sign.add(board);
+  markHit(board,{kind:'land',id:'meadow'});
+}
+function syncLand(){
+  const own=hasLand(farmOf(cur()),'meadow');
+  if(F.landSign)F.landSign.visible=!own;
+  if(F.meadowFence)F.meadowFence.visible=own;
+  if(F.meadowLot)F.meadowLot.material=earthMat(own?'dry':'sod');
+}
 function buildBoard(){const g=new THREE.Group();
   for(const x of[-1.25,1.25])g.add(mesh(CYL(.08,.1,2.4,8),'#8B5A2B',x,1.2,0));
   g.add(mesh(rbox(2.8,1.6,.16,.06),'#C68B4E',0,1.55,0));
@@ -220,15 +363,15 @@ function readyCrop(id,s){
   else if(id==='corn'){s.add(mesh(CYL(.06,.07,1.5,6),'#4E9A45',0,.75,0));for(const a of[0,2.1,4.2]){const l=mesh(BOX(.06,.6,.02),'#5DBB4A',Math.cos(a)*.12,.8,Math.sin(a)*.12);l.rotation.z=.6*Math.cos(a);l.rotation.x=.6*Math.sin(a);s.add(l)}s.add(mesh(CYL(.09,.09,.34,10),'#F2C230',.13,.95,0,{r:.5}))}
   else{const p=mesh(SPH(.31,16,12),'#F28C28',0,.18,0,{r:.5});p.scale.y=.75;s.add(p);s.add(mesh(CYL(.03,.04,.14,6),'#5A3A20',0,.42,0))}
 }
-function addNPC(o){const g=new THREE.Group();const sp=iconSprite(npcKey(o.npc),o.npc.e,1.7);sp.position.y=.95;g.add(sp);
-  const tg=labelSprite(o.npc.name.replace(/^Professor /,'').split(' ')[0],{h:.42});tg.position.y=2.05;g.add(tg);
-  const bub=labelSprite(o.line,{h:.5,border:'#F5C24C'});bub.position.y=2.65;bub.visible=false;g.add(bub);
-  g.add(shadowDisc(.6));g.position.set(o.x,0,o.z);F.scene.add(g);F.markHit(sp,{kind:'npc',n:o});g.userData.art=npcKey(o.npc);o.g=g;o.sp=sp;o.bub=bub;F.npcs.push(o)}
+function addNPC(o){const g=new THREE.Group();const sp=buildNpc(o.npc);g.add(sp);
+  const tg=labelSprite(o.npc.name.replace(/^Professor /,'').split(' ')[0],{h:.42});tg.position.y=1.85;g.add(tg);
+  const bub=labelSprite(o.line,{h:.5,border:'#F5C24C'});bub.position.y=2.35;bub.visible=false;g.add(bub);
+  g.position.set(o.x,0,o.z);F.scene.add(g);F.markHit(g,{kind:'npc',n:o});g.userData.art=npcKey(o.npc);o.g=g;o.sp=sp;o.bub=bub;F.npcs.push(o)}
 function fenceLine(parent,ax,az,bx,bz,color){const L=Math.hypot(bx-ax,bz-az),n=Math.max(1,Math.round(L/1.4));
   for(let k=0;k<=n;k++){const t=k/n;parent.add(mesh(rbox(.2,.85,.2,.05),color,ax+(bx-ax)*t,.42,az+(bz-az)*t))}
   for(const y of[.3,.62]){const r=mesh(BOX(L,.09,.06),color,(ax+bx)/2,y,(az+bz)/2);r.rotation.y=-Math.atan2(bz-az,bx-ax);parent.add(r)}}
-/* Little farm things from the picture: a tree stump with an axe, a crate of vegetables, a barrel,
-   a red mailbox and a row of sunflowers. */
+/* Little farm things from the picture: a tree stump with an axe, a crate of vegetables, a barrel
+   and a red mailbox. The flowers sit on the banks of the fishing pond. */
 function buildProps(S){
   const stump=new THREE.Group();stump.position.set(-6.9,0,10.9);S.add(stump);
   stump.add(mesh(CYL(.55,.65,.6,14),'#8B5A2B',0,.3,0,{r:.8}));const top=mesh(CYL(.5,.5,.04,14),'#E2B97A',0,.61,0,{r:.9});stump.add(top);
@@ -241,9 +384,6 @@ function buildProps(S){
   barrel.add(mesh(CYL(.42,.42,.95,16),'#A0683A',0,.48,0,{r:.7}));for(const y of[.18,.78]){const hoop=mesh(new THREE.TorusGeometry(.43,.03,6,24),'#5A5A5A',0,y,0,{m:.6});hoop.rotation.x=Math.PI/2;barrel.add(hoop)}
   const mb=new THREE.Group();mb.position.set(1.9,0,9.4);S.add(mb);
   mb.add(mesh(CYL(.06,.07,1,8),'#8B5A2B',0,.5,0));mb.add(mesh(rbox(.36,.32,.55,.12),'#D9452F',0,1.1,0,{r:.5}));mb.add(mesh(BOX(.04,.2,.1),'#FFD43B',.2,1.25,-.15));
-  for(let k=0;k<7;k++){const x=3.4+k*.85,z=15.6+Math.sin(k)*.2,f=new THREE.Group();f.position.set(x,0,z);S.add(f);   // sunflowers
-    f.add(mesh(CYL(.035,.045,1.3,6),'#4E9A45',0,.65,0));const head=mesh(CYL(.26,.26,.05,16),'#FFC93C',0,1.32,.05,{r:.6});head.rotation.x=Math.PI/2.4;f.add(head);
-    const c=mesh(CYL(.12,.12,.07,12),'#6B3E1E',0,1.34,.08);c.rotation.x=Math.PI/2.4;f.add(c)}
   F.baseObs.push({x0:-7.6,x1:-6.2,z0:10.2,z1:11.6},{x0:-8.1,x1:-6.7,z0:12.4,z1:13.4},{x0:-9.2,x1:-8.2,z0:11.2,z1:12.2});
 }
 function buildDecor(){
@@ -259,14 +399,14 @@ function buildDecor(){
   add('scarecrow',g);
   g=new THREE.Group();for(const [x,z] of[[-22,10],[-22,-9],[22,15]])g.add(roundTree(x,z,1.1,true));add('apples',g);
   g=new THREE.Group();g.position.set(-3,0,14);
-  const w=new THREE.Mesh(new THREE.CircleGeometry(2.6,40),new THREE.MeshStandardMaterial({color:col('#3FA7DD'),roughness:.08,metalness:.25,emissive:col('#1E6E9E'),emissiveIntensity:.25}));w.rotation.x=-Math.PI/2;w.position.y=.05;w.receiveShadow=true;g.add(w);F.water=w;
-  for(let k=0;k<18;k++){const a=k/18*Math.PI*2;g.add(mesh(ICO(.3,0),'#A9A39C',Math.cos(a)*2.75,.1,Math.sin(a)*2.75,{flat:true}))}
-  for(const [x,z] of[[.8,-.6],[-1.2,.9],[1.3,.8],[-.5,-1.4]]){const p=new THREE.Mesh(new THREE.CircleGeometry(.35,14,.3,Math.PI*1.8),mat('#4E9A45'));p.rotation.x=-Math.PI/2;p.position.set(x,.07,z);g.add(p)}
-  g.add(mesh(SPH(.09,8,6),'#FF9FC6',.8,.12,-.6));g.add(mesh(SPH(.09,8,6),'#FFFFFF',1.3,.12,.8));
+  const shore=new THREE.Mesh(new THREE.CircleGeometry(3.05,40),earthMat('lip'));shore.rotation.x=-Math.PI/2;shore.position.y=.03;g.add(shore);
+  const wtr=new THREE.Mesh(pondSurface(),waterMat());wtr.rotation.x=-Math.PI/2;wtr.scale.set(2.55,2.55,1);wtr.position.y=.055;wtr.receiveShadow=true;g.add(wtr);F.water=wtr;
+  for(let k=0;k<14;k++){const a=k/14*Math.PI*2,rock=mesh(SPH(.2+(k%3)*.05,10,8),'#A39C94',Math.cos(a)*2.9,.08,Math.sin(a)*2.9,{r:.9});rock.scale.set(1.3,.42,.9);rock.rotation.y=a;g.add(rock)}
+  [[.7,-.5,1,1],[-1.1,.7,.8,0],[1.2,.6,.65,1],[-.4,-1.2,.7,0]].forEach(([x,z,sc,bloom])=>g.add(lilyPad(x,z,sc,bloom)));
   const dock=new THREE.Group();dock.position.set(1.4,0,-1.2);dock.rotation.y=-.6;g.add(dock);   // a little wooden dock
   for(let k=0;k<5;k++)dock.add(mesh(rbox(1.2,.08,.32,.02),k%2?'#B98250':'#A97646',0,.22,-k*.36));
   for(const [x,z] of[[-.55,0],[.55,0],[-.55,-1.45],[.55,-1.45]])dock.add(mesh(CYL(.06,.07,.6,6),'#8B5A2B',x,.1,z));
-  F.ducks=[0,1].map(()=>{const d=emojiSprite('🦆',.9);d.position.y=.45;g.add(d);return d});add('pond',g);
+  F.ducks=[0,1].map(()=>{const d=buildBeast(BEAST.duck);d.position.y=.08;g.add(d);return d});add('pond',g);
   g=new THREE.Group();g.position.set(-23,0,-2);g.add(mesh(CYL(.7,1.3,5,10),'#F3EEE6',0,2.5,0,{flat:true}));g.add(mesh(new THREE.ConeGeometry(1.15,1.3,10),'#C8442E',0,5.65,0,{flat:true}));
   const bl=new THREE.Group();bl.position.set(0,4.6,1.15);for(let k=0;k<4;k++){const pv=new THREE.Group();pv.rotation.z=k*Math.PI/2;pv.add(mesh(rbox(.38,2.6,.06,.02),'#FFFFFF',0,1.3,0));bl.add(pv)}
   bl.add(mesh(SPH(.18,10,8),'#C8442E'));g.add(bl);F.blades=bl;add('windmill',g);
@@ -285,31 +425,33 @@ function syncWorld(){
   F.target=null;F.pending=null;
   for(const id in F.decor)F.decor[id].visible=f.decor.includes(id);
   F.obs=F.baseObs.concat(decorObstacles(f));
-  syncAnimals();syncPlots(true);
+  syncAnimals();syncPlots(true);syncLand();
   for(const z of F.zones)z.inside=Math.hypot(z.x-sp.x,z.z-sp.z)<z.r;
   F.yaw=CAM.yaw;placeCamera(1);updateHud();
 }
 function syncPlots(force){
   const f=farmOf(cur());
   F.plots.forEach((P,i)=>{
-    const locked=i>=f.unlocked,pl=f.plots[i],info=plotInfo(pl);
+    const mine=i<HOME_PLOTS||hasLand(f,'meadow'),locked=mine&&!plotOpen(f,i),pl=f.plots[i],info=plotInfo(pl);
+    P.g.visible=mine;
     const key=locked?'L':!pl?'E':`${pl.crop}${info.stage}${pl.watered?'w':''}`;
     if(!force&&key===P.key)return;P.key=key;
-    P.soil.material=mat(locked?'#86B866':pl&&pl.watered?'#4A2C17':'#6E4426',{r:1});
-    P.soil.scale.y=locked?.35:1;P.ridges.visible=!locked;
+    P.soil.geometry=locked?flatSoil():tilledGeo();
+    P.soil.material=earthMat(locked?'sod':pl&&pl.watered?'wet':'dry');
+    P.lip.material=earthMat(locked?'sod':'lip');
+    P.ridges.visible=!locked;
     clearGroup(P.crop);if(pl)P.crop.add(cropMesh(pl.crop,info.stage));P.crop.userData.art=pl?'seed:'+pl.crop:null;
-    P.spark.visible=!!info&&info.stage===3;P.lock.visible=locked&&i===f.unlocked;
+    P.spark.visible=!!info&&info.stage===3;P.lock.visible=locked&&i===f.unlocked&&i<HOME_PLOTS;
   });
 }
 function syncAnimals(){
   const f=farmOf(cur());clearGroup(F.animalGroup);
   F.hits=F.hits.filter(h=>!(h.userData.act&&h.userData.act.kind==='animal'));
-  F.animals=f.animals.map((a,idx)=>{const A=ANIMALS.find(x=>x.id===a.type),g=new THREE.Group();
-    const sp=iconSprite('animal:'+A.id,A.e,A.id==='cow'?1.5:1.15);sp.position.y=A.id==='cow'?.75:.6;g.add(sp);g.add(shadowDisc(.45));
-    const pr=iconSprite('prod:'+A.prod,A.pe,.7);g.userData.art='animal:'+A.id;pr.userData.art='prod:'+A.prod;pr.position.y=1.75;pr.visible=false;g.add(pr);
+  F.animals=f.animals.map((a,idx)=>{const A=ANIMALS.find(x=>x.id===a.type),g=buildBeast(BEAST[A.id]||BEAST.chicken);g.scale.setScalar(A.id==='cow'?1.2:1);
+    const pr=iconSprite('prod:'+A.prod,A.pe,.7);g.userData.art='animal:'+A.id;pr.userData.art='prod:'+A.prod;pr.position.y=1.35;pr.visible=false;g.add(pr);
     const x=PEN.x0+1+Math.random()*(PEN.x1-PEN.x0-2),z=PEN.z0+1+Math.random()*(PEN.z1-PEN.z0-2);g.position.set(x,0,z);
-    F.animalGroup.add(g);sp.userData.act={kind:'animal',idx};F.hits.push(sp);
-    return{g,sp,pr,a,A,tx:x,tz:z,wait:Math.random()*3}});
+    F.animalGroup.add(g);g.userData.act={kind:'animal',idx};F.hits.push(g);
+    return{g,sp:g,pr,a,A,tx:x,tz:z,wait:Math.random()*3}});
 }
 /* ---------- farm HUD: profile card, coins and stars, Art Studio and settings buttons ---------- */
 function farmHud(){const p=cur();
@@ -360,7 +502,7 @@ function updateHud(){
   const tk=$('#tasks');if(tk)tk.innerHTML=tasksHTML();
 }
 function rTown(){
-  const quick=[['tricks','🦉 Brain Boost'],['market','🛒 Farm Market'],['barn','🌾 Barn'],['studio','🎨 Art Studio'],['board','📋 Progress Board']].map(([id,l])=>`<button class="b ghost sm" data-act="quick" data-id="${id}">${l}</button>`).join('');
+  const quick=[['tricks','🦉 Brain Boost'],['market','🛒 Farm Market'],['barn','🌾 Barn'],['fish','🎣 Fishing Pond'],['studio','🎨 Art Studio'],['board','📋 Progress Board']].map(([id,l])=>`<button class="b ghost sm" data-act="quick" data-id="${id}">${l}</button>`).join('');
   $('#app').innerHTML=farmHud()+`
   <div class="world" id="world">
     <div class="wtop farmtop">${camCtl(`<button class="wide" data-act="overview" aria-label="See the whole farm">🗺️</button><button class="wide ${CAM.eye?'on':''}" data-act="eyeView" aria-pressed="${!!CAM.eye}" aria-label="Eye-level view: see your face">👀</button>`)}<div class="tasks ${tasksOpen()?'':'closed'}" id="tasks">${tasksHTML()}</div></div>
@@ -368,7 +510,7 @@ function rTown(){
     <div class="sheet" id="sheet"></div>
     <div class="paintbar" id="paintbar">🎨 Paint mode: tap anyone or anything on the farm to draw your own!</div>
   </div>
-  <p class="muted townhint">Tap the ground to walk and drag sideways to turn the camera. Tap a field patch to plant. Walk into a building to go inside. Coins 🪙 only come from Brain Boost!</p>
+  <p class="muted townhint">Tap the ground to walk and drag sideways to turn the camera. Tap a field patch to plant. Walk into a building to go inside. Harvested crops can be sold at the market.</p>
   <div class="places" id="places" role="menu"><b class="places-title">🗺️ Go to…</b>${quick}<button class="b ghost sm" data-act="mayorTalk">🐻 How to play</button></div>
   <div class="sidebtns">${typeof cloudIsAccount==='function'&&cloudIsAccount()?'<button class="sbtn" data-act="cloudSync" aria-label="Sync this farm">☁️<span>Sync</span></button>':''}<button class="sbtn" data-act="places" aria-label="Places" aria-expanded="false">🗺️<span>Places</span></button>
     <button class="sbtn paintbtn ${PAINT?'on':''}" data-act="paint" aria-pressed="${PAINT}" aria-label="Paint the farm">🖌️<span>Paint</span></button>
@@ -387,8 +529,10 @@ function rTown(){
 function mayorTalk(){dialog(MAYOR,[
   'Welcome to Happy Learning Farm! I\'m Bella, the mayor.',
   'Tap the ground to walk. Drag sideways to turn the camera. On a computer, the arrow keys work too.',
-  'Seeds, animals and decorations cost coins 🪙. The only way to earn coins is at Math School: beat number monsters by answering questions! Every answer right first time earns a coin, and clearing a level earns a bonus.',
+  'Seeds, animals and decorations cost coins 🪙. Mo buys crops you grew, for about 120% of the seed price, and fish you caught. Each fish has its own price. More coins come from Math School: every answer right first time earns a coin, and clearing a level earns a bonus.',
   'Tap a field patch to plant seeds. Crops grow in real time, so come back later to harvest! Watering 💧 makes them grow faster.',
+  'The fishing pond is at the bottom of the farm. Build it, buy tackle, then choose the 1 to 9 times table or tricks you have cleared. Get 2 answers right in a row. A wrong answer does not scare the fish away. The time limit starts at 30 seconds, and you can change it.',
+  'New land is for sale up the hill on the left. The sign says Land for sale. Mo sells that meadow too, on his Land tab.',
   'Harvests earn XP to level up your farm and unlock new seeds and animals. Mo\'s Farm Market sells animals, decorations and outfits.',
   'Start at Professor Hoot\'s Math School, at the top left of the farm. Good luck!'])}
 /* ---------- paint mode: tap anything on the farm to redraw its picture in the Art Studio ---------- */
@@ -405,6 +549,7 @@ function markFor(a){
   if(a.kind==='npc'){const p=a.n.g.position;return[p.x,p.z,.9,3.2]}
   if(a.kind==='animal'){const an=F.animals[a.idx];return an&&[an.g.position.x,an.g.position.z,.85,2.4]}
   if(a.kind==='plot'){const {x,z}=plotPos(a.i);return[x,z,1.35,1.5]}
+  if(a.kind==='land'&&F.landSign){const p=F.landSign.position;return[p.x,p.z,1.2,2.2]}
   return null;
 }
 function setPaint(on){PAINT=on;try{sessionStorage.setItem('hmf-paint',on?'1':'0')}catch(e){}
@@ -418,7 +563,7 @@ function farmHover(e){
     return{cursor:'paint',label:hit.key==='me'?'🎨 Draw yourself':`🎨 Draw my own ${artName(hit.key)}`}}
   const a=actOf(ray.intersectObjects(F.hits,true));
   if(a){const m=markFor(a);if(m)placeMark(F.selMark,m[0],0,m[1],m[2],m[3]);
-    const f=farmOf(cur()),locked=a.kind==='plot'&&a.i>f.unlocked;return{cursor:locked?'locked':'select',label:actLabel(a)}}
+    const f=farmOf(cur()),locked=a.kind==='plot'&&a.i<HOME_PLOTS&&a.i>f.unlocked;return{cursor:locked?'locked':'select',label:actLabel(a)}}
   const g=ray.intersectObject(F.ground);
   if(g.length)placeMark(F.hoverMark,g[0].point.x,g[0].point.y,g[0].point.z);
   return{cursor:'move',label:''};
@@ -427,8 +572,9 @@ function actLabel(a){
   if(a.kind==='zone')return (F.zones.find(z=>z.id===a.id)||{}).name||'';
   if(a.kind==='npc')return a.n.npc.name;
   if(a.kind==='animal'){const an=F.animals[a.idx];return an?an.A.name:''}
+  if(a.kind==='land'){const L=LANDS.find(x=>x.id===a.id);return L?`Buy ${L.name} · ${L.cost} 🪙`:''}
   if(a.kind==='plot'){const f=farmOf(cur()),pl=f.plots[a.i];
-    if(a.i>=f.unlocked)return a.i===f.unlocked?`Buy this field · ${plotCost(f)} 🪙`:'Locked field';
+    if(a.i<HOME_PLOTS&&a.i>=f.unlocked)return a.i===f.unlocked?`Buy this field · ${plotCost(f)} 🪙`:'Locked field';
     if(!pl)return 'Empty field · plant here';
     const info=plotInfo(pl);return `${info.S.name} · ${info.stage===3?'ready to harvest!':'growing'}`}
   return '';
@@ -443,6 +589,7 @@ function farmTap(e){
 function doAct(a){
   const me=F.player.position;
   if(a.kind==='plot'){const {x,z}=plotPos(a.i);walkTo(x,z+1.6,{sheet:['plot',a.i]});return true}
+  if(a.kind==='land'){walkTo(-19.1,9.7,{sheet:['land',a.id]});return true}
   if(a.kind==='npc'){const n=a.n,side=me.x<n.x?-1.1:1.1;walkTo(n.x+side,n.z+.4,{talk:n});return true}
   if(a.kind==='animal'){tapAnimal(a.idx);return true}
   if(a.kind==='zone'){const z=F.zones.find(z=>z.id===a.id);walkTo(z.x,z.z,null);return true}
@@ -496,6 +643,7 @@ function triggerZone(z){
   else if(z.kind==='board')go('progress');
   else if(z.kind==='barn')go('barn');
   else if(z.kind==='studio')go('studio');
+  else if(z.kind==='fish')go('fishing');
 }
 function farmUpdate(dt){
   const me=F.player,P=me.position,SP=6,t=F.t;
@@ -518,21 +666,22 @@ function farmUpdate(dt){
   F.walkT=(F.walkT||0)+(moving?dt:0);
   animHero(me,moving?'walk':'idle',moving?F.walkT:t,dt);
   for(const z of F.zones){const inside=Math.hypot(z.x-P.x,z.z-P.z)<z.r;if(inside&&!z.inside){z.inside=true;triggerZone(z);if(G.stage!==F)return}else z.inside=inside}
-  for(const n of F.npcs){const d=Math.hypot(n.x-P.x,n.z-P.z);n.bub.visible=d<4.5&&!DLG;n.sp.position.y=.95+Math.sin(t*2+n.x)*.05}
+  for(const n of F.npcs){const d=Math.hypot(n.x-P.x,n.z-P.z);n.bub.visible=d<4.5&&!DLG;n.sp.position.y=Math.sin(t*2+n.x)*.03}
   const now=Date.now();
   for(const an of F.animals){
     const g=an.g;
     if(an.wait>0)an.wait-=dt;else{const ddx=an.tx-g.position.x,ddz=an.tz-g.position.z,d=Math.hypot(ddx,ddz);
       if(d<.05){an.wait=1+Math.random()*4;an.tx=PEN.x0+1+Math.random()*(PEN.x1-PEN.x0-2);an.tz=PEN.z0+1+Math.random()*(PEN.z1-PEN.z0-2)}
-      else{const st=Math.min(d,1.1*dt);g.position.x+=ddx/d*st;g.position.z+=ddz/d*st;an.sp.position.y=(an.A.id==='cow'?.75:.6)+Math.abs(Math.sin(t*8))*.06}}
-    an.pr.visible=now-an.a.last>=an.A.mins*60000;an.pr.position.y=1.75+Math.sin(t*3)*.08;
+      else{const st=Math.min(d,1.1*dt);g.position.x+=ddx/d*st;g.position.z+=ddz/d*st;g.position.y=Math.abs(Math.sin(t*8))*.04;if(g.userData.legs)animHero(g,'walk',t,dt)}}
+    if(an.wait>0)g.position.y=0;
+    an.pr.visible=now-an.a.last>=an.A.mins*60000;an.pr.position.y=1.45+Math.sin(t*3)*.08;
   }
   if(F.blades)F.blades.rotation.z-=dt*.8;
-  F.ducks.forEach((d,k)=>{const a=t*.3+k*Math.PI;d.position.set(Math.cos(a)*1.4,.45+Math.sin(t*2+k)*.04,Math.sin(a)*1.1)});
+  F.ducks.forEach((d,k)=>{const a=t*.3+k*Math.PI;d.position.set(Math.cos(a)*1.4,.08+Math.sin(t*2+k)*.03,Math.sin(a)*1.1)});
   F.butterflies.forEach((b,k)=>{const a=t*.5+k*2.1;b.position.set(Math.cos(a)*(5+k)+(k-1)*2,1.4+Math.sin(t*3+k)*.4,Math.sin(a*1.3)*4-1)});
   F.clouds.forEach(c=>{c.position.x+=dt*.7;if(c.position.x>90)c.position.x=-90});
   F.lanterns.forEach((l,k)=>{const s=1.5+Math.sin(t*3+k)*.15;l.scale.set(s,s,1)});
-  if(F.water)F.water.material.emissiveIntensity=.22+Math.sin(t*1.5)*.06;
+  if(F.water)F.water.material.emissiveIntensity=.1+Math.sin(t*1.4)*.04;
   F.smoke.forEach(s=>{const k=(t*.25+s.o)%1;s.p.position.set(20.5+k*.6,5.6+k*3.2,-2.8+Math.sin(k*6)*.3);const sc=.4+k*1.1;s.p.scale.setScalar(sc);s.p.material.opacity=.45*(1-k)});
   animSparkles(F.dust,t);
   for(const P2 of F.plots)if(P2.spark.visible)P2.spark.position.y=1.9+Math.sin(t*3)*.12;
@@ -557,15 +706,16 @@ function closeSheet(){document.body.classList.remove('sheeton');if(F)F.sheet=nul
 function refreshSheet(force){
   if(!F||!F.sheet)return;const el=$('#sheet');if(!el)return;
   const {kind,arg}=F.sheet,f=farmOf(cur());let key=kind,live=null;
-  if(kind==='plot'){const pl=f.plots[arg],info=plotInfo(pl);key+=arg+(arg>=f.unlocked?'L'+cur().gems:!pl?'E'+cur().gems:pl.crop+info.stage+pl.watered);if(info&&info.stage<3)live=info}
+  if(kind==='plot'){const pl=f.plots[arg],info=plotInfo(pl);key+=arg+(arg<HOME_PLOTS&&arg>=f.unlocked?'L'+cur().gems:!pl?'E'+cur().gems:pl.crop+info.stage+pl.watered);if(info&&info.stage<3)live=info}
+  if(kind==='land')key+=arg+(hasLand(f,arg)?1:0)+cur().gems;
   if(!force&&key===F.sheetKey){if(live){const l=$('#left'),b=$('#pbar');if(l)l.textContent=fmtLeft(live.left);if(b)b.style.width=Math.round(live.prog*100)+'%'}return}
   F.sheetKey=key;el.className='sheet show';
-  el.innerHTML=`<button class="sheet-x" data-act="closeSheet" aria-label="Close">✕</button>`+(kind==='plot'?sheetPlot(arg):sheetBarn());
+  el.innerHTML=`<button class="sheet-x" data-act="closeSheet" aria-label="Close">✕</button>`+(kind==='plot'?sheetPlot(arg):kind==='land'?sheetLand(arg):sheetBarn());
 }
 function needCoins(n){return `<p class="muted">You need ${n} more 🪙. Coins come from Math School.</p><button class="b sm" data-act="quick" data-id="tricks">🦉 Walk to Math School</button>`}
 function sheetPlot(i){
   const p=cur(),f=farmOf(p),lv=farmLevel(f.xp).l;
-  if(i>=f.unlocked){const cost=plotCost(f);
+  if(i<HOME_PLOTS&&i>=f.unlocked){const cost=plotCost(f);
     return `<h3>New field patch</h3><p>Grow more at once with another patch of soil.</p><button class="b" data-act="buyPlot" ${p.gems<cost?'disabled':''}>Buy a patch for ${cost} 🪙</button>${p.gems<cost?needCoins(cost-p.gems):''}`}
   const pl=f.plots[i],info=plotInfo(pl);
   if(!pl){const cheapest=Math.min(...SEEDS.filter(s=>s.lv<=lv).map(s=>s.cost));
@@ -574,22 +724,28 @@ function sheetPlot(i){
   if(info.stage<3)return `<h3>${ico('seed:'+info.S.id,info.S.e)} ${info.S.name} is growing</h3><div class="pbarw"><i id="pbar" style="width:${Math.round(info.prog*100)}%"></i></div><p>Ready in <b id="left">${fmtLeft(info.left)}</b></p>${pl.watered?'<p class="muted">💧 Watered! It\'s growing faster.</p>':`<button class="b" data-act="water" data-i="${i}">💧 Water it to grow faster</button>`}<p class="muted">While you wait, earn more coins at Math School.</p>`;
   return `<h3>${ico('seed:'+info.S.id,info.S.e)} ${info.S.name} is ready!</h3><button class="b" data-act="harvest" data-i="${i}">🧺 Harvest</button>`;
 }
+function sheetLand(id){
+  const L=LANDS.find(x=>x.id===id),p=cur(),f=farmOf(p);if(!L)return '';
+  if(hasLand(f,id))return `<h3>${L.e} ${L.name}</h3><p>This land is yours. Tap a patch to plant.</p>`;
+  return `<h3>${L.e} ${L.name}</h3><p>${L.blurb} Buying it opens ${L.n} new patches.</p><button class="b" data-act="buyLand" data-id="${id}" ${p.gems<L.cost?'disabled':''}>Buy this land · ${L.cost} 🪙</button>${p.gems<L.cost?needCoins(L.cost-p.gems):''}`;
+}
 function sheetBarn(){
   const f=farmOf(cur()),L=farmLevel(f.xp);
   const prods=[...SEEDS.map(s=>[s.id,s.e,s.name]),...ANIMALS.map(a=>[a.prod,a.pe,a.pn])];
   return `<h3>🌾 Barn</h3><p>Farm level <b>${L.l}</b>: ${L.into} / ${L.need} XP to the next level</p><div class="pbarw"><i style="width:${Math.round(L.into/L.need*100)}%"></i></div>
   <div class="barn">${prods.map(([id,e,nm])=>`<div class="bi"><span class="e">${e}</span><b>${f.barn[id]||0}</b><small>${nm}</small></div>`).join('')}</div>
-  <p class="muted">Harvest crops and collect from animals to earn XP. Higher farm levels unlock new seeds and animals.</p>`;
+  <p class="muted">Harvest crops and collect from animals to earn XP. Mo buys only the crops you grew.</p>`;
 }
 function plant(i,id){const p=cur(),f=farmOf(p),S=SEEDS.find(s=>s.id===id);
-  if(!S||p.gems<S.cost||farmLevel(f.xp).l<S.lv||f.plots[i]||i>=f.unlocked)return;
+  if(!S||p.gems<S.cost||farmLevel(f.xp).l<S.lv||f.plots[i]||!plotOpen(f,i))return;
   p.gems-=S.cost;f.plots[i]={crop:id,planted:Date.now(),watered:false};taskDone(taskStep('plant'));save();syncPlots(false);updateHud();
   const {x,z}=plotPos(i);addFx(F,`🌱 −${S.cost} 🪙`,x,1.6,z);refreshSheet(true)}
 function water(i){const f=farmOf(cur()),pl=f.plots[i];if(!pl||pl.watered)return;pl.watered=true;save();syncPlots(false);const {x,z}=plotPos(i);addFx(F,'💧💧💧',x,1.6,z);refreshSheet(true)}
 function harvest(i){const f=farmOf(cur()),pl=f.plots[i],info=plotInfo(pl);if(!info||info.stage<3)return;
   f.barn[pl.crop]=(f.barn[pl.crop]||0)+4;f.plots[i]=null;addXP(info.S.xp);taskDone(taskStep('harvest'));save();syncPlots(false);updateHud();
   const {x,z}=plotPos(i);addFx(F,`+4 ${info.S.e}  +${info.S.xp} XP`,x,1.8,z);refreshSheet(true)}
-function buyPlot(){const p=cur(),f=farmOf(p),c=plotCost(f);if(p.gems<c||f.unlocked>=12)return;p.gems-=c;f.unlocked++;save();syncPlots(false);updateHud();closeSheet();toast('New patch ready to plant!')}
+function buyPlot(){if(purchasePlot()===false)return;syncPlots(false);updateHud();closeSheet();toast('New patch ready to plant!')}
+function buyLand(id){const L=LANDS.find(x=>x.id===id);if(!purchaseLand(id))return;syncPlots(true);syncLand();updateHud();closeSheet();toast(`${L.name} is yours! Tap a patch to plant.`)}
 
 Object.assign(ACT,{
   choose:d=>{DATA.current=d.id;LASTPOS=null;save();go('town')},
@@ -611,7 +767,7 @@ Object.assign(ACT,{
   mayorTalk:()=>mayorTalk(),
   quick:(q=>d=>{if(F&&G.stage===F){const z=F.zones.find(z=>z.id===d.id);if(z){if(Math.hypot(z.x-F.player.position.x,z.z-F.player.position.z)<z.r)triggerZone(z);else walkTo(z.x,z.z,null)}return}q(d)})(ACT.quick),
   closeSheet:()=>closeSheet(),
-  plant:d=>plant(+d.i,d.id),water:d=>water(+d.i),harvest:d=>harvest(+d.i),buyPlot:()=>buyPlot()
+  plant:d=>plant(+d.i,d.id),water:d=>water(+d.i),harvest:d=>harvest(+d.i),buyPlot:()=>buyPlot(),buyLand:d=>buyLand(d.id)
 });
 onPageKey=e=>{if(UI.screen==='town'&&F&&G.stage===F){const k=e.key.length===1?e.key.toLowerCase():e.key;if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','a','d','w','s'].includes(k)){e.preventDefault();KEYS.add(k)}}};
 startPage({players:rPlayers,town:rTown},()=>cur()?{screen:'town'}:{screen:'players'});

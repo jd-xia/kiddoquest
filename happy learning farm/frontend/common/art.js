@@ -41,8 +41,12 @@ function artTx(mode,fn){return artDb().then(db=>new Promise((res,rej)=>{
 }))}
 function artImg(r){return new Promise(res=>{const i=new Image();i.onload=i.onerror=()=>res(r);i.src=r.url;r.img=i})}
 /* Called by startPage() before the first render, so ico() and 3D textures are ready. */
+function wipeArtNow(){ART={};return artTx('readwrite',s=>s.clear()).catch(()=>{})}
 function loadArt(){
-  return artTx('readonly',s=>s.getAll()).then(rows=>{
+  let wipe=false;
+  try{wipe=localStorage.getItem('hmf-reset-art')==='1';if(wipe)localStorage.removeItem('hmf-reset-art')}catch(e){}
+  const read=wipe?wipeArtNow().then(()=>[]):artTx('readonly',s=>s.getAll());
+  return read.then(rows=>{
     ART={};
     return Promise.all((rows||[]).map(r=>{(ART[r.pid]||(ART[r.pid]={}))[r.key]=r;return artImg(r)}));
   }).catch(()=>{});
