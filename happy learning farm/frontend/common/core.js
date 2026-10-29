@@ -3,8 +3,8 @@
 const MAYOR={name:'Bella the Bear',e:'🐻'}, MERCHANT={name:'Mo the Merchant',e:'🦝'};
 const ELLIE={name:'Ellie the Elephant',e:'🐘'}, FARMER={name:'Farmer Gus',e:'🐴'}, ARTIST={name:'Polly the Parrot',e:'🦜'}, ANGLER={name:'Finn the Otter',e:'🦦'};
 const AVATARS=[['chick','🐣','Chick',0],['cat','🐱','Cat',15],['dog','🐶','Puppy',15],['fox','🦊','Fox',25],['panda','🐼','Panda',25],['frog','🐸','Frog',30],['tiger','🐯','Tiger',40],['koala','🐨','Koala',40],['unicorn','🦄','Unicorn',60],['dragon','🐲','Dragon',80],['robot','🤖','Robot',100],['alien','👾','Space Bug',120]];
-/* Characters a child can pick (Art Studio → Me). 'girl'/'boy' are full 3D farmers; the rest walk around
-   as a stand-up cut-out of the emoji. A child's own drawing of 'me' always wins over the pick. */
+/* Characters a child can pick (Art Studio → Me). Every look walks around as a 3D character.
+   A child's own drawing of 'me' stays as their portrait. */
 const LOOKS=[
   {id:'girl',e:'👧',name:'Farm girl',hero:'girl'},{id:'boy',e:'👦',name:'Farm boy',hero:'boy'},
   {id:'farmgirl',e:'👩‍🌾',name:'Farmer girl',hero:'girl'},{id:'farmboy',e:'👨‍🌾',name:'Farmer boy',hero:'boy'},
@@ -199,8 +199,20 @@ function fishOf(p){const f=farmOf(p);if(!f.fish)f.fish={pond:0,owned:['rod:twig'
 function farmLevel(xp){let l=1,need=20;while(xp>=need){xp-=need;l++;need=20*l}return{l,into:xp,need}}
 function plotInfo(pl){if(!pl)return null;const S=SEEDS.find(s=>s.id===pl.crop);const dur=S.mins*60000*(pl.watered?.7:1),el=Date.now()-pl.planted,prog=Math.min(1,el/dur);return{S,prog,left:Math.max(0,dur-el),stage:prog>=1?3:prog>=.5?2:prog>=.15?1:0}}
 const fmtLeft=ms=>{const s=Math.ceil(ms/1000);return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const HOME_PLOTS=12;
+const LANDS=[
+  {id:'meadow',name:'West Meadow',e:'🌿',cost:40,n:6,blurb:'A fenced field up the hill, on the left.'}
+];
+const hasLand=(f,id)=>(f.lands||[]).includes(id);
+const plotOpen=(f,i)=>i<HOME_PLOTS?i<(f.unlocked||0):LANDS.some((L,n)=>{const from=HOME_PLOTS+LANDS.slice(0,n).reduce((a,x)=>a+x.n,0);return i>=from&&i<from+L.n&&hasLand(f,L.id)});
 const plotCost=f=>12+4*(f.unlocked-6);
-const plotPos=i=>({x:-3.9+(i%4)*2.6,z:-3.6+Math.floor(i/4)*2.6});
+const plotPos=i=>{
+  if(i<HOME_PLOTS)return {x:-3.9+(i%4)*2.6,z:-3.6+Math.floor(i/4)*2.6};
+  const k=i-HOME_PLOTS;
+  return {x:-21.6+(k%3)*2.55,z:12.8+Math.floor(k/3)*2.55};
+};
+function purchasePlot(){const p=cur(),f=farmOf(p),c=plotCost(f);if(p.gems<c||f.unlocked>=HOME_PLOTS)return false;p.gems-=c;f.unlocked++;save();return c}
+function purchaseLand(id){const p=cur(),f=farmOf(p),L=LANDS.find(x=>x.id===id);if(!L||hasLand(f,id)||p.gems<L.cost)return false;p.gems-=L.cost;f.lands=f.lands||[];f.lands.push(id);save();return true}
 let toastTimer=null;
 function toast(t,ms){const el=$('#toast');if(!el)return;el.textContent=t;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),ms||2400)}
 function notice(t){

@@ -610,13 +610,17 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .demo-plus,.demo-stayline small,.demo-result small{font-family:"Lilita One",sans-serif;font-size:22px;color:#FFE793}
 .demo-stayline,.demo-result{font-family:"Lilita One",sans-serif;font-size:clamp(24px,5vw,36px)}
 .basketdemo.step1 .demo-step:last-child .stay{animation:demostay 1.8s ease}
-.basketdemo.step1 .demo-step:last-child .join{animation:demojoin 1.8s ease}
+.basketdemo.step1:not(.breakdemo) .demo-step:last-child .join{animation:demojoin 1.8s ease}
+.basketdemo.breakdemo.step1 .demo-step:last-child .apart.leftp{animation:demosplitL 1.8s ease}
+.basketdemo.breakdemo.step1 .demo-step:last-child .apart.rightp{animation:demosplitR 1.8s ease}
 .basketdemo.step2 .demo-step:last-child .demo-result{animation:demopop .7s ease}
-.demo-result .blank{min-width:1.1em;padding:0 8px;border-bottom:4px solid #FFE793;color:#FFE793;text-align:center}
+.demo-scroll .blank{min-width:1.1em;padding:0 8px;border-bottom:4px solid #FFE793;color:#FFE793;text-align:center;font-family:"Lilita One",sans-serif}
 @keyframes demostay{40%{transform:scale(1.18);text-shadow:0 0 14px #FFE793}}
 @keyframes demojoin{50%{transform:translateY(-10px) scale(1.08)}}
+@keyframes demosplitL{50%{transform:translateX(-14px) scale(1.06)}}
+@keyframes demosplitR{50%{transform:translateX(14px) scale(1.06)}}
 @keyframes demopop{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-@media (prefers-reduced-motion:reduce){.basketdemo .demo-step,.basketdemo .stay,.basketdemo .join,.basketdemo .demo-result{animation:none}}
+@media (prefers-reduced-motion:reduce){.basketdemo .demo-step,.basketdemo .stay,.basketdemo .join,.basketdemo .apart,.basketdemo .demo-result{animation:none}}
 /* Same Basket plays on its own orchard screen, not in the monster arena */
 .workshop{position:fixed;inset:0;z-index:5;display:flex;flex-direction:column;overflow:hidden;color:#EEF2FF;background:radial-gradient(ellipse at 50% -10%,#3A4E8C 0%,#121A3E 42%,#070B1E 78%);padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .shop-hud{display:flex;align-items:center;gap:10px;padding:12px 14px 4px}

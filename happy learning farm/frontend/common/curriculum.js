@@ -174,7 +174,8 @@ function qBasketP3(i){
   return i===3?qBasketNums(4,120,105,'Four groups of 120 and four groups of 105. These are three-digit numbers.'):qBasketNums(6,200,150,'Six groups of 200 and six groups of 150.');
 }
 /* Break It Up: the other way from Same Basket. A × (B + C) = A × B + A × C.
-   Each mixed basket holds B red and C green. Drag the two kinds apart. A stays A. */
+   Each mixed basket holds B red and C green. Drag the two kinds apart. A stays A.
+   Then a short demo, and the child types A×B + A×C. */
 function breakQ(a,b,c,say){
   return{type:'break',a,b,c,html:`${a} × (${b} + ${c})`,answer:a*(b+c),
     say:say||'Drag the red apples to the red orchard and the green apples to the green orchard.'};
@@ -255,8 +256,8 @@ const DUNGEONS=[
     {id:'c1-4',name:'Break It Up',count:5,gen:i=>qBreakP1(i),
      intro:['Now break a full basket apart!',
             '<span class="ex">3 × (4 + 2) = 3 × 4 + 3 × 2</span>',
-            'The first three questions are apples. Drag each kind to its own orchard. The 3 stays in front of both parts.',
-            'The last two questions are two-digit numbers. Pick the split with a ten, then drag the two parts apart.']},
+            'Drag each kind to its own orchard. Then watch: the number in front stays, and the basket splits in two.',
+            'Type the answer. The last two questions are two-digit numbers. Pick the split with a ten first.']},
     {id:'c1-5',name:'Coming soon',soon:true},
     {id:'c1-6',name:'Coming soon',soon:true},
     {id:'c1-7',name:'Coming soon',soon:true},
@@ -284,7 +285,7 @@ const DUNGEONS=[
             'The last two use three-digit numbers: <span class="ex">4 × 120 + 4 × 105</span>.']},
     {id:'c3-4',name:'Break It Up',count:5,gen:i=>qBreakP3(i),
      intro:['Break the basket apart again.',
-            'The first three questions are apples. Drag each kind to its own orchard.',
+            'Drag each kind to its own orchard. Then watch it split, and type the answer.',
             'The last two are three-digit numbers, like <span class="ex">4 × 225</span>.',
             'Every choice adds up. Pick the one with a hundred, then drag the two parts apart.']},
     {id:'c3-5',name:'Coming soon',soon:true},

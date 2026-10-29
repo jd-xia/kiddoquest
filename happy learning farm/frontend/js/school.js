@@ -133,7 +133,7 @@ function buildSea(S){
     const pt=[[-3.5,-1.4],[3.6,1.2],[-2.6,2.9]];pt.forEach(([a,b],k)=>g.add(T.open?(k===2?roundTree(a,b,.55):palm(a,b,.8)):pine(a,b,.6)));
     if(T.open)for(let f=0;f<14;f++){const a=f*2.4,rr=2.2+(f%4)*.7;g.add(mesh(SPH(.09,6,5),['#FF7AA8','#FFD43B','#FFFFFF','#B98CFF'][f%4],Math.cos(a)*rr,.12,Math.sin(a)*rr+.8))}
     else{const cl=cloud(2.2,5.6,-1.6,.5);g.add(cl)}
-    const keeper=iconSprite(npcKey(T.npc),T.npc.e,1.7);keeper.position.set(-1.9,1,1.6);g.add(keeper);
+    const keeper=buildNpc(T.npc);keeper.position.set(-1.9,0,1.6);keeper.userData.stand=0;g.add(keeper);
     const ban=bannerSprite(`${i+1}. ${T.name}`,T.open?`★ ${topicStars(p,T)} / ${playable(T).length*3}`:'🚧 Coming soon',T.open?T.color:'#6B6F86',2.3);ban.position.y=8.4;g.add(ban);
     g.userData.act={kind:'topic',id:T.id};SEA.hits.push(g);
     SEA.islands.push({g,lm,keeper,T,x,z});
@@ -146,7 +146,7 @@ function buildSea(S){
   const sh=new THREE.Shape();sh.moveTo(0,0);sh.lineTo(0,2.6);sh.lineTo(-1.9,0);sh.lineTo(0,0);
   const sail=new THREE.Mesh(new THREE.ShapeGeometry(sh),new THREE.MeshStandardMaterial({color:col('#FFFDF5'),side:THREE.DoubleSide,roughness:.8}));sail.position.set(1.05,1.25,-.2);sail.castShadow=true;boat.add(sail);
   const pen=mesh(BOX(.7,.4,.03),S.color,1.45,4.1,-.2,{r:.6});boat.add(pen);SEA.pennant=pen;
-  SEA.host=iconSprite(npcKey(S.npc),S.npc.e,1.7);SEA.host.position.set(-.9,1.85,.2);boat.add(SEA.host);
+  SEA.host=buildNpc(S.npc);SEA.host.scale.setScalar(.7);SEA.host.position.set(-.9,1.02,.2);SEA.host.userData.stand=1.02;boat.add(SEA.host);
   SEA.hero=buildHero(farmOf(p),false);SEA.hero.position.set(.1,1.02,.3);SEA.hero.rotation.y=Math.PI;SEA.hero.scale.setScalar(.85);boat.add(SEA.hero);
   SEA.selMark=makeMark(7.4,{opacity:.85});SEA.scene.add(SEA.selMark);
   SEA.camT.copy(SEA.mid);
@@ -154,11 +154,11 @@ function buildSea(S){
 }
 function seaUpdate(dt){
   seaTick(SEA,dt);const t=SEA.t;
-  SEA.islands.forEach((I,k)=>{I.lm.userData.anim(t);I.keeper.position.y=1+Math.abs(Math.sin(t*2+k))*.12;
+  SEA.islands.forEach((I,k)=>{I.lm.userData.anim(t);I.keeper.position.y=(I.keeper.userData.stand||0)+Math.abs(Math.sin(t*2+k))*.08;
     const up=I===SEA.hot?.45:0;I.g.position.y+=(up+Math.sin(t*1.1+k)*.06-I.g.position.y)*Math.min(1,dt*6)});
   animMark(SEA.selMark,t);
   SEA.boat.position.y=-1.15+Math.sin(t*1.5)*.08;SEA.boat.rotation.z=Math.sin(t*1.2)*.035;SEA.pennant.rotation.y=Math.sin(t*3)*.4;
-  SEA.host.position.y=1.85+Math.abs(Math.sin(t*2))*.1;animHero(SEA.hero,'idle',t,dt);
+  SEA.host.position.y=(SEA.host.userData.stand||1.02)+Math.abs(Math.sin(t*2))*.06;animHero(SEA.hero,'idle',t,dt);
   orbit(SEA,dt,SEA.mid,SEA.fit()*SEA.zm);
 }
 function seaPick(e){const a=actOf(rayFrom(e,SEA.camera).intersectObjects(SEA.hits,true));return a&&a.kind==='topic'?a.id:null}
@@ -215,7 +215,7 @@ function buildMap(D){
   }
   const arch=signPlane(D.name,D.color,4.2);arch.position.set(-5.5,2.9,12.6);scene.add(arch);
   for(const x of[-7.6,-3.4])scene.add(mesh(CYL(.12,.14,3,8),'#8B5A2B',x,1.4,12.6));
-  MAP.keeper=iconSprite(npcKey(D.npc),D.npc.e,1.6);MAP.keeper.position.set(-9.6,.9,10.2);scene.add(MAP.keeper);scene.add(mesh(CYL(.6,.7,.3,14),'#8B5A2B',-9.6,0,10.2));
+  MAP.keeper=buildNpc(D.npc);MAP.keeper.position.set(-9.6,0,10.2);MAP.keeper.userData.stand=0;scene.add(MAP.keeper);scene.add(mesh(CYL(.6,.7,.3,14),'#8B5A2B',-9.6,0,10.2));
   const ok=(x,z)=>Math.hypot(x,z)<14.2&&PL.every(([px,pz])=>Math.hypot(x-px,z-pz)>2.6)&&(!L.boss||Math.hypot(x,z+13.4)>4)&&Math.hypot(x+5.5,z-12.6)>2.6&&Math.hypot(x+9.6,z-10.2)>1.4;
   for(let k=0;k<26;k++){const a=k/26*Math.PI*2+Math.sin(k*3)*.1,r=11.8+((k*7)%3)*.9,x=Math.cos(a)*r,z=Math.sin(a)*r;if(!ok(x,z))continue;scene.add(k%3?roundTree(x,z,.95+((k*5)%4)*.1):pine(x,z,1.05))}
   scatter(scene,new THREE.ConeGeometry(.07,.4,3).translate(0,.2,0),['#5DA544','#6DB650','#7CC35A'],1400,()=>{const x=(Math.random()-.5)*30,z=(Math.random()-.5)*30;return ok(x,z)?{x,z}:null},.8,1.4,false);
@@ -270,7 +270,7 @@ function mapUpdate(dt){
   const N=MAP.plats[MAP.next>=0?MAP.next:-1];
   if(N){MAP.arrow.visible=true;MAP.arrow.position.set(N.x,N.h+(N.boss?5.3:4.4)+Math.sin(t*4)*.2,N.z)}else MAP.arrow.visible=false;
   if(MAP.crown)MAP.crown.position.y=5.8+Math.sin(t*2)*.2;
-  MAP.keeper.position.y=.95+Math.abs(Math.sin(t*2))*.1;
+  MAP.keeper.position.y=(MAP.keeper.userData.stand||0)+Math.abs(Math.sin(t*2))*.06;
   animSparkles(MAP.spark,t);animMark(MAP.selMark,t);
   orbit(MAP,dt,new THREE.Vector3(h.position.x*.55,h.position.y*.6+.6,h.position.z*.55),(MAP.camera.aspect<.8?33:28)*MAP.zm);
 }
@@ -702,7 +702,7 @@ let basketRec=null;
 function basketStopRec(){if(basketRec){try{basketRec.onresult=null;basketRec.onerror=null;basketRec.stop()}catch(e){}basketRec=null}UI.hearing=false}
 function basketHear(){
   if(UI.phase!=='answer')return;
-  const q=UI.qs[UI.idx];if(!q||q.type!=='basket')return;
+  const q=UI.qs[UI.idx];if(!q||(q.type!=='basket'&&q.type!=='break'))return;
   const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
   if(!SR){UI.bubble={kind:'bad',html:'This browser cannot hear yet. Tap the answer instead.'};return rLevel()}
   basketStopRec();UI.hearing=true;UI.heard='Listening…';rLevel();
@@ -714,7 +714,7 @@ function basketHear(){
     const nums=alts.flatMap(basketSpoken);
     if(!nums.length){UI.bubble={kind:'bad',html:`I heard “${esc(UI.heard)}”, but not a number. ${basketVoiceHint(q)}`};return rLevel()}
     const hit=nums.find(n=>n===q.answer);
-    basketSubmit(hit!=null?hit:nums[0]);
+    if(q.type==='break')breakSubmit(hit!=null?hit:nums[0]);else basketSubmit(hit!=null?hit:nums[0]);
   };
   rec.onerror=()=>{UI.hearing=false;UI.bubble={kind:'bad',html:`I could not hear. ${basketVoiceHint(q)}`};rLevel()};
   rec.onend=()=>{UI.hearing=false};
@@ -823,12 +823,53 @@ function breakFinish(q,i){
   q.broken[i]=true;
   const got=earnCoins(cur(),1);UI.paid=true;UI.mergeCoins=(UI.mergeCoins||0)+got;q.coinAt=i;save();
   const left=q.broken.filter(v=>!v).length,pay=got?'<span class="coinhint">+1 🪙</span>':'<span class="coinhint">⭐</span>';
-  if(left)UI.bubble={kind:'good',html:`Broken apart! The <b>${q.a}</b> stays <b>${q.a}</b>. This basket became <b>${q.b}</b> and <b>${q.c}</b>. ${pay}`};
-  else{if(!q.counted){q.counted=true;UI.answered++;UI.first++}
-    UI.phase='right';
-    const ten=q.hard?` <b>${q.a} × ${q.b} = ${q.a*q.b}</b> and <b>${q.a} × ${q.c} = ${q.a*q.c}</b>.`:(q.b+q.c===10?` <b>${q.b} + ${q.c} = 10</b>, so both sides still start with <b>${q.a}</b>.`:'');
-    UI.bubble={kind:'good',html:`<b>${q.a} × (${q.b} + ${q.c}) = ${q.a} × ${q.b} + ${q.a} × ${q.c}</b>.${ten} ${pay}`}}
+  if(left){UI.bubble={kind:'good',html:`Broken apart! The <b>${q.a}</b> stays <b>${q.a}</b>. This basket became <b>${q.b}</b> and <b>${q.c}</b>. ${pay}`};rLevel();return}
+  breakStartDemo(q,pay);
+}
+function breakDemoHTML(q){
+  const step=q.demo|0,ask=UI.phase==='answer',solved=UI.phase==='right',show=ask||solved?2:step;
+  const piece=(n,emoji)=>q.hard?`${n}`:`${fruitRow(n,emoji)}<b>${n}</b>`;
+  const mixed=`<div class="demo-result demo-scroll"><span class="stay">${q.a}</span><small>×</small><span>(</span><span class="join">${piece(q.b,'🍎')}</span><small>+</small><span class="join">${piece(q.c,'🍏')}</span><span>)</span><span class="demo-pad" aria-hidden="true"></span></div>`;
+  const stay=`<p class="demo-note">The <b>${q.a}</b> stays in front of both parts. <b>${q.b}</b> and <b>${q.c}</b> move apart.</p><div class="demo-stayline demo-scroll" aria-hidden="true"><span class="stay">${q.a}</span><small>stays</small><span class="apart leftp">${piece(q.b,'🍎')}</span><small>←</small><small>→</small><span class="apart rightp">${piece(q.c,'🍏')}</span><span class="demo-pad" aria-hidden="true"></span></div>`;
+  const tail=solved?`<small>=</small><span class="blank">${q.answer}</span>`:(ask?'<small>=</small><span class="blank">?</span>':'');
+  const split=`<div class="demo-row demo-scroll"><div class="demo-card left"><span class="stay">${q.a}</span><small>×</small><span class="join">${piece(q.b,'🍎')}</span></div><span class="demo-plus">+</span><div class="demo-card right"><span class="stay">${q.a}</span><small>×</small><span class="join">${piece(q.c,'🍏')}</span></div>${tail}<span class="demo-pad" aria-hidden="true"></span></div>`;
+  const block=(n,title,body)=>show>=n?`<section class="demo-step"><p class="demo-k">${n+1}. ${title}</p>${body}</section>`:'';
+  return `<div class="basketdemo breakdemo step${show}${ask?' ask':''}" aria-live="polite">${block(0,'One group',mixed)}${block(1,'The same number stays',stay)}${block(2,'They split',split)}</div>`;
+}
+function breakStartDemo(q,pay){
+  UI.phase='demo';q.demo=0;
+  UI.bubble={kind:'good',html:`Watch slowly. Step 1: one group, <b>${q.a} × (${q.b} + ${q.c})</b>. ${pay||''}`};
   rLevel();
+  clearTimeout(UI.basketTimer);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){UI.basketTimer=setTimeout(()=>breakDemoDone(q),400);return}
+  UI.basketTimer=setTimeout(()=>breakDemoStep(q,1),3000);
+}
+function breakDemoStep(q,step){
+  if(UI.screen!=='level'||!UI.qs||UI.qs[UI.idx]!==q||UI.phase!=='demo')return;
+  q.demo=step;
+  UI.bubble={kind:'good',html:step===1?`Step 2: the <b>${q.a}</b> stays. <b>${q.b}</b> and <b>${q.c}</b> move apart.`:`Step 3: now it is <b>${q.a} × ${q.b} + ${q.a} × ${q.c}</b>.`};
+  rLevel();
+  clearTimeout(UI.basketTimer);
+  UI.basketTimer=setTimeout(()=>step>=2?breakDemoDone(q):breakDemoStep(q,step+1),3000);
+}
+function breakDemoDone(q){
+  if(UI.screen!=='level'||!UI.qs||UI.qs[UI.idx]!==q||UI.phase==='answer'||UI.phase==='right')return;
+  q.demo=2;UI.phase='answer';
+  UI.bubble={kind:'',html:`Your turn. What is <b>${q.a} × ${q.b} + ${q.a} × ${q.c}</b>? ${basketVoiceHint(q)}`};
+  rLevel();
+}
+function breakSubmit(v){
+  const q=UI.qs[UI.idx];if(UI.phase!=='answer'||!q||q.type!=='break')return;
+  if(v===q.answer){
+    if(!q.counted){q.counted=true;UI.answered++;UI.first++}
+    UI.phase='right';
+    const ten=q.hard?` <b>${q.a} × ${q.b} = ${q.a*q.b}</b> and <b>${q.a} × ${q.c} = ${q.a*q.c}</b>.`:'';
+    UI.bubble={kind:'good',html:`Yes. <b>${q.a} × (${q.b} + ${q.c}) = ${q.a} × ${q.b} + ${q.a} × ${q.c} = ${q.answer}</b>.${ten}`};
+    return rLevel();
+  }
+  if(PAD)PAD.v='';
+  UI.bubble={kind:'bad',html:`${v} isn't it yet. The <b>${q.a}</b> stayed. <b>${q.a} × ${q.b} = ${q.a*q.b}</b> and <b>${q.a} × ${q.c} = ${q.a*q.c}</b>. Add those.`};
+  rLevel();const d=$('#disp');if(d)d.classList.add('shake');
 }
 function breakPlace(part,i){
   const q=UI.qs[UI.idx];if(UI.phase!=='work'||!q||q.type!=='break'||q.broken[i])return;
@@ -881,7 +922,7 @@ function hatTap(i){
 function padKey(k){
   if(!PAD||UI.screen!=='level'||UI.phase!=='answer')return;
   if(k==='back')PAD.v=PAD.v.slice(0,-1);
-  else if(k==='ok'){if(PAD.v==='')return;const q=UI.qs[UI.idx];if(q&&q.type==='basket'){basketSubmit(+PAD.v);return}submit(parseInt(PAD.v,10));return}
+  else if(k==='ok'){if(PAD.v==='')return;const q=UI.qs[UI.idx];if(q&&q.type==='basket'){basketSubmit(+PAD.v);return}if(q&&q.type==='break'){breakSubmit(+PAD.v);return}submit(parseInt(PAD.v,10));return}
   else if(PAD.v.length<8)PAD.v=(PAD.v==='0'?'':PAD.v)+k;
   $('#disp').textContent=PAD.v;
 }
@@ -930,15 +971,16 @@ function rFactory(){
   const D=dun(UI.did),q=UI.qs[UI.idx];
   const br=q.type==='break',done=br?q.broken.every(Boolean):q.merged&&q.merged.every(Boolean);
   const basketShow=q.type==='basket'&&(UI.phase==='demo'||UI.phase==='answer'||(UI.phase==='right'&&q.demo>=2));
+  const breakShow=br&&(UI.phase==='demo'||UI.phase==='answer'||(UI.phase==='right'&&q.demo>=2));
   const next=UI.phase==='right'?`<button class="b big-next" data-act="nextQ" id="nextBtn">${UI.idx<UI.qs.length-1?(br?'Next basket ▸':'Next orchards ▸'):'Finish ▸'}</button>`:'';
-  const expr=br?(done?`${q.a} × ${q.b} + ${q.a} × ${q.c}`:(q.hard&&q.chosen?`${q.a} × (${q.b} + ${q.c})`:q.html)):(UI.phase==='answer'?`${q.a} × (${q.b} + ${q.c}) = ?`:(q.demo>=2?`${q.a} × (${q.b} + ${q.c})`:q.html));
+  const expr=br?(UI.phase==='answer'?`${q.a} × ${q.b} + ${q.a} × ${q.c} = ?`:(done||q.demo>=2?`${q.a} × ${q.b} + ${q.a} × ${q.c}`:(q.hard&&q.chosen?`${q.a} × (${q.b} + ${q.c})`:q.html))):(UI.phase==='answer'?`${q.a} × (${q.b} + ${q.c}) = ?`:(q.demo>=2?`${q.a} × (${q.b} + ${q.c})`:q.html));
   const keys=[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('');
-  const asking=q.type==='basket'&&UI.phase==='answer';
+  const asking=(q.type==='basket'||q.type==='break')&&UI.phase==='answer';
   const pad=asking?`${basketVoiceHTML(q)}<div class="display" id="disp" aria-live="polite">${PAD&&PAD.q===UI.idx?esc(PAD.v):''}</div><div class="pad" id="pad">${keys}<button data-k="back" aria-label="Delete">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">OK</button></div>`:'';
   const kicker=br?`Break It Up · ${UI.idx+1} of ${UI.qs.length}`:`The Magic Basket Challenge · ${UI.idx+1} of ${UI.qs.length}`;
-  const work=br?breakHTML(q):(basketShow?basketDemoHTML(q):basketHTML(q));
-  $('#app').innerHTML=`<div class="workshop${basketShow?' demoing':''}"><header class="shop-hud">${shopHud()}</header><div class="shop-main"><p class="shop-kicker">${kicker}</p><div class="shop-expr">${expr}</div><div class="bnpc ${UI.bubble.kind||''}"><span class="bface">${ico(npcKey(D.npc),D.npc.e)}</span><div>${UI.bubble.html}</div></div>${work}</div>${pad?`<div class="shop-dock">${pad}</div>`:''}${next?`<div class="shop-dock">${next}</div>`:''}</div>`;
-  if(basketShow){basketBindDemoScroll();const main=$('.shop-main'),demo=$('.basketdemo');if(main&&demo)main.scrollTop=Math.max(0,demo.offsetTop-4)}
+  const work=breakShow?breakDemoHTML(q):br?breakHTML(q):(basketShow?basketDemoHTML(q):basketHTML(q));
+  $('#app').innerHTML=`<div class="workshop${basketShow||breakShow?' demoing':''}"><header class="shop-hud">${shopHud()}</header><div class="shop-main"><p class="shop-kicker">${kicker}</p><div class="shop-expr">${expr}</div><div class="bnpc ${UI.bubble.kind||''}"><span class="bface">${ico(npcKey(D.npc),D.npc.e)}</span><div>${UI.bubble.html}</div></div>${work}</div>${pad?`<div class="shop-dock">${pad}</div>`:''}${next?`<div class="shop-dock">${next}</div>`:''}</div>`;
+  if(basketShow||breakShow){basketBindDemoScroll();const main=$('.shop-main'),demo=$('.basketdemo');if(main&&demo)main.scrollTop=Math.max(0,demo.offsetTop-4)}
   if(UI.phase==='answer'){if(!PAD||PAD.q!==UI.idx)PAD={v:'',q:UI.idx}}
   if(UI.phase==='right')$('#nextBtn').focus({preventScroll:true});
 }
@@ -946,7 +988,7 @@ function rFactoryResult(){
   const l=dun(UI.did).levels[UI.li],nx=dun(UI.did).levels[UI.li+1],hasNext=!!nx&&!nx.soon;
   const br=UI.qs&&UI.qs[0]&&UI.qs[0].type==='break';
   const hard=!!(UI.qs&&UI.qs[0]&&UI.qs[0].hard);
-  const line=br?(hard?'You picked the easy break, then split it into two easy multiplications.':'Every mixed basket broke in two. The number of baskets stayed the same.'):(hard?'The shared count stayed in front, and the two groups joined.':'Every orchard went into the magic basket. The shared number stayed in front, and the fruit joined.');
+  const line=br?(hard?'You picked the easy break, watched it split, then added the two easy multiplications.':'Every mixed basket broke in two. The number of baskets stayed the same, then you worked out the total.'):(hard?'The shared count stayed in front, and the two groups joined.':'Every orchard went into the magic basket. The shared number stayed in front, and the fruit joined.');
   const purse=(UI.mergeCoins||0)+(UI.gems||0);
   $('#app').innerHTML=`<div class="workshop"><header class="shop-hud">${shopHud()}</header><div class="shop-main"><div class="rcard">
    <div class="rtitle">${br?'Broken apart!':'Baskets glowing!'}</div>

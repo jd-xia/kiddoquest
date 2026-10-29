@@ -272,13 +272,15 @@ function fenceRect(x0,x1,z0,z1,step,color,parent){
     for(let k=0;k<=n;k++){const t=k/n;parent.add(mesh(rbox(.2,1.05,.2,.05),color,ax+(bx-ax)*t,.52,az+(bz-az)*t))}
     for(const y of[.36,.78]){const r=mesh(BOX(L,.1,.07),color,(ax+bx)/2,y,(az+bz)/2);r.rotation.y=-Math.atan2(bz-az,bx-ax);parent.add(r)}};
   side(x0,z0,x1,z0);side(x1,z0,x1,z1);side(x1,z1,x0,z1);side(x0,z1,x0,z0)}
-/* The player on the farm, the islands and in battle: their own drawing or an emoji character as a
-   stand-up cut-out, otherwise the big-head 3D kid from avatar3d.js (a preset or their own design). */
+/* The player on the farm, the islands and in battle. Every look is a solid 3D character:
+   an animal body, or the child model from avatar3d.js. A saved drawing stays as the portrait. */
 function buildHero(f,showTag){
   const p=cur(),L=lookOf(p);
-  if(artOf('me'))return buildPaperHero(showTag);
-  if(!L.hero)return buildPaperHero(showTag,L.e);
-  return buildChibi(cfgFor(p),f,{showTag,player:p});
+  if(typeof BEAST!=='undefined'&&BEAST[L.id]){const g=buildBeast(BEAST[L.id]);g.scale.setScalar(1.25);
+    if(showTag!==false){const tag=labelSprite(p.name,{bg:'rgba(214,150,30,.95)',fg:'#FFFFFF',border:'#FFF1B8',h:.45});tag.position.y=1.85;g.add(tag)}
+    return g}
+  if(typeof buildChibi==='function'){const c=Object.assign({},cfgFor(p));if(typeof artOf==='function'&&artOf('face',p))c.face=true;return buildChibi(c,f,{showTag,player:p})}
+  return buildPaperHero(showTag,L.e);
 }
 /* The child's own character drawing as a paper cut-out. Same userData shape as buildHero so animHero works. */
 function buildPaperHero(showTag,emoji){
@@ -302,10 +304,10 @@ function animHero(h,mode,t,dt){
   else if(mode==='cast'){ar=-1.6}
   else if(mode==='sad'){hx=.45;by=-.08}
   else{by=Math.sin(t*2.2)*.02}
-  U.legs[0].rotation.x=lw;U.legs[1].rotation.x=-lw;
+  U.legs.forEach((leg,i)=>{leg.rotation.x=i%2?-lw:lw});
   if(ar){U.arms[0].rotation.x+=(ar-U.arms[0].rotation.x)*Math.min(1,dt*12);U.arms[1].rotation.x+=(ar-U.arms[1].rotation.x)*Math.min(1,dt*12);U.arms[0].rotation.z=-.25;U.arms[1].rotation.z=.25}
   else{U.arms[0].rotation.x=aw;U.arms[1].rotation.x=-aw;U.arms[0].rotation.z=0;U.arms[1].rotation.z=0}
-  U.body.position.y=by;U.head.rotation.x+=(hx-U.head.rotation.x)*Math.min(1,dt*6);
+  U.body.position.y=(U.bodyBase||0)+by;U.head.rotation.x+=(hx-U.head.rotation.x)*Math.min(1,dt*6);
   const blink=(t%3.6)<.12?.1:1;U.eyes.forEach(e=>e.scale.y=blink);
   if(U.paper){const sq=mode==='walk'?Math.abs(Math.sin(t*11))*.06:mode==='cheer'?Math.abs(Math.sin(t*6))*.1:0;   // paper cut-out: wobble and squash instead of limbs
     U.paper.material.rotation=mode==='walk'?Math.sin(t*11)*.1:mode==='sad'?.22:mode==='cast'?-.14:Math.sin(t*2.2)*.03;
