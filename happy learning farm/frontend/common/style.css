@@ -733,6 +733,11 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .mic{font-size:22px;min-height:64px}
 .mic.live{box-shadow:0 0 0 4px rgba(229,72,77,.45)}
 .heard{min-height:1.4em;font-weight:700}
+.heard.good{color:#d8ff9a}
+.heard.bad{color:#ffd0d0}
+.verdict{margin:0 0 8px;font-family:"Lilita One",sans-serif;font-size:28px;letter-spacing:.4px}
+.verdict.good{color:#d8ff9a}
+.verdict.bad{color:#ffb4b4}
 .pond .pad{margin:10px auto}
 .under{position:relative;height:240px;border-radius:22px;overflow:hidden;background:linear-gradient(180deg,#d7f6ff 0%,#67bcee 14%,#1d78c4 46%,#0c4e86 74%,#06243f 100%);box-shadow:inset 0 -30px 40px rgba(0,16,32,.35)}
 .under.lit{background:linear-gradient(180deg,#eefcff 0%,#8fd4f8 18%,#2f93d6 50%,#16659a 80%,#0c3a58 100%)}
