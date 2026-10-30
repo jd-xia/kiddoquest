@@ -49,6 +49,19 @@ class BoardRanksTest {
     }
 
     @Test
+    void farmLevelFollowsTheGameAndCoinsStayOnTheRow() throws Exception {
+        assertEquals(1, BoardRanks.farmLevel(0));
+        assertEquals(1, BoardRanks.farmLevel(19));
+        assertEquals(2, BoardRanks.farmLevel(20));
+        assertEquals(3, BoardRanks.farmLevel(60));
+        ObjectNode player = json.createObjectNode();
+        player.put("gems", 1000);
+        assertEquals(1000, BoardRanks.coins(player));
+        player.put("gems", -4);
+        assertEquals(0, BoardRanks.coins(player));
+    }
+
+    @Test
     void firstTriesCannotExceedQuestions() throws Exception {
         ObjectNode levels = json.createObjectNode();
         ObjectNode row = levels.putObject("c1-1");

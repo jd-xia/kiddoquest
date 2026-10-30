@@ -14,7 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
 @RequestMapping("/api/v1/board")
-@Tag(name = "Leaderboard")
+@Tag(name = "Farm Chat")
 public class BoardController {
 
     private final BoardService board;
@@ -24,7 +24,7 @@ public class BoardController {
     }
 
     @GetMapping
-    @Operation(summary = "Every saved child, ranked by levels cleared times first-try accuracy")
+    @Operation(summary = "Every saved child, with farm level, stars, and coins")
     public List<BoardEntry> list() {
         return board.board();
     }

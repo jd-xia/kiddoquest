@@ -35,32 +35,44 @@ public class BoardService {
     public List<BoardEntry> board() {
         List<Standing> standings = new ArrayList<>();
         for (ChildProfile child : children.findAll()) {
-            standings.add(new Standing(child, statsOf(child.getId())));
+            standings.add(standingOf(child));
         }
-        standings.sort((a, b) -> BoardRanks.compare(a.stats, a.child.getDisplayName(), b.stats, b.child.getDisplayName()));
+        standings.sort((a, b) -> {
+            boolean aOn = online.online(a.child().getUsername());
+            boolean bOn = online.online(b.child().getUsername());
+            if (aOn != bOn) {
+                return aOn ? -1 : 1;
+            }
+            return shown(a.child().getDisplayName()).compareToIgnoreCase(shown(b.child().getDisplayName()));
+        });
         List<BoardEntry> rows = new ArrayList<>();
-        for (int i = 0; i < standings.size(); i++) {
-            Standing row = standings.get(i);
-            Stats stats = row.stats;
-            rows.add(new BoardEntry(i + 1, row.child.getUsername(), row.child.getDisplayName(), row.child.getGrade(),
-                    row.child.getLook(), stats.cleared(), stats.questions(), stats.firstTry(), stats.accuracy(),
-                    stats.stars(), stats.score(), online.online(row.child.getUsername())));
+        for (Standing row : standings) {
+            Stats stats = row.stats();
+            rows.add(new BoardEntry(row.child().getUsername(), row.child().getDisplayName(), row.child().getGrade(),
+                    row.child().getLook(), stats.cleared(), stats.questions(), stats.firstTry(), stats.accuracy(),
+                    stats.stars(), stats.score(), online.online(row.child().getUsername()), row.level(), row.coins()));
         }
         return rows;
     }
 
-    private Stats statsOf(String childId) {
-        GameSnapshot snap = snapshots.findById(childId).orElse(null);
+    private Standing standingOf(ChildProfile child) {
+        GameSnapshot snap = snapshots.findById(child.getId()).orElse(null);
         if (snap == null || snap.getPlayerJson() == null) {
-            return BoardRanks.empty();
+            return new Standing(child, BoardRanks.empty(), 1, 0);
         }
         try {
-            return BoardRanks.from(mapper.readTree(snap.getPlayerJson()).get("lv"));
+            var player = mapper.readTree(snap.getPlayerJson());
+            return new Standing(child, BoardRanks.from(player.get("lv")),
+                    BoardRanks.farmLevel(player.path("farm").path("xp").asInt(0)), BoardRanks.coins(player));
         } catch (Exception ex) {
-            return BoardRanks.empty();
+            return new Standing(child, BoardRanks.empty(), 1, 0);
         }
     }
 
-    private record Standing(ChildProfile child, Stats stats) {
+    private static String shown(String name) {
+        return name == null ? "" : name;
+    }
+
+    private record Standing(ChildProfile child, Stats stats, int level, long coins) {
     }
 }

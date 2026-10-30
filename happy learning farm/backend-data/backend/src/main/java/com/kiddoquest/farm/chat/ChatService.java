@@ -64,7 +64,6 @@ public class ChatService {
 
     @Transactional
     public Sent send(String ownerId, String childId, String to, String text) {
-        Speaker mine = bind(ownerId, childId);
         String body = ChatText.clean(text);
         if (body.isEmpty()) {
             throw new SyncRejectedException("Type a message first.");
@@ -72,6 +71,33 @@ public class ChatService {
         if (body.length() > ChatText.MAX) {
             throw new SyncRejectedException("Keep the message under 180 characters.");
         }
+        Ready ready = ready(ownerId, childId, to);
+        FarmMessage message = blank(ready);
+        message.setKind("text");
+        message.setBody(body);
+        messages.save(message);
+        return sent(message, ready);
+    }
+
+    @Transactional
+    public Sent sendVoice(String ownerId, String childId, String to, String voice, String mime) {
+        String type = ChatVoice.mime(mime);
+        String data = ChatVoice.stored(voice);
+        if (type == null || data == null) {
+            throw new SyncRejectedException("That voice message could not be sent.");
+        }
+        Ready ready = ready(ownerId, childId, to);
+        FarmMessage message = blank(ready);
+        message.setKind("voice");
+        message.setBody("");
+        message.setVoiceMime(type);
+        message.setVoiceData(data);
+        messages.save(message);
+        return sent(message, ready);
+    }
+
+    private Ready ready(String ownerId, String childId, String to) {
+        Speaker mine = bind(ownerId, childId);
         String room = ChatText.room(mine.username(), to);
         if (room == null) {
             throw new SyncRejectedException("Choose the farm chat, or another saved child.");
@@ -80,16 +106,25 @@ public class ChatService {
             throw new NotFoundException();
         }
         pace(mine.username());
+        return new Ready(mine, room, to);
+    }
+
+    private static FarmMessage blank(Ready ready) {
         FarmMessage message = new FarmMessage();
         message.setId(UUID.randomUUID().toString());
-        message.setRoom(room);
-        message.setFromUsername(mine.username());
-        message.setFromName(mine.name());
-        message.setFromLook(mine.look() == null || mine.look().isBlank() ? "girl" : mine.look());
-        message.setBody(body);
+        message.setRoom(ready.room());
+        message.setFromUsername(ready.mine().username());
+        message.setFromName(ready.mine().name());
+        message.setFromLook(ready.mine().look() == null || ready.mine().look().isBlank() ? "girl" : ready.mine().look());
         message.setCreatedAt(Instant.now());
-        messages.save(message);
-        return new Sent(line(message), room, mine.username(), "hall".equals(to) ? "hall" : to);
+        return message;
+    }
+
+    private static Sent sent(FarmMessage message, Ready ready) {
+        return new Sent(line(message), ready.room(), ready.mine().username(), "hall".equals(ready.to()) ? "hall" : ready.to());
+    }
+
+    private record Ready(Speaker mine, String room, String to) {
     }
 
     private void pace(String username) {
@@ -118,7 +153,9 @@ public class ChatService {
     }
 
     private static ChatLine line(FarmMessage message) {
+        boolean voice = "voice".equals(message.getKind());
         return new ChatLine(message.getId(), message.getFromUsername(), message.getFromName(), message.getFromLook(),
-                message.getBody(), message.getCreatedAt());
+                voice ? "" : message.getBody(), message.getCreatedAt(), voice ? "voice" : "text",
+                voice ? message.getVoiceData() : null, voice ? message.getVoiceMime() : null);
     }
 }

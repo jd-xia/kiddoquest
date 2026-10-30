@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.Date;
 import java.util.UUID;
 
@@ -31,6 +32,7 @@ import com.kiddoquest.farm.repo.FarmMessageRepository;
 import com.kiddoquest.farm.repo.GameSnapshotRepository;
 import com.kiddoquest.farm.repo.SyncReceiptRepository;
 import com.kiddoquest.farm.web.FarmExceptions.NotFoundException;
+import com.kiddoquest.farm.web.FarmExceptions.SyncRejectedException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -80,7 +82,9 @@ class HallFlowTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name").value("Mia"))
-                .andExpect(jsonPath("$[0].rank").value(1))
+                .andExpect(jsonPath("$[0].rank").doesNotExist())
+                .andExpect(jsonPath("$[0].level").value(1))
+                .andExpect(jsonPath("$[0].coins").value(1000))
                 .andExpect(jsonPath("$[0].cleared").value(1))
                 .andExpect(jsonPath("$[0].questions").value(5))
                 .andExpect(jsonPath("$[0].firstTry").value(4))
@@ -105,7 +109,20 @@ class HallFlowTest {
                 .header("Authorization", "Bearer " + mia)).andExpect(status().isOk()).andReturn());
         assertEquals(1, history.size());
         assertEquals("Hello farm", history.get(0).path("text").asText());
+        assertEquals("text", history.get(0).path("kind").asText());
         assertEquals(username, history.get(0).path("from").asText());
+
+        String clip = Base64.getEncoder().encodeToString(new byte[800]);
+        Thread.sleep(900);
+        chat.sendVoice("user-a", child, "hall", clip, "audio/webm;codecs=opus");
+        JsonNode voiced = body(mvc.perform(get("/api/v1/chat/history").param("as", child).param("with", "hall")
+                .header("Authorization", "Bearer " + mia)).andExpect(status().isOk()).andReturn());
+        assertEquals(2, voiced.size());
+        assertEquals("voice", voiced.get(1).path("kind").asText());
+        assertEquals("audio/webm", voiced.get(1).path("mime").asText());
+        assertEquals(clip, voiced.get(1).path("voice").asText());
+        assertEquals("", voiced.get(1).path("text").asText());
+        assertThrows(SyncRejectedException.class, () -> chat.sendVoice("user-a", child, "hall", clip, "text/plain"));
         assertThrows(NotFoundException.class, () -> chat.history("user-b", child, "hall"));
         assertThrows(NotFoundException.class, () -> chat.send("user-a", child, "P0099999", "hi"));
 

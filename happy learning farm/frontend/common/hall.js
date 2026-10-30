@@ -1,5 +1,5 @@
-/* Leaderboard and live chat. The lamp checks the farm server. The board lists every saved child.
-   Rank = levels cleared × first-try accuracy, after five answers. Chat needs a signed-in saved child. */
+/* Farm Chat. The lamp checks the farm server. The list shows every saved child, with farm level, stars, and coins.
+   Chat needs a signed-in saved child. A voice message is a short recording. */
 let LINK='wait';
 const HALL={open:false,rows:[],thread:null,lines:[],note:'',unread:0,ws:null,opening:false,ready:false,childId:null};
 let HALL_WAIT=1500,HALL_POLL=null;
@@ -9,7 +9,7 @@ function linkLampHTML(){
   return `<button type="button" class="linklamp ${LINK}" data-act="linkLamp" aria-label="${label}" title="${label}"></button>`;
 }
 function hallMarkHTML(cls){
-  return `<button type="button" class="${cls}" data-act="hallOpen" aria-label="Leaderboard">🏆${HALL.unread?'<i class="halldot" aria-hidden="true"></i>':''}</button>`;
+  return `<button type="button" class="${cls}" data-act="hallOpen" aria-label="Farm Chat">💬${HALL.unread?'<i class="halldot" aria-hidden="true"></i>':''}</button>`;
 }
 function linkSet(next){
   if(LINK===next)return;
@@ -50,20 +50,19 @@ function hallWhen(iso){
   const d=new Date(iso);if(Number.isNaN(d.getTime()))return '';
   return d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
 }
-function hallAcc(row){return row.accuracy==null?'–':row.accuracy+'%'}
 function hallEnsure(){
   if($('#hall'))return;
   document.body.insertAdjacentHTML('beforeend',`<div id="hall" class="hallpanel" hidden>
-    <button type="button" class="hallback" data-act="hallClose" aria-label="Close the leaderboard"></button>
-    <div class="hallbox" data-act="hallHold" role="dialog" aria-modal="true" aria-label="Leaderboard">
-      <header class="halltop"><b>Leaderboard</b><button type="button" class="b ghost sm" data-act="hallClose" aria-label="Close">✕</button></header>
-      <p class="hallrule">Rank = levels cleared × first-try accuracy. Five answers are needed before accuracy counts. Stars break a tie. Coins stay off this list.</p>
+    <button type="button" class="hallback" data-act="hallClose" aria-label="Close Farm Chat"></button>
+    <div class="hallbox" data-act="hallHold" role="dialog" aria-modal="true" aria-label="Farm Chat">
+      <header class="halltop"><b>Farm Chat</b><button type="button" class="b ghost sm" data-act="hallClose" aria-label="Close">✕</button></header>
+      <p class="hallrule">Tap a farmer to chat. Each row keeps their farm level, stars, and coins.</p>
       <div class="hallsplit">
-        <div class="hallside"><div class="halllist" id="hallList"></div><button type="button" class="b hallall" data-act="hallHall">Farm chat</button></div>
+        <div class="hallside"><div class="halllist" id="hallList"></div><button type="button" class="b hallall" data-act="hallHall">Everyone</button></div>
         <section class="hallchat" id="hallChat" hidden>
-          <header class="halltop"><button type="button" class="b ghost sm hallbackbtn" data-act="hallList">←</button><b id="hallTitle">Farm chat</b></header>
+          <header class="halltop"><button type="button" class="b ghost sm hallbackbtn" data-act="hallList">←</button><div class="halltitle"><b id="hallTitle">Farm Chat</b><small id="hallPeer"></small></div></header>
           <div class="halllog" id="hallLog" aria-live="polite"></div>
-          <form class="hallform" id="hallForm"><input id="hallText" maxlength="180" autocomplete="off" placeholder="Say something kind" aria-label="Message"><button class="b sm" type="submit">Send</button></form>
+          <form class="hallform" id="hallForm"><button type="button" class="b sm hallmic" data-act="hallMic" aria-label="Record a voice message">🎙️</button><input id="hallText" maxlength="180" autocomplete="off" placeholder="Say something kind" aria-label="Message"><button class="b sm" type="submit">Send</button></form>
           <p class="hallfine" id="hallFine"></p>
         </section>
       </div>
@@ -80,14 +79,15 @@ function hallOpen(){
 }
 function hallClose(){
   HALL.open=false;HALL.thread=null;HALL.note='';
+  hallSilence();
   const el=$('#hall');if(el){el.classList.remove('show','split');el.hidden=true}
   const chat=$('#hallChat');if(chat)chat.hidden=true;
   clearInterval(HALL_POLL);HALL_POLL=null;
 }
 function hallHold(){}
-function hallList(){HALL.thread=null;HALL.note='';hallPaint()}
+function hallList(){hallVoiceCancel();HALL.thread=null;HALL.note='';hallPaint()}
 function hallMe(){if(typeof toast==='function'&&$('#toast'))toast('This row is your farm.');else if(typeof notice==='function')notice('This row is your farm.')}
-function hallRank(n){return n===1?'🥇':n===2?'🥈':n===3?'🥉':String(n)}
+function hallStats(r){return `Lv ${r&&r.level||1} · ⭐ ${r&&r.stars||0} · 🪙 ${r&&r.coins||0}`}
 function hallPaintList(){
   const el=$('#hallList');if(!el)return;
   const mine=hallMine();
@@ -95,12 +95,14 @@ function hallPaintList(){
   if(!HALL.rows.length){el.innerHTML='<p class="muted">No saved farms yet. Sign in and sync a child to appear here.</p>';return}
   el.innerHTML=HALL.rows.map(r=>{
     const me=r.username&&r.username===mine;
+    const grade=typeof gradeName==='function'?gradeName(r.grade):r.grade||'';
     return `<button type="button" class="hallrow${me?' me':''}" data-act="${me?'hallMe':'hallChat'}" data-id="${esc(r.username)}">
-      <b class="hallrank">${hallRank(r.rank)}</b><span class="halle">${hallLook(r.look)}</span>
-      <span class="hallwho"><b>${esc(r.name||'Farmer')}${r.online?'<i class="ondot" title="Online"></i>':''}</b><small>${esc(r.username||'')} · ${esc(typeof gradeName==='function'?gradeName(r.grade):r.grade||'')}${me?' · You':''}</small></span>
-      <span class="hallstat"><b>${r.score}</b><small>${hallAcc(r)} · ${r.cleared} levels · ${r.stars} ★</small></span>
+      <span class="halle">${hallLook(r.look)}</span>
+      <span class="hallwho"><b>${esc(r.name||'Farmer')}${r.online?'<i class="ondot" title="Online"></i>':''}</b><small>${esc(r.username||'')}${grade?' · '+esc(grade):''}${me?' · You':''}</small></span>
+      <span class="hallstat"><b>Lv ${r.level||1}</b><small>⭐ ${r.stars||0} · 🪙 ${r.coins||0}</small></span>
     </button>`;
   }).join('');
+  hallPaintPeer();
 }
 function hallPaintChat(){
   const box=$('#hallChat'),title=$('#hallTitle'),log=$('#hallLog'),fine=$('#hallFine');
@@ -108,23 +110,33 @@ function hallPaintChat(){
   const on=!!HALL.thread;
   root.classList.toggle('split',on);box.hidden=!on;if(!on)return;
   const row=(HALL.rows||[]).find(r=>r.username===HALL.thread);
-  title.textContent=HALL.thread==='hall'?'Farm chat':(row&&row.name)||HALL.thread;
+  title.textContent=HALL.thread==='hall'?'Everyone':(row&&row.name)||HALL.thread;
+  hallPaintPeer();
   const mine=hallMine(),signed=typeof cloudIsAccount==='function'&&cloudIsAccount();
-  log.innerHTML=(HALL.lines||[]).map(m=>`<div class="hallmsg${m.from===mine?' mine':''}"><span class="halle">${hallLook(m.look)}</span><div><b>${esc(m.name||m.from||'')}</b> <small>${esc(hallWhen(m.at))}</small><p>${esc(m.text||'')}</p></div></div>`).join('')||`<p class="muted">${signed?'No messages yet. Say hello.':'Sign in and open a saved child to chat.'}</p>`;
+  log.innerHTML=(HALL.lines||[]).map(m=>{
+    const body=m.kind==='voice'||m.voice?`<button type="button" class="hallvoice" data-act="hallPlay" data-id="${esc(m.id)}">▶ Voice</button>`:`<p>${esc(m.text||'')}</p>`;
+    return `<div class="hallmsg${m.from===mine?' mine':''}"><span class="halle">${hallLook(m.look)}</span><div><b>${esc(m.name||m.from||'')}</b> <small>${esc(hallWhen(m.at))}</small>${body}</div></div>`;
+  }).join('')||`<p class="muted">${signed?'No messages yet. Say hello, or send a voice message.':'Sign in and open a saved child to chat.'}</p>`;
   log.scrollTop=log.scrollHeight;
   const form=$('#hallForm');
   if(form)form.hidden=!signed;
-  fine.textContent=signed?(HALL.ready?'Be kind. A grown-up can read this chat.':'Connecting the chat…'):'Sign in and open a saved child to chat.';
+  if(!HALL.voiceRec)fine.textContent=signed?(HALL.ready?'Be kind. A grown-up can read this chat. Tap the mic to send a voice message.':'Connecting the chat…'):'Sign in and open a saved child to chat.';
+}
+function hallPaintPeer(){
+  const sub=$('#hallPeer');if(!sub)return;
+  const row=(HALL.rows||[]).find(r=>r.username===HALL.thread);
+  sub.textContent=row?hallStats(row):'';
 }
 function hallPaint(){hallPaintList();hallPaintChat()}
 async function hallLoad(quiet){
   try{
     const rows=await cloudFetch(cloudConfig().dataBase+'/api/v1/board',{});
     HALL.rows=Array.isArray(rows)?rows:[];HALL.note='';
-  }catch(e){if(!quiet){HALL.rows=[];HALL.note='The leaderboard did not load.'}}
+  }catch(e){if(!quiet){HALL.rows=[];HALL.note='Farm Chat did not load.'}}
   if(HALL.open)hallPaintList();
 }
 async function hallOpenThread(id){
+  hallVoiceCancel();
   HALL.thread=id;HALL.lines=[];HALL.note='';hallPaint();
   if(!(typeof cloudIsAccount==='function'&&cloudIsAccount()))return;
   const as=cloudRead().childId;
@@ -142,7 +154,8 @@ function hallIncoming(msg){
     hallPaintChat();return;
   }
   if(!HALL.open){HALL.unread++;hallPaintMarks()}
-  if(typeof toast==='function')toast((msg.name||'Farmer')+': '+String(msg.text||'').slice(0,80));
+  const preview=msg.kind==='voice'||msg.voice?'Voice message':String(msg.text||'').slice(0,80);
+  if(typeof toast==='function')toast((msg.name||'Farmer')+': '+preview);
 }
 function hallDrop(){
   HALL.ready=false;HALL.childId=null;
@@ -189,6 +202,101 @@ document.addEventListener('keydown',e=>{
 },true);
 setInterval(()=>{if(HALL.ws&&HALL.ws.readyState===1)HALL.ws.send('{"type":"ping"}')},20000);
 setInterval(()=>{if((!HALL.ws||HALL.ws.readyState>1)&&!HALL.opening)hallConnect()},8000);
-Object.assign(ACT,{linkLamp,hallOpen,hallClose,hallHold,hallChat,hallHall,hallList,hallMe});
+function hallFine(text){const fine=$('#hallFine');if(fine)fine.textContent=text}
+function hallSilence(){
+  hallVoiceCancel();
+  if(HALL.audio){try{HALL.audio.pause()}catch(e){}HALL.audio=null;HALL.audioId=null}
+}
+function hallVoiceCancel(){
+  HALL.voiceGen=(HALL.voiceGen||0)+1;
+  HALL.voiceSend=false;HALL.voiceStopping=false;HALL.voiceCapped=false;
+  clearTimeout(HALL.voiceTimer);HALL.voiceTimer=null;
+  const rec=HALL.voiceRec;HALL.voiceRec=null;
+  if(rec){try{rec.ondataavailable=null;rec.onstop=null;if(rec.state!=='inactive')rec.stop()}catch(e){}}
+  const stream=HALL.voiceStream;HALL.voiceStream=null;
+  if(stream)stream.getTracks().forEach(t=>{try{t.stop()}catch(e){}});
+  hallVoicePaint(false);
+}
+function hallVoiceMime(){
+  if(typeof MediaRecorder==='undefined'||!MediaRecorder.isTypeSupported)return '';
+  if(MediaRecorder.isTypeSupported('audio/webm;codecs=opus'))return 'audio/webm;codecs=opus';
+  if(MediaRecorder.isTypeSupported('audio/mp4'))return 'audio/mp4';
+  if(MediaRecorder.isTypeSupported('audio/webm'))return 'audio/webm';
+  return '';
+}
+function hallVoiceCleanMime(raw){return String(raw||'audio/webm').split(';')[0].trim().toLowerCase()||'audio/webm'}
+function hallVoicePaint(on){
+  const btn=document.querySelector('#hallForm .hallmic');if(!btn)return;
+  btn.classList.toggle('live',!!on);
+  btn.textContent=on?'⏹️':'🎙️';
+  btn.setAttribute('aria-label',on?'Send the voice message':'Record a voice message');
+  if(on)hallFine('Recording… tap the mic again to send. It stops after 15 seconds.');
+}
+function hallMic(){
+  if(!HALL.thread)return;
+  if(HALL.voiceRec){hallVoiceFinish(true);return}
+  if(!(typeof cloudIsAccount==='function'&&cloudIsAccount())){hallFine('Sign in and open a saved child to chat.');return}
+  if(!HALL.ws||HALL.ws.readyState!==1||!HALL.ready){hallFine('Chat is still connecting.');return}
+  hallVoiceBegin();
+}
+function hallVoiceBegin(){
+  if(typeof voiceStop==='function')voiceStop();
+  if(!navigator.mediaDevices||typeof MediaRecorder==='undefined'){hallFine('This browser cannot record a voice message.');return}
+  const gen=(HALL.voiceGen||0)+1;HALL.voiceGen=gen;
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+    if(gen!==HALL.voiceGen||!HALL.open||!HALL.thread){stream.getTracks().forEach(t=>t.stop());return}
+    const pick=hallVoiceMime();
+    let rec;
+    try{rec=pick?new MediaRecorder(stream,{mimeType:pick,audioBitsPerSecond:20000}):new MediaRecorder(stream,{audioBitsPerSecond:20000})}
+    catch(e){try{rec=new MediaRecorder(stream)}catch(err){stream.getTracks().forEach(t=>t.stop());hallFine('This browser cannot record a voice message.');return}}
+    const chunks=[];let size=0;
+    HALL.voiceStream=stream;HALL.voiceRec=rec;HALL.voiceSend=false;HALL.voiceStopping=false;HALL.voiceCapped=false;
+    rec.ondataavailable=ev=>{
+      if(!ev.data||!ev.data.size||HALL.voiceCapped)return;
+      chunks.push(ev.data);size+=ev.data.size;
+      if(size>60000){HALL.voiceCapped=true;hallVoiceFinish(true)}
+    };
+    rec.onstop=()=>{
+      stream.getTracks().forEach(t=>{try{t.stop()}catch(e){}});
+      if(HALL.voiceStream===stream)HALL.voiceStream=null;
+      const send=HALL.voiceSend;HALL.voiceSend=false;HALL.voiceRec=null;HALL.voiceStopping=false;
+      hallVoicePaint(false);
+      if(!send||!HALL.thread)return;
+      const blob=new Blob(chunks,{type:rec.mimeType||pick||'audio/webm'});
+      if(blob.size<400){hallFine('Hold a little longer, then tap the mic to send.');return}
+      if(blob.size>80000){hallFine('That voice message is too long. Try a shorter one.');return}
+      const reader=new FileReader();
+      reader.onload=()=>{const s=String(reader.result||''),i=s.indexOf(',');hallSendVoice(i>=0?s.slice(i+1):s,hallVoiceCleanMime(blob.type))};
+      reader.onerror=()=>hallFine('That voice message did not send.');
+      reader.readAsDataURL(blob);
+    };
+    try{rec.start(200)}catch(e){hallVoiceCancel();hallFine('This browser cannot record a voice message.');return}
+    hallVoicePaint(true);
+    HALL.voiceTimer=setTimeout(()=>hallVoiceFinish(true),15000);
+  }).catch(()=>hallFine('Allow the microphone to send a voice message.'));
+}
+function hallVoiceFinish(send){
+  if(!HALL.voiceRec||HALL.voiceStopping)return;
+  HALL.voiceStopping=true;HALL.voiceSend=!!send;
+  clearTimeout(HALL.voiceTimer);HALL.voiceTimer=null;
+  const rec=HALL.voiceRec;
+  if(rec.state!=='inactive'){try{rec.stop()}catch(e){HALL.voiceRec=null;HALL.voiceStopping=false;hallVoicePaint(false)}}
+}
+function hallSendVoice(b64,mime){
+  if(!HALL.thread||!b64)return;
+  if(!HALL.ws||HALL.ws.readyState!==1||!HALL.ready){hallFine('Chat is still connecting.');return}
+  HALL.ws.send(JSON.stringify({type:'send',to:HALL.thread,voice:b64,mime:mime||'audio/webm'}));
+  hallFine('Voice message sent.');
+}
+function hallPlay(d){
+  const m=(HALL.lines||[]).find(l=>l.id===d.id);if(!m||!m.voice)return;
+  if(HALL.audio&&HALL.audioId===m.id&&!HALL.audio.paused){HALL.audio.pause();return}
+  if(HALL.audio){try{HALL.audio.pause()}catch(e){}}
+  const mime=hallVoiceCleanMime(m.mime||'audio/webm');
+  const audio=new Audio('data:'+mime+';base64,'+m.voice);
+  HALL.audio=audio;HALL.audioId=m.id;
+  audio.play().catch(()=>hallFine('This voice message could not play.'));
+}
+Object.assign(ACT,{linkLamp,hallOpen,hallClose,hallHold,hallChat,hallHall,hallList,hallMe,hallMic,hallPlay});
 linkWatch();
 hallConnect();

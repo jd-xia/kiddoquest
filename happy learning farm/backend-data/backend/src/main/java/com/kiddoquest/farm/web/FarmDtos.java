@@ -51,11 +51,12 @@ public final class FarmDtos {
             List<String> notes) {
     }
 
-    public record BoardEntry(int rank, String username, String name, String grade, String look, int cleared,
-            int questions, int firstTry, Integer accuracy, int stars, int score, boolean online) {
+    public record BoardEntry(String username, String name, String grade, String look, int cleared,
+            int questions, int firstTry, Integer accuracy, int stars, int score, boolean online, int level, long coins) {
     }
 
-    public record ChatLine(String id, String from, String name, String look, String text, Instant at) {
+    public record ChatLine(String id, String from, String name, String look, String text, Instant at, String kind,
+            String voice, String mime) {
     }
 
     public record ChatTicket(String ticket) {

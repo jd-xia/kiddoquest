@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
@@ -81,6 +83,17 @@ class ChatSocketTest {
         String direct = waitFor(rightIn, "Just us");
         assertTrue(direct.contains("\"room\":\"P0000001\""));
         assertTrue(messages.count() >= 2);
+
+        Thread.sleep(900);
+        rightIn.clear();
+        byte[] clip = new byte[5000];
+        Arrays.fill(clip, (byte) 7);
+        String voice = Base64.getEncoder().encodeToString(clip);
+        left.sendMessage(new TextMessage(
+                "{\"type\":\"send\",\"to\":\"P0000002\",\"voice\":\"" + voice + "\",\"mime\":\"audio/webm\"}"));
+        String heard = waitFor(rightIn, "\"kind\":\"voice\"");
+        assertTrue(heard.contains("audio/webm"));
+        assertTrue(heard.contains(voice.substring(0, 40)));
     }
 
     private WebSocketSession open(String ticket, List<String> inbox) throws Exception {

@@ -6,6 +6,7 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 @Entity
@@ -31,6 +32,17 @@ public class FarmMessage {
 
     @Column(nullable = false, length = 180)
     private String body;
+
+    /** "text" or "voice". Older rows are text. */
+    @Column(length = 8)
+    private String kind;
+
+    @Column(name = "voice_mime", length = 40)
+    private String voiceMime;
+
+    @Lob
+    @Column(name = "voice_data")
+    private String voiceData;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -81,6 +93,30 @@ public class FarmMessage {
 
     public void setBody(String body) {
         this.body = body;
+    }
+
+    public String getKind() {
+        return kind == null || kind.isBlank() ? "text" : kind;
+    }
+
+    public void setKind(String kind) {
+        this.kind = kind;
+    }
+
+    public String getVoiceMime() {
+        return voiceMime;
+    }
+
+    public void setVoiceMime(String voiceMime) {
+        this.voiceMime = voiceMime;
+    }
+
+    public String getVoiceData() {
+        return voiceData;
+    }
+
+    public void setVoiceData(String voiceData) {
+        this.voiceData = voiceData;
     }
 
     public Instant getCreatedAt() {

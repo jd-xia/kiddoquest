@@ -74,6 +74,30 @@ public final class BoardRanks {
         return safe(nameA).compareToIgnoreCase(safe(nameB));
     }
 
+    /** Same steps as farmLevel() in the game: 20 XP, then 40, then 60, and so on. */
+    public static int farmLevel(int xp) {
+        int left = Math.max(0, xp);
+        int level = 1;
+        int need = 20;
+        while (left >= need && level < 200) {
+            left -= need;
+            level++;
+            need = 20 * level;
+        }
+        return level;
+    }
+
+    public static long coins(JsonNode player) {
+        if (player == null || !player.isObject()) {
+            return 0;
+        }
+        long gems = player.path("gems").asLong(0);
+        if (gems < 0) {
+            return 0;
+        }
+        return Math.min(gems, 1_000_000_000L);
+    }
+
     private static int shown(Integer accuracy) {
         return accuracy == null ? -1 : accuracy;
     }

@@ -45,7 +45,7 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
-        session.setTextMessageSizeLimit(4096);
+        session.setTextMessageSizeLimit(160 * 1024);
     }
 
     @Override
@@ -67,7 +67,12 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
                 return;
             }
             if ("send".equals(type)) {
-                speak(session, body.path("to").asText(""), body.path("text").asText(""));
+                String voice = body.path("voice").asText("");
+                if (!voice.isBlank()) {
+                    speakVoice(session, body.path("to").asText(""), voice, body.path("mime").asText(""));
+                } else {
+                    speak(session, body.path("to").asText(""), body.path("text").asText(""));
+                }
             }
         } catch (NotFoundException ex) {
             send(session, Map.of("type", "error", "message", "That farm was not found."));
@@ -100,6 +105,21 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
             return;
         }
         Sent sent = chat.send(owner, childId, to, text);
+        fan(sent);
+    }
+
+    private void speakVoice(WebSocketSession session, String to, String voice, String mime) throws IOException {
+        String owner = String.valueOf(session.getAttributes().get("owner"));
+        String childId = (String) session.getAttributes().get("childId");
+        if (childId == null) {
+            send(session, Map.of("type", "error", "message", "Open a saved child before chatting."));
+            return;
+        }
+        Sent sent = chat.sendVoice(owner, childId, to, voice, mime);
+        fan(sent);
+    }
+
+    private void fan(Sent sent) {
         if ("hall".equals(sent.other())) {
             for (String username : Set.copyOf(byUser.keySet())) {
                 deliver(username, sent.line(), "hall");
@@ -122,6 +142,11 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
         payload.put("name", line.name());
         payload.put("look", line.look());
         payload.put("text", line.text());
+        payload.put("kind", line.kind() == null ? "text" : line.kind());
+        if (line.voice() != null) {
+            payload.put("voice", line.voice());
+            payload.put("mime", line.mime() == null ? "" : line.mime());
+        }
         payload.put("at", line.at() == null ? "" : line.at().toString());
         payload.put("room", room);
         for (WebSocketSession session : Set.copyOf(sessions)) {

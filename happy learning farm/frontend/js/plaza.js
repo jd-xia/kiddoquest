@@ -518,7 +518,7 @@ function rTown(){
     <div class="paintbar" id="paintbar">🎨 Paint mode: tap anyone or anything on the farm to draw your own!</div>
   </div>
   <p class="muted townhint">Tap the ground to walk and drag sideways to turn the camera. Tap a field patch to plant. Walk into a building to go inside. Harvested crops can be sold at the market.</p>
-  <div class="places" id="places" role="menu"><b class="places-title">🗺️ Go to…</b>${quick}<button class="b ghost sm" data-act="hallOpen">🏆 Leaderboard</button><button class="b ghost sm" data-act="mayorTalk">🐻 How to play</button></div>
+  <div class="places" id="places" role="menu"><b class="places-title">🗺️ Go to…</b>${quick}<button class="b ghost sm" data-act="hallOpen">💬 Farm Chat</button><button class="b ghost sm" data-act="mayorTalk">🐻 How to play</button></div>
   <div class="sidebtns">${typeof cloudIsAccount==='function'&&cloudIsAccount()?'<button class="sbtn" data-act="cloudSync" aria-label="Sync this farm">☁️<span>Sync</span></button>':''}<button class="sbtn" data-act="places" aria-label="Places" aria-expanded="false">🗺️<span>Places</span></button>
     <button class="sbtn paintbtn ${PAINT?'on':''}" data-act="paint" aria-pressed="${PAINT}" aria-label="Paint the farm">🖌️<span>Paint</span></button>
     <button class="sbtn bag" data-act="quick" data-id="barn" aria-label="Backpack: open the barn">🎒<span>Backpack</span></button></div>
