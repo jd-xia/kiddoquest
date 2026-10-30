@@ -75,7 +75,7 @@ public class SyncService {
             incoming = validator.sanitize(merged.node(), child.getDisplayName(), child.getGrade(), child.getLook(), now);
             notes.addAll(merged.notes());
         }
-        SyncResponse response = decide(child, snap, incoming, request, notes, now);
+        SyncResponse response = decide(child, snap, incoming, request, notes, now, email);
         if (!"conflict".equals(response.status())) {
             remember(childId, request.idempotencyKey(), response, now);
         }
@@ -83,32 +83,41 @@ public class SyncService {
     }
 
     private SyncResponse decide(ChildProfile child, GameSnapshot snap, ObjectNode incoming, SyncRequest request,
-            List<String> notes, Instant now) {
+            List<String> notes, Instant now, String email) {
         if ("keep_server".equals(request.policy())) {
             if (snap == null) {
                 throw new SyncRejectedException("There is no saved farm yet. This device was not changed.");
             }
-            return new SyncResponse("server", snap.getRevision(), child.getId(), read(snap), null, List.of());
+            return described("server", snap, child.getId(), read(snap), null, List.of());
         }
         String hash = ContentHash.sha256(mapper, incoming);
         if (snap != null && hash.equals(snap.getContentHash())) {
-            return new SyncResponse("unchanged", snap.getRevision(), child.getId(), read(snap), null, List.of("Already the same."));
+            return described("unchanged", snap, child.getId(), read(snap), null, List.of("Already the same."));
         }
         boolean force = "keep_local".equals(request.policy()) || "merge".equals(request.policy());
         if ("upload".equals(request.policy())) {
             long revision = snap == null ? 0 : snap.getRevision();
             boolean mismatch = (snap == null && request.baseRevision() != 0) || (snap != null && request.baseRevision() != revision);
             if (mismatch) {
-                return new SyncResponse("conflict", revision, child.getId(), null, snap == null ? null : read(snap),
-                        List.of("This device and the saved farm both changed. Nothing was overwritten."));
+                return described("conflict", snap, child.getId(), null, snap == null ? null : read(snap),
+                        List.of("The saved farm is a different version. Nothing was overwritten."));
             }
         } else if (!force) {
             throw new SyncRejectedException("That sync choice is not available.");
         }
         long previous = snap == null ? 0 : read(snap).path("gems").asLong(0);
         validator.checkCoins(previous, snap == null ? null : snap.getUpdatedAt(), incoming.path("gems").asLong(0), request.policy(), now);
-        GameSnapshot stored = childService.store(child, snap, incoming, now);
-        return new SyncResponse("synced", stored.getRevision(), child.getId(), incoming, null, notes);
+        GameSnapshot stored = childService.store(child, snap, incoming, now, email);
+        return described("synced", stored, child.getId(), incoming, null, notes);
+    }
+
+    private SyncResponse described(String status, GameSnapshot snap, String childId, JsonNode player, JsonNode serverPlayer,
+            List<String> notes) {
+        long revision = snap == null ? 0 : snap.getRevision();
+        Instant updatedAt = snap == null ? null : snap.getUpdatedAt();
+        String updatedBy = snap == null ? null : snap.getUpdatedBy();
+        String hash = snap == null ? null : snap.getContentHash();
+        return new SyncResponse(status, revision, childId, player, serverPlayer, notes, updatedAt, updatedBy, hash);
     }
 
     private void remember(String childId, String key, SyncResponse response, Instant now) {

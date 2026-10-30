@@ -1,8 +1,7 @@
 /* Optional account sync. Loading this file does not contact a server.
    After a Google account is linked and a child farm is open, that farm is checked about once a minute.
-   Same sync copy with new changes on this device: upload quietly. Different sync copies: a dialog
-   shows both asset lists, the total value, and a recommendation. The player chooses.
-   Guest play never calls the server. */
+   The same version uploads quietly. An older device asks before replacing the newer saved farm.
+   A device that is ahead of the saved farm stops and waits for a choice. Guest play never calls the server. */
 function cloudConfig(){
   const cfg=window.HMF_CLOUD||{};
   const base=v=>v==null?'http://localhost:8080':String(v).replace(/\/$/,'');
@@ -16,7 +15,7 @@ function cloudIsAccount(){const c=cloudRead();return c.mode==='account'&&!!c.chi
 function cloudRevision(id){const n=Number(localStorage.getItem('hmf-rev-'+id)||'0');return Number.isFinite(n)&&n>=0?n:0}
 function cloudSetRevision(id,rev){try{localStorage.setItem('hmf-rev-'+id,String(rev||0))}catch(e){}}
 function cloudRememberActive(){try{const c=cloudRead();if(c.mode==='account'&&c.childId)localStorage.setItem('hmf-account-cache-'+c.childId,JSON.stringify(DATA))}catch(e){}}
-function cloudStatusLine(){return cloudIsAccount()?'After sign-in, a new change on the same sync copy uploads by itself. If the sync copies differ, you choose. The dialog recommends the copy with the higher total value.':'Progress is saved on this device. Sign-in is optional and is never required to play.'}
+function cloudStatusLine(){return cloudIsAccount()?'The same version uploads by itself. If the saved farm is newer, you choose. If this device is ahead, nothing is overwritten until you choose.':'Progress is saved on this device. Sign-in is optional and is never required to play.'}
 function cloudTopActions(){return cloudIsAccount()?'<button class="pill" data-act="cloudSync" aria-label="Compare and sync this farm">☁️ Sync</button>':''}
 const CLOUD_KID_MAX=5;
 let cloudKidList=null,cloudKidLoading=false,cloudKidStamp=0;
@@ -62,7 +61,7 @@ function cloudSaveLocalHtml(){
 }
 function cloudBarHtml(){
   const c=cloudRead(),signed=!!cloudToken(),label=c.session&&(c.session.email||c.session.displayName),who=signed&&label?`Signed in as ${esc(label)}. `:'';
-  if(c.mode==='account')return `<div class="cloudbar"><h3>Saved farm</h3><p class="syncnote">${esc(cloudSyncNotice(c.childId))}</p><p class="muted">${who}A new change on the same sync copy uploads by itself. If the sync copies differ, you choose. The dialog recommends the copy worth more.</p><div class="row">
+  if(c.mode==='account')return `<div class="cloudbar"><h3>Saved farm</h3><p class="syncnote">${esc(cloudSyncNotice(c.childId))}</p><p class="muted">${who}The same version uploads by itself. If the saved farm is newer, you choose. If this device is ahead, sync waits.</p><div class="row">
     <button class="b" data-act="cloudSync">☁️ Sync</button><button class="b ghost" data-act="cloudChildren">Saved farms</button><button class="b ghost" data-act="cloudCloseCurrent">Close this child</button>
     <button class="b ghost" data-act="cloudAskGuest">Guest farm</button>
     ${signed?'<button class="b ghost" data-act="cloudSwitchAccount">Switch account</button><button class="b ghost" data-act="cloudLogout">Sign out</button>':'<button class="b" data-act="cloudLogin">Sign in</button>'}</div></div>`;
@@ -360,10 +359,26 @@ function cloudStarsOf(p){if(!p||!p.lv)return 0;return Object.values(p.lv).reduce
 function cloudBaseKey(id){return 'hmf-sync-base-'+id}
 function cloudReadBase(id){try{return localStorage.getItem(cloudBaseKey(id))}catch(e){return null}}
 function cloudWriteBase(id,material){if(!id)return;try{localStorage.setItem(cloudBaseKey(id),material==null?cloudMaterial():material)}catch(e){}}
+function cloudCanonical(v){
+  if(v==null||typeof v!=='object')return v;
+  if(Array.isArray(v))return v.map(cloudCanonical);
+  const o={};
+  Object.keys(v).sort().forEach(k=>{o[k]=cloudCanonical(v[k])});
+  return o;
+}
+async function cloudPlayerHash(player){
+  if(!player)return '';
+  try{
+    if(!window.crypto||!crypto.subtle)return '';
+    const bytes=new TextEncoder().encode(JSON.stringify(cloudCanonical(player)));
+    const buf=await crypto.subtle.digest('SHA-256',bytes);
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }catch(e){return ''}
+}
 function cloudSameFarm(a,b){
   if(!a||!b)return false;
   const pick=p=>({gems:p.gems||0,time:p.time||0,name:p.name||'',grade:p.grade||'',look:p.look||'',lv:p.lv||{},farm:p.farm||{},sessions:p.sessions||[],seen:p.seen||{}});
-  try{return JSON.stringify(pick(a))===JSON.stringify(pick(b))}catch(e){return false}
+  try{return JSON.stringify(cloudCanonical(pick(a)))===JSON.stringify(cloudCanonical(pick(b)))}catch(e){return false}
 }
 function cloudCropValue(cost,n){return n>0?Math.max(1,Math.round(n*cost*1.2/4)):0}
 function cloudWorth(p){
@@ -415,53 +430,64 @@ function cloudWorth(p){
   add('Farm level',level,0);
   return {lines,total:coins+cropCoins+fishCoins+animalCoins+decorCoins+landCoins+clothCoins+gear+grow,stars};
 }
-function cloudAdvice(local,remote){
-  const a=cloudWorth(local),b=cloudWorth(remote);
-  if(!remote)return {side:'local',text:'There is no saved farm yet. Recommended: keep this device.'};
-  if(a.total!==b.total){
-    const side=a.total>b.total?'local':'server';
-    const high=Math.max(a.total,b.total),low=Math.min(a.total,b.total);
-    const who=side==='local'?'This device':'The saved farm';
-    return {side,text:who+' is worth more ('+high+' 🪙 vs '+low+' 🪙). Recommended: keep '+(side==='local'?'this device':'the saved farm')+'.'};
-  }
-  if(a.stars!==b.stars){
-    const side=a.stars>b.stars?'local':'server';
-    return {side,text:'Both are worth '+a.total+' 🪙. '+(side==='local'?'This device':'The saved farm')+' has more stars ('+Math.max(a.stars,b.stars)+' vs '+Math.min(a.stars,b.stars)+'). Recommended: keep '+(side==='local'?'this device':'the saved farm')+'.'};
-  }
-  return {side:null,text:'Both are worth '+a.total+' 🪙, with '+a.stars+' stars. Either copy is fine.'};
-}
-function cloudSideHtml(title,p,when,copy,recommended){
+function cloudSideHtml(title,p,meta,recommended){
   const w=cloudWorth(p);
   const lines=p?w.lines.map(l=>{const extra=l.coins&&!String(l.detail).includes('🪙')?' · '+l.coins+' 🪙':'';return `<p>${esc(l.label)}: <b>${esc(l.detail)}</b>${extra}</p>`}).join('')+`<p class="synctotal">Total value: <b>${w.total} 🪙</b></p>`:'<p>Nothing saved yet</p>';
-  return `<div class="synccard${recommended?' newer':''}"><div class="syncwho">${esc(title)}${recommended?' <span class="tag good">Recommended</span>':''}</div><p><b>${esc(p&&p.name||'Farm')}</b></p>${lines}<p class="muted">${esc(when)}</p><p class="muted">${esc(copy)}</p></div>`;
+  const hash=meta&&meta.hash?String(meta.hash).slice(0,12):'';
+  const facts=`<p>Revision <b>${esc(meta&&meta.version)}</b></p><p>Last updated <b>${esc(meta&&meta.updated)}</b></p><p>Last saved by <b>${esc(meta&&meta.who)}</b></p>${hash?`<p>SHA-256 <b>${esc(hash)}…</b></p>`:''}`;
+  return `<div class="synccard${recommended?' newer':''}"><div class="syncwho">${esc(title)}${recommended?' <span class="tag good">Recommended</span>':''}</div><p><b>${esc(p&&p.name||'Farm')}</b></p>${facts}${lines}</div>`;
 }
-/* same: the farms match. upload: same sync copy, this device has new changes. conflict: the sync copies differ. */
-function cloudChoose(localRev,serverRev,same){
-  if(same)return 'same';
-  if(Number(serverRev)===Number(localRev))return 'upload';
-  return 'conflict';
+/* same: content matches. upload: same version, this device has new changes.
+   behind: this device is older. ahead: this device is newer, which should be rare. unclear: do not guess. */
+function cloudJudge(localRev,serverRev,same,localHash,serverHash){
+  const local=Number(localRev),remote=Number(serverRev);
+  const lh=localHash?String(localHash).toLowerCase():'';
+  const sh=serverHash?String(serverHash).toLowerCase():'';
+  const hashSame=!!(lh&&sh&&lh===sh);
+  if(same||hashSame)return 'same';
+  if(!Number.isFinite(local)||!Number.isFinite(remote))return 'unclear';
+  if(local===remote)return 'upload';
+  if(local<remote)return hashSame?'unclear':'behind';
+  if(local>remote)return hashSame?'unclear':'ahead';
+  return 'unclear';
+}
+function cloudActor(){
+  const s=cloudRead().session;
+  return s&&(s.email||s.displayName)||'This device';
 }
 function cloudDrawSync(remote){
   const el=$('#dlg');if(!el)return;
   const local=typeof cur==='function'?cur():null;
   const localRev=cloudRevision(cloudRead().childId);
   const remoteRev=remote&&Number(remote.revision)||0;
-  const localMs=cloudStamp(typeof DATA!=='undefined'?DATA.updated:0);
-  const serverMs=cloudStamp(remote&&remote.updatedAt);
-  const advice=cloudAdvice(local,remote&&remote.player);
-  cloudSyncRemote=remote&&remote.player?{player:remote.player,revision:remoteRev,updatedAt:remote.updatedAt||null}:null;
-  const keepLocal=`<button class="b${advice.side==='server'?' ghost':''} sm" data-act="cloudUpload" ${local?'':'disabled'}>Keep this device</button>`;
-  const keepServer=`<button class="b${advice.side==='local'?' ghost':''} sm" data-act="cloudDownload" ${cloudSyncRemote?'':'disabled'}>Keep the saved farm</button>`;
+  const localHash=remote&&remote.localHash||'';
+  const serverHash=remote&&remote.contentHash||'';
+  const relation=remote&&remote.relation||cloudJudge(localRev,remoteRev,false,localHash,serverHash);
+  const recommendRemote=relation==='behind';
+  const manualPick=relation==='ahead'||relation==='unclear';
+  cloudSyncRemote=remote&&remote.player?{player:remote.player,revision:remoteRev,updatedAt:remote.updatedAt||null,updatedBy:remote.updatedBy||'',contentHash:serverHash}:null;
+  const keepLocal=`<button class="b${recommendRemote||manualPick?' ghost':''} sm" data-act="cloudUpload" ${local?'':'disabled'}>Keep this device and upload</button>`;
+  const keepServer=`<button class="b${recommendRemote?'':' ghost'} sm" data-act="cloudDownload" ${cloudSyncRemote?'':'disabled'}>Use the saved farm${recommendRemote?' (Recommended)':''}</button>`;
+  const title=relation==='ahead'?'This device is newer than the saved farm':relation==='behind'?'The saved farm is newer':relation==='unclear'?'Sync needs your choice':'Which copy should we keep?';
+  const lead=relation==='ahead'
+    ?'This is not the usual case. This device has a higher revision than the saved farm. Nothing is overwritten until you choose.'
+    :relation==='behind'
+    ?'This device has an older revision. The saved farm is newer, so that copy is recommended. You can still keep this device and upload it.'
+    :relation==='unclear'
+    ?'Revision and content hash do not agree on which copy is newer. Nothing is overwritten until you choose.'
+    :'The revisions do not say which copy is newer. Nothing is overwritten until you choose.';
+  const localMeta={version:String(localRev),updated:cloudWhen(cloudStamp(typeof DATA!=='undefined'?DATA.updated:0)),who:cloudActor(),hash:localHash};
+  const remoteMeta={version:remote&&remote.player?String(remoteRev):'none',updated:cloudWhen(cloudStamp(remote&&remote.updatedAt)),who:remote&&remote.updatedBy||'Not recorded',hash:serverHash};
   el.className='show';
-  el.innerHTML=`<div class="dlg syncdlg"><div style="flex:1"><div class="dlg-name">Which copy should we keep?</div>
-    <p>${esc(advice.text)}</p>
-    <p class="muted syncmath">Total value adds coins, crops at the market sell price, fish at their prices, animals, decorations, land, clothes, fishing gear, and crops still growing. Stars and animal goods are shown, and they are not added as coins.</p>
+  el.innerHTML=`<div class="dlg syncdlg"><div style="flex:1"><div class="dlg-name">${esc(title)}</div>
+    <p class="${relation==='ahead'||relation==='unclear'?'syncwarn':'syncnote'}">${esc(lead)}</p>
+    <p class="muted syncmath">Revision ID decides which copy is newer. SHA-256 decides whether the farm data matches. Last updated time and who saved last are shown to help you choose, not to pick the winner. Total value is coins plus crops, fish, animals, decorations, land, clothes, fishing gear, and crops still growing.</p>
     <div class="synccards">
-      ${cloudSideHtml('This device',local,cloudWhen(localMs),'Sync copy '+localRev,advice.side==='local')}
-      ${cloudSideHtml('Saved farm',remote&&remote.player,cloudWhen(serverMs),remote&&remote.player?'Sync copy '+remoteRev:'Not on the server yet',advice.side==='server')}
+      ${cloudSideHtml('This device',local,localMeta,false)}
+      ${cloudSideHtml('Saved farm',remote&&remote.player,remoteMeta,recommendRemote)}
     </div>
     <div class="dlg-btns">
-      ${advice.side==='server'?keepServer+keepLocal:keepLocal+keepServer}
+      ${recommendRemote?keepServer+keepLocal:keepLocal+keepServer}
       <button class="b ghost sm" data-act="cloudClose">Not now</button>
     </div></div></div>`;
 }
@@ -525,10 +551,14 @@ async function cloudRunSync(policy,reuse,quiet){
   try{
     const res=await cloudFetch(cloudConfig().dataBase+'/api/v1/children/'+encodeURIComponent(c.childId)+'/sync',{method:'POST',auth:true,json:{idempotencyKey:key,baseRevision:cloudRevision(c.childId),policy,player:cur()}});
     cloudLastKey=null;cloudLastMaterial=null;
-    if(res.status==='conflict'){cloudAutoHold=true;cloudPending=res;cloudConflictSig=(res.revision||0)+'|'+material;cloudDrawSync({player:res.serverPlayer,revision:res.revision,updatedAt:res.updatedAt,conflict:true});
-      cloudFetch(cloudConfig().dataBase+'/api/v1/children/'+encodeURIComponent(c.childId),{auth:true}).then(state=>{
+    if(res.status==='conflict'){cloudAutoHold=true;cloudPending=res;cloudConflictSig=(res.revision||0)+'|'+material;
+      const localHash=await cloudPlayerHash(typeof cur==='function'?cur():null);
+      const held=cloudJudge(cloudRevision(c.childId),res.revision,false,localHash,res.contentHash||'');
+      cloudDrawSync({player:res.serverPlayer,revision:res.revision,updatedAt:res.updatedAt,updatedBy:res.updatedBy,contentHash:res.contentHash,localHash,relation:held});
+      cloudFetch(cloudConfig().dataBase+'/api/v1/children/'+encodeURIComponent(c.childId),{auth:true}).then(async state=>{
         if(cloudBusy||!state||!$('#dlg')||!$('#dlg').classList.contains('show'))return;
-        cloudDrawSync({player:state.player||res.serverPlayer,revision:state.revision,updatedAt:state.updatedAt,conflict:true});
+        const hash=await cloudPlayerHash(typeof cur==='function'?cur():null);
+        cloudDrawSync({player:state.player||res.serverPlayer,revision:state.revision,updatedAt:state.updatedAt,updatedBy:state.updatedBy,contentHash:state.contentHash,localHash:hash,relation:cloudJudge(cloudRevision(c.childId),state.revision,false,hash,state.contentHash||'')});
       }).catch(()=>{});
       return}
     if(quiet){
@@ -555,6 +585,7 @@ async function cloudReconcile(opts){
   if(!manual&&(DLG||(el&&el.classList.contains('show'))))return;
   const c=cloudRead();
   if(c.mode!=='account'||!c.childId||!cloudToken()){if(manual)cloudTell('Open a saved farm before syncing.');return}
+  if(!manual&&cloudAutoHold)return;
   const local=typeof cur==='function'?cur():null;
   if(!local){if(manual)cloudTell('Open a saved farm before syncing.');return}
   const material=cloudMaterial();
@@ -563,8 +594,10 @@ async function cloudReconcile(opts){
   try{
     const state=await cloudFetch(cloudConfig().dataBase+'/api/v1/children/'+encodeURIComponent(c.childId),{auth:true});
     const localRev=cloudRevision(c.childId),serverRev=Number(state&&state.revision)||0;
-    const same=!!(state&&state.player&&cloudSameFarm(local,state.player));
-    const choice=cloudChoose(localRev,serverRev,same);
+    const localHash=await cloudPlayerHash(local);
+    const serverHash=state&&state.contentHash||'';
+    const same=!!(state&&state.player&&(cloudSameFarm(local,state.player)||(localHash&&serverHash&&localHash===serverHash.toLowerCase())));
+    const choice=cloudJudge(localRev,serverRev,same,localHash,serverHash);
     if(choice==='same'){
       cloudKeepCode(local,state&&state.username);if(local&&local.code)save();
       cloudMarkSynced(c.childId,serverRev,material);
@@ -577,11 +610,11 @@ async function cloudReconcile(opts){
       if(manual&&!cloudAutoHold){cloudClose();cloudTell('Uploaded. The saved farm now matches this device.')}
       return;
     }
-    const sig=serverRev+'|'+material;
+    const sig=serverRev+'|'+material+'|'+choice;
     if(!manual&&cloudConflictSig===sig)return;
     cloudConflictSig=sig;cloudAutoHold=true;
-    cloudPending={serverPlayer:state&&state.player,revision:serverRev,updatedAt:state&&state.updatedAt};
-    cloudDrawSync({player:state&&state.player,revision:serverRev,updatedAt:state&&state.updatedAt,conflict:true});
+    cloudPending={serverPlayer:state&&state.player,revision:serverRev,updatedAt:state&&state.updatedAt,updatedBy:state&&state.updatedBy,contentHash:state&&state.contentHash};
+    cloudDrawSync({player:state&&state.player,revision:serverRev,updatedAt:state&&state.updatedAt,updatedBy:state&&state.updatedBy,contentHash:serverHash,localHash,relation:choice});
   }catch(e){
     if(e.status===401){const c2=cloudRead();c2.session=null;cloudWrite(c2);cloudTell('Please sign in again. This farm is still on this device.')}
     else if(manual)cloudTell('The saved farm could not be loaded. This device was not changed.');

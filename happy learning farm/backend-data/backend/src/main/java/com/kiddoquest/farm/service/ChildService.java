@@ -88,7 +88,7 @@ public class ChildService {
         JsonNode raw = request.player() == null || request.player().isNull() ? blank(child) : request.player();
         ObjectNode player = validator.sanitize(raw, child.getDisplayName(), child.getGrade(), child.getLook(), now);
         validator.checkCoins(0, null, player.path("gems").asLong(0), "keep_local", now);
-        GameSnapshot snap = store(child, null, player, now);
+        GameSnapshot snap = store(child, null, player, now, writer(email));
         return state(child, snap);
     }
 
@@ -124,7 +124,7 @@ public class ChildService {
                 raw.put("grade", child.getGrade());
                 raw.put("look", child.getLook());
                 ObjectNode player = validator.sanitize(raw, child.getDisplayName(), child.getGrade(), child.getLook(), now);
-                snap = store(child, snap, player, now);
+                snap = store(child, snap, player, now, writer(child.getEmail()));
             } catch (SyncRejectedException ex) {
                 throw ex;
             } catch (Exception ex) {
@@ -147,7 +147,7 @@ public class ChildService {
     }
 
     @Transactional
-    public GameSnapshot store(ChildProfile child, GameSnapshot snap, ObjectNode player, Instant now) {
+    public GameSnapshot store(ChildProfile child, GameSnapshot snap, ObjectNode player, Instant now, String updatedBy) {
         try {
             if (snap == null) {
                 snap = new GameSnapshot();
@@ -162,6 +162,7 @@ public class ChildService {
             snap.setPlayerJson(mapper.writeValueAsString(player));
             snap.setContentHash(ContentHash.sha256(mapper, player));
             snap.setUpdatedAt(now);
+            snap.setUpdatedBy(writer(updatedBy));
             String nextName = player.path("name").asText(child.getDisplayName());
             requireUniqueName(child.getEmail(), nextName, child.getId());
             child.setDisplayName(nextName);
@@ -216,6 +217,11 @@ public class ChildService {
         }
     }
 
+    private static String writer(String email) {
+        String cleaned = cleanEmail(email);
+        return cleaned == null ? "This account" : cleaned;
+    }
+
     private static String cleanEmail(String email) {
         if (email == null) {
             return null;
@@ -246,7 +252,8 @@ public class ChildService {
             }
         }
         return new ChildState(child.getId(), child.getUsername(), child.getEmail(), child.getDisplayName(),
-                child.getGrade(), child.getLook(), revision, child.getUpdatedAt(), player);
+                child.getGrade(), child.getLook(), revision, snap == null ? child.getUpdatedAt() : snap.getUpdatedAt(), player,
+                snap == null ? null : snap.getContentHash(), snap == null ? null : snap.getUpdatedBy());
     }
 
     private ObjectNode blank(ChildProfile child) {

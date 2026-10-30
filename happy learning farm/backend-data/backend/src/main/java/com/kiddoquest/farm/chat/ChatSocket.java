@@ -45,7 +45,7 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
-        session.setTextMessageSizeLimit(160 * 1024);
+        session.setTextMessageSizeLimit(768 * 1024);
     }
 
     @Override

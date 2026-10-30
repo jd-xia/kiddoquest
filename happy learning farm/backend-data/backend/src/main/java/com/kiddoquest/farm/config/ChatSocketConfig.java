@@ -2,6 +2,8 @@ package com.kiddoquest.farm.config;
 
 import java.util.Map;
 
+import org.springframework.boot.web.servlet.ServletContextInitializer;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -11,6 +13,8 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 import org.springframework.web.socket.server.HandshakeInterceptor;
+
+import jakarta.websocket.server.ServerContainer;
 
 import com.kiddoquest.farm.chat.ChatSocket;
 import com.kiddoquest.farm.chat.ChatTickets;
@@ -25,6 +29,16 @@ public class ChatSocketConfig implements WebSocketConfigurer {
     public ChatSocketConfig(ChatSocket socket, ChatTickets tickets) {
         this.socket = socket;
         this.tickets = tickets;
+    }
+
+    @Bean
+    public ServletContextInitializer webSocketBuffer() {
+        return servletContext -> {
+            Object container = servletContext.getAttribute("jakarta.websocket.server.ServerContainer");
+            if (container instanceof ServerContainer server) {
+                server.setDefaultMaxTextMessageBufferSize(768 * 1024);
+            }
+        };
     }
 
     @Override

@@ -149,6 +149,7 @@ function hallChat(d){if(d&&d.id)hallOpenThread(d.id)}
 function hallHall(){hallOpenThread('hall')}
 function hallIncoming(msg){
   if(!msg||msg.type!=='chat')return;
+  if(msg.kind==='voice'||msg.voice)HALL.voiceWaiting=false;
   if(HALL.open&&HALL.thread===msg.room){
     if(!HALL.lines.some(l=>l.id===msg.id))HALL.lines.push(msg);
     hallPaintChat();return;
@@ -181,12 +182,19 @@ function hallConnect(){
       if(msg.type==='joined'){HALL.ready=true;if(HALL.open)hallPaintChat()}
       else if(msg.type==='chat')hallIncoming(msg);
       else if(msg.type==='presence'){const row=(HALL.rows||[]).find(r=>r.username===msg.username);if(row)row.online=!!msg.online;if(HALL.open)hallPaintList()}
-      else if(msg.type==='error'){const fine=$('#hallFine');if(fine&&HALL.open)fine.textContent=msg.message||'Chat did not send.';else if(typeof toast==='function')toast(msg.message||'Chat did not send.')}
+      else if(msg.type==='error'){HALL.voiceWaiting=false;const fine=$('#hallFine');if(fine&&HALL.open)fine.textContent=msg.message||'Chat did not send.';else if(typeof toast==='function')toast(msg.message||'Chat did not send.')}
     };
-    ws.onclose=()=>{if(HALL.ws!==ws)return;HALL.ws=null;HALL.ready=false;setTimeout(()=>hallConnect(),HALL_WAIT);HALL_WAIT=Math.min(15000,HALL_WAIT*2)};
+    ws.onclose=()=>{
+      if(HALL.ws!==ws)return;
+      const waiting=HALL.voiceWaiting;HALL.voiceWaiting=false;
+      HALL.ws=null;HALL.ready=false;
+      if(waiting&&HALL.open)hallFine('The voice message did not send. Try a shorter one.');
+      setTimeout(()=>hallConnect(),HALL_WAIT);HALL_WAIT=Math.min(15000,HALL_WAIT*2);
+    };
   }).catch(()=>{HALL.opening=false;setTimeout(()=>hallConnect(),HALL_WAIT);HALL_WAIT=Math.min(15000,HALL_WAIT*2)});
 }
 function hallSend(){
+  if(HALL.voiceRec){hallVoiceFinish(true);return}
   const input=$('#hallText');if(!input||!HALL.thread)return;
   const text=input.value.trim();if(!text)return;
   if(!HALL.ws||HALL.ws.readyState!==1||!HALL.ready){const fine=$('#hallFine');if(fine)fine.textContent='Chat is still connecting.';return}
@@ -209,7 +217,7 @@ function hallSilence(){
 }
 function hallVoiceCancel(){
   HALL.voiceGen=(HALL.voiceGen||0)+1;
-  HALL.voiceSend=false;HALL.voiceStopping=false;HALL.voiceCapped=false;
+  HALL.voiceSend=false;HALL.voiceStopping=false;HALL.voiceCapped=false;HALL.voiceStopPending=false;
   clearTimeout(HALL.voiceTimer);HALL.voiceTimer=null;
   const rec=HALL.voiceRec;HALL.voiceRec=null;
   if(rec){try{rec.ondataavailable=null;rec.onstop=null;if(rec.state!=='inactive')rec.stop()}catch(e){}}
@@ -230,7 +238,7 @@ function hallVoicePaint(on){
   btn.classList.toggle('live',!!on);
   btn.textContent=on?'⏹️':'🎙️';
   btn.setAttribute('aria-label',on?'Send the voice message':'Record a voice message');
-  if(on)hallFine('Recording… tap the mic again to send. It stops after 15 seconds.');
+  if(on)hallFine('Recording… tap the mic or Send. It stops after 15 seconds.');
 }
 function hallMic(){
   if(!HALL.thread)return;
@@ -250,11 +258,11 @@ function hallVoiceBegin(){
     try{rec=pick?new MediaRecorder(stream,{mimeType:pick,audioBitsPerSecond:20000}):new MediaRecorder(stream,{audioBitsPerSecond:20000})}
     catch(e){try{rec=new MediaRecorder(stream)}catch(err){stream.getTracks().forEach(t=>t.stop());hallFine('This browser cannot record a voice message.');return}}
     const chunks=[];let size=0;
-    HALL.voiceStream=stream;HALL.voiceRec=rec;HALL.voiceSend=false;HALL.voiceStopping=false;HALL.voiceCapped=false;
+    HALL.voiceStream=stream;HALL.voiceRec=rec;HALL.voiceSend=false;HALL.voiceStopping=false;HALL.voiceCapped=false;HALL.voiceStopPending=false;
     rec.ondataavailable=ev=>{
       if(!ev.data||!ev.data.size||HALL.voiceCapped)return;
       chunks.push(ev.data);size+=ev.data.size;
-      if(size>60000){HALL.voiceCapped=true;hallVoiceFinish(true)}
+      if(size>360000){HALL.voiceCapped=true;hallVoiceFinish(true)}
     };
     rec.onstop=()=>{
       stream.getTracks().forEach(t=>{try{t.stop()}catch(e){}});
@@ -264,29 +272,34 @@ function hallVoiceBegin(){
       if(!send||!HALL.thread)return;
       const blob=new Blob(chunks,{type:rec.mimeType||pick||'audio/webm'});
       if(blob.size<400){hallFine('Hold a little longer, then tap the mic to send.');return}
-      if(blob.size>80000){hallFine('That voice message is too long. Try a shorter one.');return}
+      if(blob.size>400000){hallFine('That voice message is too long. Try a shorter one.');return}
       const reader=new FileReader();
       reader.onload=()=>{const s=String(reader.result||''),i=s.indexOf(',');hallSendVoice(i>=0?s.slice(i+1):s,hallVoiceCleanMime(blob.type))};
       reader.onerror=()=>hallFine('That voice message did not send.');
       reader.readAsDataURL(blob);
     };
-    try{rec.start(200)}catch(e){hallVoiceCancel();hallFine('This browser cannot record a voice message.');return}
+    try{rec.start(250)}catch(e){hallVoiceCancel();hallFine('This browser cannot record a voice message.');return}
     hallVoicePaint(true);
+    if(HALL.voiceStopPending){HALL.voiceStopPending=false;hallVoiceFinish(true);return}
     HALL.voiceTimer=setTimeout(()=>hallVoiceFinish(true),15000);
   }).catch(()=>hallFine('Allow the microphone to send a voice message.'));
 }
 function hallVoiceFinish(send){
-  if(!HALL.voiceRec||HALL.voiceStopping)return;
-  HALL.voiceStopping=true;HALL.voiceSend=!!send;
+  const rec=HALL.voiceRec;if(!rec)return;
+  HALL.voiceSend=!!send;
   clearTimeout(HALL.voiceTimer);HALL.voiceTimer=null;
-  const rec=HALL.voiceRec;
-  if(rec.state!=='inactive'){try{rec.stop()}catch(e){HALL.voiceRec=null;HALL.voiceStopping=false;hallVoicePaint(false)}}
+  if(rec.state==='inactive'){HALL.voiceStopPending=true;return}
+  if(HALL.voiceStopping)return;
+  HALL.voiceStopping=true;
+  try{rec.stop()}catch(e){hallVoiceCancel();hallFine('That voice message did not send.')}
 }
 function hallSendVoice(b64,mime){
   if(!HALL.thread||!b64)return;
   if(!HALL.ws||HALL.ws.readyState!==1||!HALL.ready){hallFine('Chat is still connecting.');return}
-  HALL.ws.send(JSON.stringify({type:'send',to:HALL.thread,voice:b64,mime:mime||'audio/webm'}));
-  hallFine('Voice message sent.');
+  HALL.voiceWaiting=true;
+  try{HALL.ws.send(JSON.stringify({type:'send',to:HALL.thread,voice:b64,mime:mime||'audio/webm'}))}
+  catch(e){HALL.voiceWaiting=false;hallFine('That voice message did not send.');return}
+  hallFine('Sending the voice message…');
 }
 function hallPlay(d){
   const m=(HALL.lines||[]).find(l=>l.id===d.id);if(!m||!m.voice)return;

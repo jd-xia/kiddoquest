@@ -36,7 +36,7 @@ public final class FarmDtos {
     }
 
     public record ChildState(String id, String username, String email, String displayName, String grade, String look,
-            long revision, Instant updatedAt, JsonNode player) {
+            long revision, Instant updatedAt, JsonNode player, String contentHash, String updatedBy) {
     }
 
     public record SyncRequest(
@@ -48,7 +48,7 @@ public final class FarmDtos {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record SyncResponse(String status, long revision, String childId, JsonNode player, JsonNode serverPlayer,
-            List<String> notes) {
+            List<String> notes, Instant updatedAt, String updatedBy, String contentHash) {
     }
 
     public record BoardEntry(String username, String name, String grade, String look, int cleared,

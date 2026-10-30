@@ -7,7 +7,8 @@ import java.util.Set;
 /** A short voice clip stored as base64. The browser records it; the farm only keeps audio. */
 public final class ChatVoice {
 
-    public static final int MAX_BYTES = 80_000;
+    /** About fifteen seconds of a normal browser recording. */
+    public static final int MAX_BYTES = 400_000;
 
     private static final int MIN_BYTES = 200;
     private static final Set<String> TYPES = Set.of("audio/webm", "audio/mp4", "audio/ogg", "audio/mpeg", "audio/wav",

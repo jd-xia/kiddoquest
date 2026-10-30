@@ -31,6 +31,10 @@ public class GameSnapshot {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    /** Account that last wrote this snapshot. Empty on rows saved before this was recorded. */
+    @Column(name = "updated_by", length = 320)
+    private String updatedBy;
+
     public String getChildId() {
         return childId;
     }
@@ -69,5 +73,13 @@ public class GameSnapshot {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getUpdatedBy() {
+        return updatedBy;
+    }
+
+    public void setUpdatedBy(String updatedBy) {
+        this.updatedBy = updatedBy;
     }
 }

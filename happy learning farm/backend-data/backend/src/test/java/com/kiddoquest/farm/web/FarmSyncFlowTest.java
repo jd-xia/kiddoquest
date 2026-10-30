@@ -71,6 +71,8 @@ class FarmSyncFlowTest {
         JsonNode up = body(uploaded);
         org.junit.jupiter.api.Assertions.assertEquals("synced", up.path("status").asText());
         org.junit.jupiter.api.Assertions.assertEquals(2, up.path("revision").asLong());
+        org.junit.jupiter.api.Assertions.assertEquals("This account", up.path("updatedBy").asText());
+        org.junit.jupiter.api.Assertions.assertEquals(64, up.path("contentHash").asText().length());
 
         JsonNode conflict = body(sync(mia, child, "upload-key-0002", 1, "upload", player(25, "flowers")));
         org.junit.jupiter.api.Assertions.assertEquals("conflict", conflict.path("status").asText());
