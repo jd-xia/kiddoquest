@@ -789,9 +789,31 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .under .b4{left:84%;width:6px;height:6px;animation-duration:6.2s;animation-delay:.4s}
 .tugbar{height:12px;margin:8px 0 0;border-radius:99px;background:rgba(255,255,255,.16);overflow:hidden}
 .tugbar span{display:block;height:100%;background:linear-gradient(90deg,#7dffa6,#ffe56a);transition:width .45s ease}
+.tugbar.live{height:18px;background:rgba(8,20,40,.35);box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+.tugbar.live span{transition:width .08s linear}
+.under.pulling{cursor:pointer;touch-action:manipulation;user-select:none;box-shadow:0 0 0 3px #7dffa6,inset 0 -30px 40px rgba(0,16,32,.35)}
+.under.pulling .fighter{transition:top .08s linear}
+.under.pulling .line{transition:height .08s linear}
 .tugnote{margin:4px 0 8px}
+.leapshow{position:relative;height:360px;margin:8px 0 12px;border-radius:22px;overflow:hidden;background:linear-gradient(180deg,#d7f3ff 0 28%,#7ec8f0 28% 40%,#1d78c4 40% 72%,#08304f 72% 100%)}
+.leap-pond{position:absolute;left:0;right:0;top:28%;height:14%;border-top:4px solid rgba(255,255,255,.9);pointer-events:none}
+.leap-splash{position:absolute;left:50%;top:-8px;width:140px;height:36px;margin-left:-70px;border-radius:50%;background:rgba(255,255,255,.7);animation:splashing 3.4s ease forwards}
+.leap-fish{position:absolute;left:50%;bottom:8px;z-index:3;font-size:84px;line-height:1;filter:drop-shadow(0 10px 0 rgba(0,20,40,.25));animation:fishleap 3.4s ease forwards}
+.struggle{position:absolute;left:0;right:0;top:0;height:168px;display:flex;align-items:flex-end;justify-content:center;gap:6px;opacity:0;animation:struggleIn 3.4s ease forwards}
+.struggle .spray{font-size:40px;animation:spray 3.4s ease forwards}
+.hold{position:relative;width:168px;height:132px}
+.hold .hand{position:absolute;left:0;top:22px;width:168px;text-align:center;font-size:112px;line-height:1;animation:hug 3.4s ease forwards}
+.hold .catchfish{position:absolute;left:34px;top:0;font-size:92px;line-height:1;z-index:2;animation:wriggle 3.4s ease forwards}
+.leap-cap{position:absolute;left:12px;right:12px;bottom:14px;margin:0;text-align:center;color:#fff;font-family:"Lilita One",sans-serif;text-shadow:0 2px 0 rgba(0,0,0,.35)}
+@keyframes fishleap{0%{transform:translate(-50%,24px) rotate(-20deg);opacity:1}34%{transform:translate(-50%,-300px) rotate(18deg) scale(1.18)}50%{transform:translate(-50%,-250px) rotate(-8deg) scale(1.05);opacity:1}64%,100%{transform:translate(-50%,-250px);opacity:0}}
+@keyframes splashing{0%,16%{opacity:0;transform:scaleX(.5)}30%{opacity:1;transform:scaleX(1.2)}52%,100%{opacity:0}}
+@keyframes struggleIn{0%,52%{opacity:0}66%,100%{opacity:1}}
+@keyframes wriggle{0%,58%{transform:rotate(0)}66%{transform:rotate(-18deg) translateX(-8px) scale(1.04)}74%{transform:rotate(16deg) translateX(10px)}82%{transform:rotate(-14deg) translateX(-6px)}90%{transform:rotate(8deg)}100%{transform:rotate(-4deg)}}
+@keyframes hug{0%,58%{transform:scale(1.35) translateY(10px)}70%{transform:scale(1)}78%{transform:rotate(-8deg) scale(1.05)}86%{transform:rotate(7deg)}100%{transform:rotate(-2deg) scale(1)}}
+@keyframes spray{0%,60%{opacity:0;transform:translateY(10px)}72%{opacity:1;transform:translateY(-8px)}100%{opacity:.85;transform:translateY(-16px)}}
 .landdemo{margin:0 0 10px}
 .under.landing{box-shadow:0 0 0 3px #F5C24C,inset 0 -30px 40px rgba(0,16,32,.35)}
+.under.landing.pulling{box-shadow:0 0 0 3px #7dffa6,inset 0 -30px 40px rgba(0,16,32,.35)}
 .landover{position:absolute;inset:0;z-index:8;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;padding-bottom:18px;pointer-events:none}
 .landover p{margin:0;padding:4px 12px;border-radius:999px;background:rgba(8,16,32,.72);color:#FFE793;font-family:"Lilita One",sans-serif;font-size:20px}
 .landover .hand{font-size:72px;line-height:1;animation:grabclose 1.2s ease;filter:drop-shadow(0 6px 0 rgba(0,0,0,.35))}
@@ -800,7 +822,7 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .landdemo .catchfish{display:inline-block;animation:grabfish 1.2s ease}
 @keyframes grabclose{0%{transform:translateY(-18px) scale(1.25)}100%{transform:none}}
 @keyframes grabfish{0%{transform:translateY(16px) scale(.8)}100%{transform:none}}
-@media (prefers-reduced-motion:reduce){.landdemo .hand,.landdemo .catchfish{animation:none}}
+@media (prefers-reduced-motion:reduce){.landdemo .hand,.landdemo .catchfish,.leap-fish,.leap-splash,.struggle,.struggle .catchfish,.struggle .hand,.struggle .spray{animation:none}.struggle{opacity:1}}
 .fighter.tug .swimmer{animation:yank .4s ease}
 .fighter.reel .swimmer{animation:haul .45s ease}
 @keyframes swim{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(5px) rotate(10deg)}}
@@ -808,4 +830,4 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 @keyframes haul{50%{transform:translateY(-18px) scale(1.08)}}
 @keyframes rise{0%{transform:translateY(0);opacity:0}12%{opacity:.85}100%{transform:translateY(-210px);opacity:0}}
 @keyframes rays{from{transform:translateX(0)}to{transform:translateX(-48px)}}
-@media (prefers-reduced-motion:reduce){.under .swimmer,.under .bub,.under .rays,.fighter.tug .swimmer,.fighter.reel .swimmer,.schoolfish,.under.waiting .line.dropping{animation:none}}
+@media (prefers-reduced-motion:reduce){.under .swimmer,.under .bub,.under .rays,.fighter.tug .swimmer,.fighter.reel .swimmer,.schoolfish,.under.waiting .line.dropping,.leap-fish,.leap-splash,.struggle,.struggle .catchfish,.struggle .hand,.struggle .spray{animation:none}.struggle{opacity:1}}

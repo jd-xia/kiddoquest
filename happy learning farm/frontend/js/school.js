@@ -478,10 +478,12 @@ function rLevel(){
   if(q.type==='friends')work=friendsHTML(q);
   if(q.type==='hats')work=hatsHTML(q);
   if(q.type==='basket')work=basketHTML(q);
-  const pad=UI.phase==='answer'?`<div class="display" id="disp" aria-live="polite"></div><div class="pad" id="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button data-k="back" aria-label="Delete">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok" aria-label="Attack">⚡</button></div>`:'';
+  const voice=voiceArm(q);
+  const pad=UI.phase==='answer'?`${voice}<div class="display" id="disp" aria-live="polite"></div><div class="pad" id="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button data-k="back" aria-label="Delete">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok" aria-label="Attack">⚡</button></div>`:'';
   const next=UI.phase==='right'?`<button class="b big-next" data-act="nextQ" id="nextBtn">${UI.idx<UI.qs.length-1?(l.boss?'Attack again ▸':'Next monster ▸'):'Finish level ▸'}</button>`:'';
   $('#bpanel').innerHTML=`<div class="bnpc ${UI.bubble.kind||''}"><span class="bface">${ico(npcKey(D.npc),D.npc.e)}</span><div>${UI.bubble.html}</div></div>${work}${pad}${next}`;
   if(UI.phase==='answer')PAD={v:''};
+  voiceArmStart();
   if(UI.phase==='right')$('#nextBtn').focus({preventScroll:true});
 }
 function pairHTML(q){
@@ -679,21 +681,29 @@ function basketLive(text,nums){
   if(h)h.textContent=UI.heard?`Heard: ${UI.heard}`:'Listening…';
   if(n)n.textContent=UI.heardNums.length?`Number: ${UI.heardNums.join(', ')}`:'';
 }
+function voiceTrick(q){return !!q&&(q.type==='basket'||q.type==='break'||q.type==='friends'||q.type==='hats')}
+function voiceArm(q){
+  if(!voiceTrick(q)||UI.phase!=='answer')return '';
+  if(!UI.hearing&&!UI.voiceMiss&&(UI.voiceForce||!voiceBlocked)){UI.hearing=true;UI.heard='';UI.heardNums=[];UI.voicePending=true}
+  return basketVoiceHTML(q);
+}
+function voiceArmStart(){if(UI.voicePending){UI.voicePending=false;basketStartRec()}}
 function basketStartRec(){
   const q=UI.qs&&UI.qs[UI.idx];
   const force=!!UI.voiceForce;UI.voiceForce=false;
   const started=voiceListen({
     force,lang:UI.lang,
-    keep:()=>UI.screen==='level'&&UI.phase==='answer'&&UI.qs&&(UI.qs[UI.idx]&&(UI.qs[UI.idx].type==='basket'||UI.qs[UI.idx].type==='break')),
+    keep:()=>UI.screen==='level'&&UI.phase==='answer'&&voiceTrick(UI.qs&&UI.qs[UI.idx]),
     onLive:basketLive,
     onFinal:(text,nums)=>{
       const now=UI.qs&&UI.qs[UI.idx];
-      if(UI.phase!=='answer'||!now||(now.type!=='basket'&&now.type!=='break'))return;
+      if(UI.phase!=='answer'||!voiceTrick(now))return;
       basketStopRec();
       UI.heard=text;UI.heardNums=nums;
       if(!nums.length){UI.voiceMiss=false;UI.bubble={kind:'bad',html:`I heard “${esc(text)}”, but not a number. ${basketVoiceHint(now)}`};return rLevel()}
       const hit=nums.find(n=>n===now.answer);
-      if(now.type==='break')breakSubmit(hit!=null?hit:nums[nums.length-1]);else basketSubmit(hit!=null?hit:nums[nums.length-1]);
+      const n=hit!=null?hit:nums[nums.length-1];
+      if(now.type==='break')breakSubmit(n);else if(now.type==='basket')basketSubmit(n);else submit(n);
     },
     onError:()=>{
       if(!voiceBlocked||UI.phase!=='answer')return;
@@ -708,7 +718,7 @@ function basketStartRec(){
 }
 function basketHear(){
   if(UI.phase!=='answer')return;
-  const q=UI.qs&&UI.qs[UI.idx];if(!q||(q.type!=='basket'&&q.type!=='break'))return;
+  const q=UI.qs&&UI.qs[UI.idx];if(!voiceTrick(q))return;
   basketStopRec();UI.voiceForce=true;UI.voiceMiss=false;UI.hearing=false;rLevel();
 }
 function basketBindDemoScroll(){
@@ -967,14 +977,13 @@ function rFactory(){
   const expr=br?(UI.phase==='answer'?`${q.a} × ${q.b} + ${q.a} × ${q.c} = ?`:(done||q.demo>=2?`${q.a} × ${q.b} + ${q.a} × ${q.c}`:(q.hard&&q.chosen?`${q.a} × (${q.b} + ${q.c})`:q.html))):(UI.phase==='answer'?`${q.a} × (${q.b} + ${q.c}) = ?`:(q.demo>=2?`${q.a} × (${q.b} + ${q.c})`:q.html));
   const keys=[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('');
   const asking=(q.type==='basket'||q.type==='break')&&UI.phase==='answer';
-  if(asking&&!UI.hearing&&!UI.voiceMiss&&(UI.voiceForce||!voiceBlocked)){UI.hearing=true;UI.heard='';UI.heardNums=[];UI.voicePending=true}
-  const pad=asking?`${basketVoiceHTML(q)}<div class="display" id="disp" aria-live="polite">${PAD&&PAD.q===UI.idx?esc(PAD.v):''}</div><div class="pad" id="pad">${keys}<button data-k="back" aria-label="Delete">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">OK</button></div>`:'';
+  const pad=asking?`${voiceArm(q)}<div class="display" id="disp" aria-live="polite">${PAD&&PAD.q===UI.idx?esc(PAD.v):''}</div><div class="pad" id="pad">${keys}<button data-k="back" aria-label="Delete">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">OK</button></div>`:'';
   const kicker=br?`Break It Up · ${UI.idx+1} of ${UI.qs.length}`:`The Magic Basket Challenge · ${UI.idx+1} of ${UI.qs.length}`;
   const work=breakShow?breakDemoHTML(q):br?breakHTML(q):(basketShow?basketDemoHTML(q):basketHTML(q));
   $('#app').innerHTML=`<div class="workshop${basketShow||breakShow?' demoing':''}"><header class="shop-hud">${shopHud()}</header><div class="shop-main"><p class="shop-kicker">${kicker}</p><div class="shop-expr">${expr}</div><div class="bnpc ${UI.bubble.kind||''}"><span class="bface">${ico(npcKey(D.npc),D.npc.e)}</span><div>${UI.bubble.html}</div></div>${work}</div>${pad?`<div class="shop-dock">${pad}</div>`:''}${next?`<div class="shop-dock">${next}</div>`:''}</div>`;
   if(basketShow||breakShow){basketBindDemoScroll();const main=$('.shop-main'),demo=$('.basketdemo');if(main&&demo)main.scrollTop=Math.max(0,demo.offsetTop-4)}
   if(UI.phase==='answer'){if(!PAD||PAD.q!==UI.idx)PAD={v:'',q:UI.idx}}
-  if(UI.voicePending){UI.voicePending=false;basketStartRec()}
+  voiceArmStart();
   if(UI.phase==='right')$('#nextBtn').focus({preventScroll:true});
 }
 function rFactoryResult(){
