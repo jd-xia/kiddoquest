@@ -19,10 +19,7 @@ const FISHES=[
   {id:'koi',name:'Koi',e:'🎏',pond:2,start:66,tug:3,dive:28},
   {id:'octopus',name:'Octopus',e:'🐙',pond:2,start:72,tug:3,dive:30}
 ];
-const EN={zero:0,oh:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
-const EN_LIKE={to:2,too:2,won:1,for:4,fore:4,ate:8,tree:3,sex:6};
-const ZD={零:0,〇:0,一:1,二:2,两:2,兩:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9};
-let fishTimer=null,fishTugTimer=null,fishRec=null,fishClock=null;
+let fishTimer=null,fishTugTimer=null,fishClock=null;
 function rodOf(fish){return RODS.find(r=>r.id===fish.rod)||RODS[0]}
 function qTimes(){
   const a=rnd(1,9),b=rnd(1,9);
@@ -59,57 +56,9 @@ function fishQuestion(p){
   }
   return qTimes();
 }
-function parseEn(text){
-  const words=String(text||'').toLowerCase().replace(/-/g,' ').split(/[^a-z0-9]+/).filter(Boolean);
-  const nums=[];
-  let total=0,cur=0,any=false,neg=false;
-  const flush=()=>{if(any)nums.push(neg?-(total+cur):total+cur);total=0;cur=0;any=false;neg=false};
-  for(const w of words){
-    if(w==='and')continue;
-    if((w==='minus'||w==='negative')&&!any){neg=true;continue}
-    if(w==='hundred'){cur=(cur||1)*100;any=true;continue}
-    if(w==='thousand'){total+=(cur||1)*1000;cur=0;any=true;continue}
-    if(/^\d+$/.test(w)){cur+=+w;any=true;continue}
-    if(EN[w]!=null){cur+=EN[w];any=true;continue}
-    if(EN_LIKE[w]!=null){cur+=EN_LIKE[w];any=true;continue}
-    flush();
-  }
-  flush();
-  return nums;
-}
-function parseZhPlain(s){
-  let i=0,section=0,num=0,any=false,neg=false;
-  if(s[0]==='负'||s[0]==='負'){neg=true;i=1}
-  while(i<s.length){
-    const c=s[i];
-    if(c==='廿'){section+=20;num=0;any=true;i++;continue}
-    if(c==='十'||c==='百'||c==='千'||c==='万'||c==='萬'){
-      const u=c==='十'?10:c==='百'?100:c==='千'?1000:10000;
-      section+=(num||1)*u;num=0;any=true;i++;continue;
-    }
-    if(ZD[c]!=null){
-      const nxt=s[i+1],unit=nxt==='十'||nxt==='百'||nxt==='千'||nxt==='万'||nxt==='萬'||nxt==='廿';
-      if(any&&num===0&&section>0&&!unit){num=ZD[c];i++;continue}
-      if(any&&!unit)break;
-      num=ZD[c];any=true;i++;continue;
-    }
-    break;
-  }
-  return any?[neg?-(section+num):section+num]:[];
-}
-function parseZhPart(s){
-  if(/^\d+$/.test(s))return [+s];
-  const rhyme=/^([一二三四五六七八九两兩])([一二三四五六七八九两兩])(.+)$/.exec(s);
-  if(rhyme){const rest=parseZhPlain(rhyme[3]);if(rest.length===1)return [ZD[rhyme[1]],ZD[rhyme[2]],rest[0]]}
-  if(s.length===2&&ZD[s[0]]!=null&&ZD[s[1]]!=null)return [ZD[s[0]]*10+ZD[s[1]]];
-  return parseZhPlain(s);
-}
-function parseZh(text){
-  return String(text||'').split(/[^\d零〇一二两三兩四五六七八九十百千万萬廿负負]+/).filter(Boolean).flatMap(parseZhPart);
-}
-function spokenNumbers(text){return [...parseEn(text),...parseZh(text)]}
 function rFish(){
   const p=cur(),fish=fishOf(p),tab=UI.tab||'fish';
+  if(tab==='fish'&&UI.phase==='bite'&&UI.q&&!UI.hearing&&!UI.voiceMiss&&(UI.voiceForce||!voiceBlocked)){UI.hearing=true;UI.voice=true;UI.heard='';UI.heardNums=[];UI.voicePending=true}
   const tabs=[['fish','🎣 Fish'],['shop','🧰 Tackle']].map(([id,l])=>`<button class="b sm ${tab===id?'':'ghost'}" data-act="fishTab" data-id="${id}">${l}</button>`).join('');
   let body='';
   if(fish.pond<1)body=`<div class="card"><h2>Empty shore</h2><p>Build a pond here. Then buy tackle and fish.</p><button class="b" data-act="fishBuild" ${p.gems<POND_COST?'disabled':''}>Build the pond · ${POND_COST} 🪙</button></div>`;
@@ -127,6 +76,7 @@ function rFish(){
     if(step)step.scrollIntoView({block:'center'});
   }
   if(UI.phase==='wait'||UI.phase==='strike'){const water=document.querySelector('.under');if(water)water.scrollIntoView({block:'center'})}
+  if(UI.voicePending){UI.voicePending=false;fishStartRec()}
 }
 function shopHTML(p,fish){
   const worms=`<div class="item"><div class="e">🪱</div><div class="nm">Worms</div><p class="muted" style="font-size:14px">You have ${fish.bait}<br>3 worms · one cast each</p><div class="acts"><button class="b sm" data-act="fishWorms" ${p.gems<6?'disabled':''}>Buy 3 · 6 🪙</button></div></div>`;
@@ -301,7 +251,7 @@ function fishBiteStart(p){
   if(!UI.fight)return;
   if(UI.limit==null)UI.limit=30;
   UI.phase='bite';UI.q=fishQuestion(p);UI.streak=0;UI.log=[];UI.left=UI.limit;
-  UI.heard='';UI.typed='';UI.mark='';UI.voice=false;UI.heardNums=null;UI.pending='next';
+  UI.heard='';UI.typed='';UI.mark='';UI.voice=false;UI.heardNums=null;UI.pending='next';UI.voiceMiss=false;
   UI.msg=`A ${UI.fight.fish.name} is hooked! Get 2 correct in a row. A wrong answer does not scare it away.${UI.limit?` ${UI.limit} seconds.`:''}`;
   rFish();fishClockStart();
 }
@@ -371,7 +321,7 @@ function fishEscape(){
   UI.msg=`Time's up. The ${name} gets away.`;
   rFish();
 }
-function fishStopRec(){if(fishRec){try{fishRec.onresult=null;fishRec.onerror=null;fishRec.stop()}catch(e){}fishRec=null}UI.hearing=false}
+function fishStopRec(){if(typeof voiceStop==='function')voiceStop();UI.hearing=false;UI.voicePending=false}
 function fishPauseClock(){clearInterval(fishClock);fishClock=null}
 function fishClockStart(){
   fishPauseClock();
@@ -411,7 +361,7 @@ function fishMarkNext(){
   if(UI.pending==='land'){const last=UI.log[UI.log.length-1];return fishLand({html:last.html,answer:last.answer})}
   if(UI.pending==='lost')return fishEscape();
   UI.phase='bite';UI.q=fishQuestion(cur());
-  UI.heard='';UI.typed='';UI.mark='';UI.voice=false;UI.heardNums=null;
+  UI.heard='';UI.typed='';UI.mark='';UI.voice=false;UI.heardNums=null;UI.voiceMiss=false;
   UI.msg=`Correct in a row: ${UI.streak|0} of 2.${UI.limit?` ${UI.left|0}s left.`:''}`;
   rFish();fishClockStart();
 }
@@ -430,34 +380,33 @@ function fishJudge(n,said,voice,nums){
   UI.typed='';UI.voice=!!voice;UI.heard=said||'';UI.heardNums=voice?(nums&&nums.length?nums:[n]):null;UI.mark=ok?'good':'bad';
   fishHold(ok,q);
 }
+function fishStartRec(){
+  const force=!!UI.voiceForce;UI.voiceForce=false;
+  const started=voiceListen({
+    force,lang:UI.lang,
+    keep:()=>UI.screen==='fishing'&&UI.phase==='bite'&&!!UI.q&&!UI.mark,
+    onLive:fishLive,
+    onFinal:(text,nums)=>{
+      if(UI.phase!=='bite'||!UI.q)return;
+      if(!nums.length){UI.hearing=false;UI.voice=true;UI.heard=text;UI.heardNums=[];UI.mark='bad';fishHold(false,UI.q);return}
+      const hit=nums.find(n=>n===UI.q.answer);
+      fishJudge(hit!=null?hit:nums[nums.length-1],text,true,nums);
+    },
+    onError:()=>{
+      UI.hearing=false;
+      if(UI.phase!=='bite'||!voiceBlocked)return;
+      UI.voiceMiss=true;UI.msg='The microphone is blocked. Tap the answer instead.';rFish();
+    },
+    onEnd:()=>{if(UI.phase==='bite'&&!voiceRec)UI.hearing=false}
+  });
+  if(started)return;
+  UI.hearing=false;UI.voiceMiss=true;
+  UI.msg='This browser cannot hear yet. Tap the answer instead.';
+  rFish();
+}
 function fishHear(){
   if(UI.phase!=='bite')return;
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){UI.msg='This browser cannot hear yet. Tap the answer instead.';return rFish()}
-  fishStopRec();UI.hearing=true;UI.heard='';UI.heardNums=[];UI.voice=true;rFish();
-  const rec=new SR();fishRec=rec;rec.lang=UI.lang==='zh-CN'?'zh-CN':'en-US';rec.interimResults=true;rec.maxAlternatives=5;
-  rec.onresult=ev=>{
-    if(UI.phase!=='bite'||!UI.q)return;
-    let text='';
-    for(let i=0;i<ev.results.length;i++)text+=ev.results[i][0].transcript;
-    fishLive(text);
-    const last=ev.results[ev.results.length-1];
-    if(!last.isFinal)return;
-    const alts=[...last].map(r=>r.transcript);
-    const nums=[...new Set(alts.flatMap(spokenNumbers).concat(spokenNumbers(text)))];
-    if(!nums.length){UI.hearing=false;UI.voice=true;UI.heard=(alts[0]||text||'').trim();UI.heardNums=[];UI.mark='bad';fishHold(false,UI.q);return}
-    const hit=nums.find(n=>n===UI.q.answer);
-    fishJudge(hit!=null?hit:nums[nums.length-1],(alts[0]||text||'').trim(),true,nums);
-  };
-  rec.onerror=ev=>{
-    if(ev&&ev.error==='aborted')return;
-    UI.hearing=false;
-    if(UI.phase!=='bite')return;
-    UI.msg='I could not hear. Tap the answer, or try the microphone again.';
-    rFish();
-  };
-  rec.onend=()=>{if(fishRec===rec)UI.hearing=false};
-  try{rec.start()}catch(e){UI.hearing=false;UI.msg='The microphone did not start. Tap the answer instead.';rFish()}
+  fishStopRec();UI.voiceForce=true;UI.voiceMiss=false;UI.hearing=false;rFish();
 }
 function fishKey(k){
   if(UI.phase!=='bite')return;
@@ -471,7 +420,7 @@ Object.assign(ACT,{
   fishTab:d=>{fishStop();UI.tab=d.id;UI.phase='ready';UI.msg=null;rFish()},
   fishBuild:()=>fishBuild(),fishWide:()=>fishWide(),fishWorms:()=>fishWorms(),
   fishBuy:d=>fishBuy(d.id),fishEquip:d=>fishEquip(d.id),fishCast:()=>fishCast(),
-  fishHear:()=>fishHear(),fishLang:()=>{UI.lang=UI.lang==='zh-CN'?'en-US':'zh-CN';rFish()},
+  fishHear:()=>fishHear(),fishLang:()=>{UI.lang=UI.lang==='zh-CN'?'en-US':'zh-CN';if(UI.phase==='bite'){fishStopRec();UI.voiceMiss=false;UI.hearing=false}rFish()},
   fishNext:()=>fishMarkNext(),
   fishLimit:d=>{
     if(UI.phase==='bite'||UI.phase==='wait'||UI.phase==='strike'||UI.phase==='land'||UI.phase==='mark')return;

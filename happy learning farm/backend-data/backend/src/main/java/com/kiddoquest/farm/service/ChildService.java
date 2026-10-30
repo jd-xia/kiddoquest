@@ -29,7 +29,7 @@ import com.kiddoquest.farm.web.FarmExceptions.SyncRejectedException;
 @Service
 public class ChildService {
 
-    static final int MAX_CHILDREN = 2;
+    static final int MAX_CHILDREN = 5;
 
     private final ChildProfileRepository children;
     private final GameSnapshotRepository snapshots;
@@ -52,8 +52,8 @@ public class ChildService {
     public List<ChildSummary> list(String ownerId) {
         return children.findByOwnerUserIdOrderByCreatedAtAsc(ownerId).stream().map(child -> {
             GameSnapshot snap = snapshots.findById(child.getId()).orElse(null);
-            return new ChildSummary(child.getId(), child.getDisplayName(), child.getGrade(), child.getLook(),
-                    snap == null ? 0 : snap.getRevision(), child.getUpdatedAt());
+            return new ChildSummary(child.getId(), child.getUsername(), child.getEmail(), child.getDisplayName(),
+                    child.getGrade(), child.getLook(), snap == null ? 0 : snap.getRevision(), child.getUpdatedAt());
         }).toList();
     }
 
@@ -64,14 +64,16 @@ public class ChildService {
     }
 
     @Transactional
-    public ChildState create(String ownerId, ChildWrite request) {
+    public ChildState create(String ownerId, String email, ChildWrite request) {
         if (children.countByOwnerUserId(ownerId) >= MAX_CHILDREN) {
-            throw new SyncRejectedException("This account already has 2 kids.");
+            throw new SyncRejectedException("This account already has " + MAX_CHILDREN + " kids.");
         }
         Instant now = clock.instant();
         ChildProfile child = new ChildProfile();
         child.setId(UUID.randomUUID().toString());
         child.setOwnerUserId(ownerId);
+        child.setEmail(cleanEmail(email));
+        child.setUsername(nextUsername());
         child.setDisplayName(validator.cleanName(request.displayName(), "Farmer"));
         child.setGrade(validator.cleanGrade(request.grade(), "p3"));
         child.setLook(validator.cleanLook(request.look()));
@@ -144,6 +146,9 @@ public class ChildService {
             } else {
                 snap.setRevision(snap.getRevision() + 1);
             }
+            if (child.getUsername() == null || child.getUsername().isBlank()) {
+                child.setUsername(nextUsername());
+            }
             snap.setPlayerJson(mapper.writeValueAsString(player));
             snap.setContentHash(ContentHash.sha256(mapper, player));
             snap.setUpdatedAt(now);
@@ -158,6 +163,47 @@ public class ChildService {
         } catch (Exception ex) {
             throw new SyncRejectedException("Farm data could not be saved. This device was not changed.");
         }
+    }
+
+    @Transactional
+    public void rememberEmail(String ownerId, String email) {
+        String cleaned = cleanEmail(email);
+        if (cleaned == null || ownerId == null || ownerId.isBlank()) {
+            return;
+        }
+        for (ChildProfile child : children.findByOwnerUserIdOrderByCreatedAtAsc(ownerId)) {
+            if (!cleaned.equals(child.getEmail())) {
+                child.setEmail(cleaned);
+            }
+        }
+    }
+
+    private String nextUsername() {
+        int next = 1;
+        for (ChildProfile child : children.findAll()) {
+            String current = child.getUsername();
+            if (current != null && current.matches("P\\d{7}")) {
+                next = Math.max(next, Integer.parseInt(current.substring(1)) + 1);
+            }
+        }
+        for (int i = 0; i < 30 && next <= 9_999_999; i++, next++) {
+            String code = "P" + String.format("%07d", next);
+            if (!children.existsByUsername(code)) {
+                return code;
+            }
+        }
+        throw new SyncRejectedException("A player number could not be chosen. This device was not changed.");
+    }
+
+    private static String cleanEmail(String email) {
+        if (email == null) {
+            return null;
+        }
+        String trimmed = email.trim().toLowerCase();
+        if (!trimmed.contains("@") || trimmed.length() > 320 || trimmed.indexOf(' ') >= 0) {
+            return null;
+        }
+        return trimmed;
     }
 
     private ChildProfile require(String ownerId, String childId) {
@@ -178,8 +224,8 @@ public class ChildService {
                 throw new SyncRejectedException("Farm data could not be read. This device was not changed.");
             }
         }
-        return new ChildState(child.getId(), child.getDisplayName(), child.getGrade(), child.getLook(), revision,
-                child.getUpdatedAt(), player);
+        return new ChildState(child.getId(), child.getUsername(), child.getEmail(), child.getDisplayName(),
+                child.getGrade(), child.getLook(), revision, child.getUpdatedAt(), player);
     }
 
     private ObjectNode blank(ChildProfile child) {
@@ -190,7 +236,7 @@ public class ChildService {
         player.put("look", child.getLook());
         player.put("avatar", "chick");
         player.putArray("owned").add("chick");
-        player.put("gems", 100);
+        player.put("gems", 1000);
         player.putObject("seen");
         player.putObject("lv");
         player.putArray("sessions");

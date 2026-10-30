@@ -5,16 +5,16 @@ let NEWGRADE=DEFAULT_GRADE,NEWLOOK='girl';
 function rPlayers(){
   const signed=typeof cloudToken==='function'&&!!cloudToken();
   const accountList=signed&&typeof cloudPlayersHtml==='function'?cloudPlayersHtml():null;
-  const canAdd=signed?(typeof cloudKidCount==='function'&&cloudKidCount()!=null&&cloudKidCount()<2):DATA.players.length<6;
+  const canAdd=signed?(typeof cloudKidCount==='function'&&cloudKidCount()!=null&&cloudKidCount()<CLOUD_KID_MAX):DATA.players.length<6;
   const addAct=signed?'cloudAddKid':'addPlayer';
   $('#app').innerHTML=`
   <h1>Happy Learning Farm</h1>
-  ${npcHTML(MAYOR,signed?'Hello! This Google account can have 2 kids. Tap who is playing.':'Hello! Who is playing today? Tap your name.')}
-  ${accountList!=null?accountList:`<div class="players">${DATA.players.map(p=>`<button class="player" data-act="choose" data-id="${p.id}"><div class="e">${avE(p)}</div><div class="nm">${esc(p.name)}</div><div class="muted"><span class="tag good">${gradeName(gradeOf(p))}</span> ⭐ ${totalStars(p)} · 🪙 ${p.gems}</div></button>`).join('')}</div>`}
+  ${npcHTML(MAYOR,signed?`Hello! This Google account can have ${CLOUD_KID_MAX} kids. Tap who is playing.`:'Hello! Who is playing today? Tap your name.')}
+  ${accountList!=null?accountList:`<div class="players">${DATA.players.map(p=>`<button class="player" data-act="choose" data-id="${p.id}"><div class="e">${avE(p)}</div><div class="nm">${esc(p.name)}</div>${p.code?`<div class="pcode">${esc(p.code)}</div>`:''}<div class="muted"><span class="tag good">${gradeName(gradeOf(p))}</span> ⭐ ${totalStars(p)} · 🪙 ${p.gems}</div></button>`).join('')}</div>`}
   ${signed&&typeof cloudSaveLocalHtml==='function'?cloudSaveLocalHtml():''}
   ${canAdd?`<h3>${signed?'Add a child':'New player'}</h3><div style="display:flex;gap:8px;flex-wrap:wrap;max-width:520px"><input type="text" id="newname" maxlength="16" placeholder="Name" aria-label="New player name">${GRADES.map(g=>`<button class="b ${NEWGRADE===g.id?'':'ghost'}" data-act="pickGrade" data-g="${g.id}" aria-pressed="${NEWGRADE===g.id}">${g.name}</button>`).join('')}${['girl','boy'].map(id=>{const L=LOOKS.find(l=>l.id===id);return `<button class="b ${NEWLOOK===id?'':'ghost'}" data-act="pickNewLook" data-id="${id}" aria-pressed="${NEWLOOK===id}" aria-label="${L.name}">${L.e}</button>`}).join('')}<button class="b" data-act="${addAct}">Add</button></div>`:''}
   ${typeof cloudBarHtml==='function'?cloudBarHtml():''}
-  <div class="cloudbar"><h3>Start again</h3><p class="muted">Every child on this device goes back to a new farm with 100 coins. A saved farm stays until you open Sync and tap Upload.</p>
+  <div class="cloudbar"><h3>Start again</h3><p class="muted">Every child on this device goes back to a new farm with 1000 coins. A saved farm stays until you open Sync and tap Upload.</p>
   <button class="b ghost" data-act="resetAll">${resetArmed?'Tap again to reset every child':'Reset every child'}</button></div>`;
 }
 const BOUND={x:26.5,z:17.5}, PEN={x0:9,x1:16.5,z0:-6,z1:3};
@@ -455,9 +455,11 @@ function syncAnimals(){
 }
 /* ---------- farm HUD: profile card, coins and stars, Art Studio and settings buttons ---------- */
 function farmHud(){const p=cur();
-  return `<div class="fhud">
+  const code=typeof cloudPlayerCode==='function'?cloudPlayerCode(p):'';
+  const sync=typeof cloudSyncLine==='function'?cloudSyncLine():'';
+  return `<div class="fhud${code||sync?' hasid':''}">
     <button class="fcard" data-act="toPlayers" aria-label="Switch player"><span class="fav">${avE(p)}</span>
-      <span class="fmeta"><b class="fname">${esc(p.name)}'s Happy Farm</b><span class="flvl" id="flvl"></span></span></button>
+      <span class="fmeta"><b class="fname">${esc(p.name)}</b><span class="fcode" id="fcode"${code?'':' hidden'}>${esc(code)}</span><span class="fsync" id="fsync"${sync?'':' hidden'}>${esc(sync)}</span><span class="flvl" id="flvl"></span></span></button>
     <div class="fright"><span class="fpill" id="coins">🪙 ${p.gems}</span><span class="fpill">⭐ ${totalStars(p)}</span>
       <button class="fround art" data-act="toStudio" aria-label="Art Studio: draw your own pictures" title="Art Studio">🎨</button>
       <button class="fround" data-act="openProgress" aria-label="Progress board and settings" title="Progress board">⚙️</button></div>

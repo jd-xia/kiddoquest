@@ -1,6 +1,6 @@
 @echo off
 setlocal
-rem Publish https://mvinb-2203.tail5e7276.ts.net on the public internet,
+rem Publish https://mvinb-2207.tail5e7276.ts.net on the public internet,
 rem proxying to Nginx on this PC (port 8080).
 rem Start the stack first: docker compose up -d
 rem From cmd:         start-tailscale.bat

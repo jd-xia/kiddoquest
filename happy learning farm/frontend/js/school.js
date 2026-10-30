@@ -454,6 +454,7 @@ function beginLevel(i){
   setupQ();render();
 }
 function setupQ(){
+  UI.voiceMiss=false;UI.heard='';UI.heardNums=[];
   const q=UI.qs[UI.idx];
   if(q.type==='hats'&&!q.hatsInfo){const H=q.hats;q.hatsInfo=i=>H[i]}   // generator's {R,d} list; q.hats becomes the tapped list
   q.sel=[];q.pairs=[];q.boxes=[];q.hats=[];
@@ -655,36 +656,6 @@ function basketDemoDone(q){
   UI.bubble={kind:'',html:`Your turn. What is <b>${q.a} × (${q.b} + ${q.c})</b>? ${basketVoiceHint(q)}`};
   rLevel();
 }
-const BASKET_EN={zero:0,oh:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
-function basketParseEn(text){
-  const words=String(text||'').toLowerCase().replace(/-/g,' ').split(/[^a-z0-9]+/).filter(Boolean);
-  let total=0,cur=0,any=false,neg=false;
-  for(const w of words){
-    if((w==='minus'||w==='negative')&&!any){neg=true;continue}
-    if(w==='and')continue;
-    if(w==='hundred'){cur=(cur||1)*100;any=true;continue}
-    if(w==='thousand'){total+=(cur||1)*1000;cur=0;any=true;continue}
-    if(/^\d+$/.test(w)){cur+=+w;any=true;continue}
-    if(BASKET_EN[w]!=null){cur+=BASKET_EN[w];any=true}
-  }
-  return any?[neg?-(total+cur):total+cur]:[];
-}
-function basketParseZh(text){
-  const d={零:0,〇:0,一:1,二:2,两:2,兩:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9};
-  let s=String(text||'').replace(/[^\u4e00-\u9fff0-9]/g,''),neg=false;
-  if(s[0]==='负'||s[0]==='負'){neg=true;s=s.slice(1)}
-  let section=0,num=0,any=false,i=0;
-  while(i<s.length){
-    if(/\d/.test(s[i])){let n='';while(i<s.length&&/\d/.test(s[i]))n+=s[i++];num=+n;any=true;continue}
-    if(s[i]==='千'){section+=(num||1)*1000;num=0;any=true;i++;continue}
-    if(s[i]==='百'){section+=(num||1)*100;num=0;any=true;i++;continue}
-    if(s[i]==='十'){section+=(num||1)*10;num=0;any=true;i++;continue}
-    if(d[s[i]]!=null){num=d[s[i]];any=true;i++;continue}
-    i++;
-  }
-  return any?[neg?-(section+num):section+num]:[];
-}
-function basketSpoken(text){return [...basketParseEn(text),...basketParseZh(text)]}
 function basketVoiceExample(q){
   const zh=UI.lang==='zh-CN';
   const samples=zh?[[18,'十八'],[42,'四十二'],[112,'一百一十二']]:[[18,'eighteen'],[42,'forty-two'],[112,'one hundred twelve']];
@@ -696,29 +667,49 @@ function basketVoiceHint(q){
 }
 function basketVoiceHTML(q){
   const zh=UI.lang==='zh-CN',hint=basketVoiceHint(q);
-  return `<p class="voicehint">${hint}</p><div class="voicerow"><button class="b mic ${UI.hearing?'live':''}" data-act="basketHear">${UI.hearing?'Listening…':'🎙️ Say the answer'}</button><button class="b ghost sm" data-act="basketLang">${zh?'English':'中文'}</button></div>${UI.heard?`<p class="heard">${esc(UI.heard)}</p>`:''}`;
+  const nums=UI.heardNums&&UI.heardNums.length?UI.heardNums.join(', '):'';
+  const live=UI.hearing?`<p class="heard heard-live" id="heardLive">${UI.heard?`Heard: ${esc(UI.heard)}`:'Listening…'}</p><p class="heard" id="heardNum">${nums?`Number: ${esc(nums)}`:''}</p>`
+    :(UI.heard?`<p class="heard">Heard: ${esc(UI.heard)}</p><p class="heard">Number: ${esc(nums||'none')}</p>`:`<p class="voicehint">${hint}</p>`);
+  return `${live}<div class="voicerow"><button class="b mic ${UI.hearing?'live':''}" data-act="basketHear">${UI.hearing?'Listening…':'🎙️ Say the answer'}</button><button class="b ghost sm" data-act="basketLang">${zh?'English':'中文'}</button></div>`;
 }
-let basketRec=null;
-function basketStopRec(){if(basketRec){try{basketRec.onresult=null;basketRec.onerror=null;basketRec.stop()}catch(e){}basketRec=null}UI.hearing=false}
+function basketStopRec(){if(typeof voiceStop==='function')voiceStop();UI.hearing=false;UI.voicePending=false}
+function basketLive(text,nums){
+  UI.heard=text||'';UI.heardNums=nums||[];
+  const h=document.getElementById('heardLive'),n=document.getElementById('heardNum');
+  if(h)h.textContent=UI.heard?`Heard: ${UI.heard}`:'Listening…';
+  if(n)n.textContent=UI.heardNums.length?`Number: ${UI.heardNums.join(', ')}`:'';
+}
+function basketStartRec(){
+  const q=UI.qs&&UI.qs[UI.idx];
+  const force=!!UI.voiceForce;UI.voiceForce=false;
+  const started=voiceListen({
+    force,lang:UI.lang,
+    keep:()=>UI.screen==='level'&&UI.phase==='answer'&&UI.qs&&(UI.qs[UI.idx]&&(UI.qs[UI.idx].type==='basket'||UI.qs[UI.idx].type==='break')),
+    onLive:basketLive,
+    onFinal:(text,nums)=>{
+      const now=UI.qs&&UI.qs[UI.idx];
+      if(UI.phase!=='answer'||!now||(now.type!=='basket'&&now.type!=='break'))return;
+      basketStopRec();
+      UI.heard=text;UI.heardNums=nums;
+      if(!nums.length){UI.voiceMiss=false;UI.bubble={kind:'bad',html:`I heard “${esc(text)}”, but not a number. ${basketVoiceHint(now)}`};return rLevel()}
+      const hit=nums.find(n=>n===now.answer);
+      if(now.type==='break')breakSubmit(hit!=null?hit:nums[nums.length-1]);else basketSubmit(hit!=null?hit:nums[nums.length-1]);
+    },
+    onError:()=>{
+      if(!voiceBlocked||UI.phase!=='answer')return;
+      UI.hearing=false;UI.voiceMiss=true;
+      UI.bubble={kind:'bad',html:`The microphone is blocked. ${basketVoiceHint(q)}`};rLevel();
+    },
+    onEnd:()=>{if(UI.phase==='answer'&&!voiceRec)UI.hearing=false}
+  });
+  if(started)return;
+  UI.hearing=false;UI.voiceMiss=true;
+  UI.bubble={kind:'bad',html:'This browser cannot hear yet. Tap the answer instead.'};rLevel();
+}
 function basketHear(){
   if(UI.phase!=='answer')return;
-  const q=UI.qs[UI.idx];if(!q||(q.type!=='basket'&&q.type!=='break'))return;
-  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){UI.bubble={kind:'bad',html:'This browser cannot hear yet. Tap the answer instead.'};return rLevel()}
-  basketStopRec();UI.hearing=true;UI.heard='Listening…';rLevel();
-  const rec=new SR();basketRec=rec;rec.lang=UI.lang==='zh-CN'?'zh-CN':'en-US';rec.interimResults=false;rec.maxAlternatives=5;
-  rec.onresult=ev=>{
-    if(UI.phase!=='answer'||!UI.qs||UI.qs[UI.idx]!==q)return;
-    const alts=[...ev.results[0]].map(r=>r.transcript);
-    UI.heard=alts[0]||'';UI.hearing=false;
-    const nums=alts.flatMap(basketSpoken);
-    if(!nums.length){UI.bubble={kind:'bad',html:`I heard “${esc(UI.heard)}”, but not a number. ${basketVoiceHint(q)}`};return rLevel()}
-    const hit=nums.find(n=>n===q.answer);
-    if(q.type==='break')breakSubmit(hit!=null?hit:nums[0]);else basketSubmit(hit!=null?hit:nums[0]);
-  };
-  rec.onerror=()=>{UI.hearing=false;UI.bubble={kind:'bad',html:`I could not hear. ${basketVoiceHint(q)}`};rLevel()};
-  rec.onend=()=>{UI.hearing=false};
-  try{rec.start()}catch(e){UI.hearing=false;UI.bubble={kind:'bad',html:'The microphone did not start. Tap the answer instead.'};rLevel()}
+  const q=UI.qs&&UI.qs[UI.idx];if(!q||(q.type!=='basket'&&q.type!=='break'))return;
+  basketStopRec();UI.voiceForce=true;UI.voiceMiss=false;UI.hearing=false;rLevel();
 }
 function basketBindDemoScroll(){
   document.querySelectorAll('.demo-scroll').forEach(box=>{
@@ -976,12 +967,14 @@ function rFactory(){
   const expr=br?(UI.phase==='answer'?`${q.a} × ${q.b} + ${q.a} × ${q.c} = ?`:(done||q.demo>=2?`${q.a} × ${q.b} + ${q.a} × ${q.c}`:(q.hard&&q.chosen?`${q.a} × (${q.b} + ${q.c})`:q.html))):(UI.phase==='answer'?`${q.a} × (${q.b} + ${q.c}) = ?`:(q.demo>=2?`${q.a} × (${q.b} + ${q.c})`:q.html));
   const keys=[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('');
   const asking=(q.type==='basket'||q.type==='break')&&UI.phase==='answer';
+  if(asking&&!UI.hearing&&!UI.voiceMiss&&(UI.voiceForce||!voiceBlocked)){UI.hearing=true;UI.heard='';UI.heardNums=[];UI.voicePending=true}
   const pad=asking?`${basketVoiceHTML(q)}<div class="display" id="disp" aria-live="polite">${PAD&&PAD.q===UI.idx?esc(PAD.v):''}</div><div class="pad" id="pad">${keys}<button data-k="back" aria-label="Delete">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok">OK</button></div>`:'';
   const kicker=br?`Break It Up · ${UI.idx+1} of ${UI.qs.length}`:`The Magic Basket Challenge · ${UI.idx+1} of ${UI.qs.length}`;
   const work=breakShow?breakDemoHTML(q):br?breakHTML(q):(basketShow?basketDemoHTML(q):basketHTML(q));
   $('#app').innerHTML=`<div class="workshop${basketShow||breakShow?' demoing':''}"><header class="shop-hud">${shopHud()}</header><div class="shop-main"><p class="shop-kicker">${kicker}</p><div class="shop-expr">${expr}</div><div class="bnpc ${UI.bubble.kind||''}"><span class="bface">${ico(npcKey(D.npc),D.npc.e)}</span><div>${UI.bubble.html}</div></div>${work}</div>${pad?`<div class="shop-dock">${pad}</div>`:''}${next?`<div class="shop-dock">${next}</div>`:''}</div>`;
   if(basketShow||breakShow){basketBindDemoScroll();const main=$('.shop-main'),demo=$('.basketdemo');if(main&&demo)main.scrollTop=Math.max(0,demo.offsetTop-4)}
   if(UI.phase==='answer'){if(!PAD||PAD.q!==UI.idx)PAD={v:'',q:UI.idx}}
+  if(UI.voicePending){UI.voicePending=false;basketStartRec()}
   if(UI.phase==='right')$('#nextBtn').focus({preventScroll:true});
 }
 function rFactoryResult(){
@@ -1042,7 +1035,7 @@ Object.assign(ACT,{
   startLevel:d=>{const i=+d.i;if(UI.screen!=='dungeon')UI={screen:'dungeon',did:UI.did,mapAt:i};startLevel(i);if(UI.screen==='dungeon')render()},
   quitLevel:()=>quitLevel(),
   basketHear:()=>basketHear(),
-  basketLang:()=>{if(UI.phase!=='answer')return;basketStopRec();UI.lang=UI.lang==='zh-CN'?'en-US':'zh-CN';UI.heard='';rLevel()},
+  basketLang:()=>{if(UI.phase!=='answer')return;basketStopRec();UI.lang=UI.lang==='zh-CN'?'en-US':'zh-CN';UI.heard='';UI.heardNums=[];UI.voiceMiss=false;UI.hearing=false;rLevel()},
   nextQ:()=>nextQ(),
   breakPick:d=>breakPick(+d.i),
   pairTap:d=>pairTap(+d.i),

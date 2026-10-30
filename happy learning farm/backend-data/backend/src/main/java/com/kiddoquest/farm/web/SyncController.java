@@ -37,6 +37,6 @@ public class SyncController {
             Repeating the same idempotencyKey returns the first result.
             """)
     public SyncResponse sync(@AuthenticationPrincipal Jwt jwt, @PathVariable String childId, @Valid @RequestBody SyncRequest request) {
-        return sync.sync(ChildController.owner(jwt), childId, request);
+        return sync.sync(ChildController.owner(jwt), ChildController.email(jwt), childId, request);
     }
 }

@@ -113,9 +113,9 @@ class FarmSyncFlowTest {
     }
 
     @Test
-    void oneAccountCanKeepTwoKidsAndNotAThird() throws Exception {
+    void oneAccountCanKeepFiveKidsAndNotASixth() throws Exception {
         String token = bearer("user-a");
-        for (int i = 0; i < 2; i++) {
+        for (int i = 0; i < 5; i++) {
             create(token, null);
         }
         mvc.perform(post("/api/v1/children").header("Authorization", "Bearer " + token)
@@ -123,7 +123,7 @@ class FarmSyncFlowTest {
                 .content("{\"displayName\":\"Extra\",\"grade\":\"p1\",\"look\":\"girl\"}"))
                 .andExpect(status().isUnprocessableEntity());
         mvc.perform(get("/api/v1/children").header("Authorization", "Bearer " + token))
-                .andExpect(jsonPath("$.length()").value(2));
+                .andExpect(jsonPath("$.length()").value(5));
     }
 
     private String create(String token, ObjectNode player) throws Exception {
@@ -138,6 +138,8 @@ class FarmSyncFlowTest {
                 .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(body)))
                 .andExpect(status().isCreated())
                 .andReturn();
+        String username = body(result).path("username").asText();
+        org.junit.jupiter.api.Assertions.assertTrue(username.matches("P\\d{7}"));
         return body(result).path("id").asText();
     }
 

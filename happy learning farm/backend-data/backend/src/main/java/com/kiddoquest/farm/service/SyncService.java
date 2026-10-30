@@ -52,7 +52,8 @@ public class SyncService {
     }
 
     @Transactional
-    public SyncResponse sync(String ownerId, String childId, SyncRequest request) {
+    public SyncResponse sync(String ownerId, String email, String childId, SyncRequest request) {
+        childService.rememberEmail(ownerId, email);
         if (!ChildIds.valid(childId)) {
             throw new NotFoundException();
         }

@@ -7,9 +7,11 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-@Table(name = "farm_child", indexes = @Index(name = "ix_farm_child_owner", columnList = "owner_user_id"))
+@Table(name = "farm_child", indexes = @Index(name = "ix_farm_child_owner", columnList = "owner_user_id"),
+        uniqueConstraints = @UniqueConstraint(name = "uk_farm_child_username", columnNames = "username"))
 public class ChildProfile {
 
     @Id
@@ -18,6 +20,14 @@ public class ChildProfile {
 
     @Column(name = "owner_user_id", nullable = false, length = 36)
     private String ownerUserId;
+
+    /** Google email of the account that owns this child. */
+    @Column(length = 320)
+    private String email;
+
+    /** Public id, P plus 7 digits, starting at P0000001. Unique across every child. */
+    @Column(nullable = false, length = 8)
+    private String username;
 
     @Column(name = "display_name", nullable = false, length = 16)
     private String displayName;
@@ -48,6 +58,22 @@ public class ChildProfile {
 
     public void setOwnerUserId(String ownerUserId) {
         this.ownerUserId = ownerUserId;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getDisplayName() {

@@ -22,7 +22,7 @@ const PRAISE=['Hoo-ray! Spot on.','Brilliant trick work!','Exactly right!','You\
 
 /* ---------- data & saving ---------- */
 const LS='mathstreet-v1';
-const START_COINS=100;
+const START_COINS=1000;
 function newPlayer(name,grade,look){return{id:'p'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,grade:grade||DEFAULT_GRADE,look:look||'boy',avatar:'chick',owned:['chick'],gems:START_COINS,starter:1,seen:{},lv:{},sessions:[],time:0}}
 function blank(){const a=newPlayer('Jayden','p1','boy'),b=newPlayer('Michelle',null,'girl');return{v:3,updated:0,current:null,players:[a,b]}}
 let DATA=(()=>{try{const s=localStorage.getItem(LS);if(s){const d=JSON.parse(s);if(d&&d.players)return d}}catch(e){}return blank()})();
@@ -36,7 +36,7 @@ DATA.players.forEach(p=>{
   if(!p.starter){if(!(Number(p.gems)>0))p.gems=START_COINS;p.starter=1;coinGrant=true}
 });
 if(coinGrant){try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}}
-/* Save v3 runs once: every child on this device goes back to a new farm with 100 coins.
+/* Save v3 runs once: every child on this device goes back to a new farm with 1000 coins.
    Name, grade and look stay. The saved farm on the server stays until Sync → Upload. */
 function resetPlayer(p){
   const fresh=newPlayer(p&&p.name||'Farmer',p&&p.grade,p&&p.look||'boy');
@@ -114,7 +114,7 @@ function topBar(title,backAct){
   <span class="stat" aria-label="Stars">⭐ ${totalStars(p)}</span><span class="stat" id="coins" aria-label="Coins">🪙 ${p.gems}</span>
   ${PAGE_FILE==='studio.html'?'':'<button class="pill artpill" data-act="toStudio" aria-label="Art Studio: draw your own pictures" title="Art Studio">🎨</button>'}
   ${typeof cloudTopActions==='function'?cloudTopActions():''}
-  <button class="pill" data-act="toPlayers" aria-label="Switch player"><span class="av">${avE(p)}</span>${esc(p.name)}</button></div>`;
+  <button class="pill" data-act="toPlayers" aria-label="Switch player"><span class="av">${avE(p)}</span><span class="who"><b>${esc(p.name)}</b>${typeof cloudPlayerCode==='function'&&cloudPlayerCode(p)?`<small class="pillcode">${esc(cloudPlayerCode(p))}</small>`:''}${typeof cloudSyncLine==='function'&&cloudSyncLine()?`<small class="synctime">${esc(cloudSyncLine())}</small>`:''}</span></button></div>`;
 }
 function npcHTML(npc,html,kind){return `<div class="npc"><div class="face" aria-hidden="true">${ico(npcKey(npc),npc.e)}</div><div class="bubble ${kind||''}"><div class="who">${npc.name}</div>${html}</div></div>`}
 
@@ -237,7 +237,7 @@ const ACT={
   resetAll:()=>{
     if(!resetArmed){resetArmed=true;render();return}
     resetArmed=false;resetEveryChild();render();
-    if(!DLG)notice('Every child on this device is back to 100 coins. Open Sync and tap Upload to replace a saved farm.');
+    if(!DLG)notice('Every child on this device is back to 1000 coins. Open Sync and tap Upload to replace a saved farm.');
   }
 };
 let onPageKey=null;
@@ -254,6 +254,100 @@ document.addEventListener('keydown',e=>{
 document.addEventListener('keyup',e=>{KEYS.delete(e.key.length===1?e.key.toLowerCase():e.key)});
 window.addEventListener('blur',()=>KEYS.clear());
 
+/* Spoken numbers and the microphone. Fishing and Brain Boost share this.
+   The listener shows words as they arrive, keeps every alternative, and can stay on while a question is open. */
+const SPOKEN_EN={zero:0,oh:0,one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,eleven:11,twelve:12,thirteen:13,fourteen:14,fifteen:15,sixteen:16,seventeen:17,eighteen:18,nineteen:19,twenty:20,thirty:30,forty:40,fifty:50,sixty:60,seventy:70,eighty:80,ninety:90};
+const SPOKEN_LIKE={to:2,too:2,won:1,for:4,fore:4,ate:8,tree:3,sex:6};
+const SPOKEN_ZH={零:0,〇:0,一:1,二:2,两:2,兩:2,三:3,四:4,五:5,六:6,七:7,八:8,九:9};
+function parseSpokenEn(text){
+  const words=String(text||'').toLowerCase().replace(/-/g,' ').split(/[^a-z0-9]+/).filter(Boolean);
+  const nums=[];
+  let total=0,cur=0,any=false,neg=false;
+  const flush=()=>{if(any)nums.push(neg?-(total+cur):total+cur);total=0;cur=0;any=false;neg=false};
+  for(const w of words){
+    if(w==='and')continue;
+    if((w==='minus'||w==='negative')&&!any){neg=true;continue}
+    if(w==='hundred'){cur=(cur||1)*100;any=true;continue}
+    if(w==='thousand'){total+=(cur||1)*1000;cur=0;any=true;continue}
+    if(/^\d+$/.test(w)){cur+=+w;any=true;continue}
+    if(SPOKEN_EN[w]!=null){cur+=SPOKEN_EN[w];any=true;continue}
+    if(SPOKEN_LIKE[w]!=null){cur+=SPOKEN_LIKE[w];any=true;continue}
+    flush();
+  }
+  flush();
+  return nums;
+}
+function parseSpokenZhPlain(s){
+  let i=0,section=0,num=0,any=false,neg=false;
+  if(s[0]==='负'||s[0]==='負'){neg=true;i=1}
+  while(i<s.length){
+    const c=s[i];
+    if(c==='廿'){section+=20;num=0;any=true;i++;continue}
+    if(c==='十'||c==='百'||c==='千'||c==='万'||c==='萬'){
+      const u=c==='十'?10:c==='百'?100:c==='千'?1000:10000;
+      section+=(num||1)*u;num=0;any=true;i++;continue;
+    }
+    if(SPOKEN_ZH[c]!=null){
+      const nxt=s[i+1],unit=nxt==='十'||nxt==='百'||nxt==='千'||nxt==='万'||nxt==='萬'||nxt==='廿';
+      if(any&&num===0&&section>0&&!unit){num=SPOKEN_ZH[c];i++;continue}
+      if(any&&!unit)break;
+      num=SPOKEN_ZH[c];any=true;i++;continue;
+    }
+    break;
+  }
+  return any?[neg?-(section+num):section+num]:[];
+}
+function parseSpokenZhPart(s){
+  if(/^\d+$/.test(s))return [+s];
+  const rhyme=/^([一二三四五六七八九两兩])([一二三四五六七八九两兩])(.+)$/.exec(s);
+  if(rhyme){const rest=parseSpokenZhPlain(rhyme[3]);if(rest.length===1)return [SPOKEN_ZH[rhyme[1]],SPOKEN_ZH[rhyme[2]],rest[0]]}
+  if(s.length===2&&SPOKEN_ZH[s[0]]!=null&&SPOKEN_ZH[s[1]]!=null)return [SPOKEN_ZH[s[0]]*10+SPOKEN_ZH[s[1]]];
+  return parseSpokenZhPlain(s);
+}
+function parseSpokenZh(text){
+  return String(text||'').split(/[^\d零〇一二两三兩四五六七八九十百千万萬廿负負]+/).filter(Boolean).flatMap(parseSpokenZhPart);
+}
+function spokenNumbers(text){return [...parseSpokenEn(text),...parseSpokenZh(text)]}
+let voiceRec=null,voiceBlocked=false;
+function voiceAllow(){voiceBlocked=false}
+function voiceStop(){
+  const rec=voiceRec;voiceRec=null;
+  if(!rec)return;
+  try{rec.onresult=null;rec.onerror=null;rec.onend=null;rec.stop()}catch(e){}
+}
+function voiceListen(opts){
+  opts=opts||{};
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  if(!SR){voiceBlocked=true;return false}
+  if(voiceBlocked&&!opts.force)return false;
+  if(opts.force)voiceBlocked=false;
+  voiceStop();
+  const rec=new SR();voiceRec=rec;
+  rec.lang=opts.lang==='zh-CN'?'zh-CN':'en-US';
+  rec.interimResults=true;rec.maxAlternatives=5;
+  rec.onresult=ev=>{
+    let text='';
+    for(let i=0;i<ev.results.length;i++)text+=ev.results[i][0].transcript;
+    if(opts.onLive)opts.onLive(text.trim(),spokenNumbers(text));
+    const last=ev.results[ev.results.length-1];
+    if(!last||!last.isFinal)return;
+    const alts=[...last].map(r=>r.transcript);
+    const nums=[...new Set(alts.flatMap(spokenNumbers).concat(spokenNumbers(text)))];
+    if(opts.onFinal)opts.onFinal((alts[0]||text||'').trim(),nums,alts);
+  };
+  rec.onerror=ev=>{
+    if(!ev||ev.error==='aborted'||ev.error==='no-speech')return;
+    if(ev.error==='not-allowed'||ev.error==='service-not-allowed')voiceBlocked=true;
+    if(opts.onError)opts.onError(ev);
+  };
+  rec.onend=()=>{
+    if(voiceRec!==rec)return;
+    voiceRec=null;
+    if(!voiceBlocked&&opts.keep&&opts.keep()){if(voiceListen(opts))return}
+    if(opts.onEnd)opts.onEnd();
+  };
+  try{rec.start();return true}catch(e){voiceRec=null;return false}
+}
 /* startPage(screens, defaultUI): every page calls this once at the bottom of its script. */
 function startPage(screens,def){
   SCREENS=screens;let nav=null;

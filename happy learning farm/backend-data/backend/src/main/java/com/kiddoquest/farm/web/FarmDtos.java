@@ -31,11 +31,12 @@ public final class FarmDtos {
             @Size(max = 24) String look) {
     }
 
-    public record ChildSummary(String id, String displayName, String grade, String look, long revision, Instant updatedAt) {
+    public record ChildSummary(String id, String username, String email, String displayName, String grade, String look,
+            long revision, Instant updatedAt) {
     }
 
-    public record ChildState(String id, String displayName, String grade, String look, long revision, Instant updatedAt,
-            JsonNode player) {
+    public record ChildState(String id, String username, String email, String displayName, String grade, String look,
+            long revision, Instant updatedAt, JsonNode player) {
     }
 
     public record SyncRequest(

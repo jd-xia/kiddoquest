@@ -33,20 +33,22 @@ public class JwtService {
         }
     }
 
-    public IssuedToken issue(String userId, String provider) {
+    public IssuedToken issue(String userId, String provider, String email) {
         Instant now = Instant.now();
         Instant expires = now.plus(properties.getJwt().getTtl());
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+        JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder()
                 .issuer(properties.getJwt().getIssuer())
                 .subject(userId)
                 .audience(properties.getJwt().getAudience())
                 .issueTime(Date.from(now))
                 .expirationTime(Date.from(expires))
                 .jwtID(UUID.randomUUID().toString())
-                .claim("provider", provider)
-                .build();
+                .claim("provider", provider);
+        if (email != null && !email.isBlank()) {
+            claims.claim("email", email.trim().toLowerCase());
+        }
         try {
-            SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+            SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims.build());
             jwt.sign(new MACSigner(secret));
             return new IssuedToken(jwt.serialize(), properties.getJwt().getTtl().toSeconds());
         } catch (JOSEException ex) {

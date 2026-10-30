@@ -47,7 +47,7 @@ public class AuthService {
         UserAccount user = identities.findByProviderAndSubject(identity.provider(), identity.subject())
                 .map(link -> updateLink(link, identity))
                 .orElseGet(() -> create(identity));
-        JwtService.IssuedToken token = tokens.issue(user.getId(), identity.provider());
+        JwtService.IssuedToken token = tokens.issue(user.getId(), identity.provider(), emailOf(user.getId()));
         return new LoginResponse(token.value(), "Bearer", token.expiresInSeconds(),
                 new UserResponse(user.getId(), user.getDisplayName(), emailOf(user.getId())));
     }

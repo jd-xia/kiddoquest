@@ -18,6 +18,8 @@ public interface ChildProfileRepository extends JpaRepository<ChildProfile, Stri
 
     long countByOwnerUserId(String ownerUserId);
 
+    boolean existsByUsername(String username);
+
     Optional<ChildProfile> findByIdAndOwnerUserId(String id, String ownerUserId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)

@@ -40,14 +40,15 @@ public class ChildController {
     @GetMapping
     @Operation(summary = "List the signed-in account's child farms")
     public List<ChildSummary> list(@AuthenticationPrincipal Jwt jwt) {
+        children.rememberEmail(owner(jwt), email(jwt));
         return children.list(owner(jwt));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Create a child farm. One account can keep up to six.")
+    @Operation(summary = "Create a child farm. One account can keep up to five.")
     public ChildState create(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody ChildWrite request) {
-        return children.create(owner(jwt), request);
+        return children.create(owner(jwt), email(jwt), request);
     }
 
     @GetMapping("/{childId}")
@@ -74,5 +75,20 @@ public class ChildController {
             throw new FarmExceptions.NotFoundException();
         }
         return jwt.getSubject();
+    }
+
+    static String email(Jwt jwt) {
+        if (jwt == null) {
+            return null;
+        }
+        String email = jwt.getClaimAsString("email");
+        if (email == null) {
+            return null;
+        }
+        String trimmed = email.trim().toLowerCase();
+        if (!trimmed.contains("@") || trimmed.length() > 320 || trimmed.indexOf(' ') >= 0) {
+            return null;
+        }
+        return trimmed;
     }
 }

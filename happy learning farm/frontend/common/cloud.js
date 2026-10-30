@@ -1,7 +1,7 @@
 /* Optional account sync. Loading this file does not contact a server.
-   After a Google account is linked and a child farm is open, that farm is uploaded about once a minute
-   in the background. No conflict and this device is newer: upload quietly. A conflict is the only
-   time a dialog appears. Tap Sync to compare both copies and choose upload or download.
+   After a Google account is linked and a child farm is open, that farm is checked about once a minute.
+   Same sync copy with new changes on this device: upload quietly. Different sync copies: a dialog
+   shows both asset lists, the total value, and a recommendation. The player chooses.
    Guest play never calls the server. */
 function cloudConfig(){
   const cfg=window.HMF_CLOUD||{};
@@ -16,9 +16,9 @@ function cloudIsAccount(){const c=cloudRead();return c.mode==='account'&&!!c.chi
 function cloudRevision(id){const n=Number(localStorage.getItem('hmf-rev-'+id)||'0');return Number.isFinite(n)&&n>=0?n:0}
 function cloudSetRevision(id,rev){try{localStorage.setItem('hmf-rev-'+id,String(rev||0))}catch(e){}}
 function cloudRememberActive(){try{const c=cloudRead();if(c.mode==='account'&&c.childId)localStorage.setItem('hmf-account-cache-'+c.childId,JSON.stringify(DATA))}catch(e){}}
-function cloudStatusLine(){return cloudIsAccount()?'After sign-in, the newer copy is kept. This device then uploads about once a minute. A dialog appears only when both copies changed.':'Progress is saved on this device. Sign-in is optional and is never required to play.'}
+function cloudStatusLine(){return cloudIsAccount()?'After sign-in, a new change on the same sync copy uploads by itself. If the sync copies differ, you choose. The dialog recommends the copy with the higher total value.':'Progress is saved on this device. Sign-in is optional and is never required to play.'}
 function cloudTopActions(){return cloudIsAccount()?'<button class="pill" data-act="cloudSync" aria-label="Compare and sync this farm">☁️ Sync</button>':''}
-const CLOUD_KID_MAX=2;
+const CLOUD_KID_MAX=5;
 let cloudKidList=null,cloudKidLoading=false,cloudKidStamp=0;
 function cloudLinkKey(){const id=cloudRead().session&&cloudRead().session.userId;return 'hmf-kid-links-'+(id||'none')}
 function cloudLinks(){try{const m=JSON.parse(localStorage.getItem(cloudLinkKey())||'{}');return m&&typeof m==='object'?m:{}}catch(e){return {}}}
@@ -44,7 +44,7 @@ function cloudLoadKids(){
   if(!cloudToken()){cloudKidList=null;return}
   if(cloudKidLoading||(cloudKidList&&Date.now()-cloudKidStamp<4000))return;
   cloudKidLoading=true;
-  cloudFetch(cloudConfig().dataBase+'/api/v1/children',{auth:true}).then(list=>{cloudKidLoading=false;cloudRememberKids(list||[]);if(UI&&UI.screen==='players'&&typeof rPlayers==='function')rPlayers()}).catch(()=>{cloudKidLoading=false;if(!cloudKidList)cloudRememberKids([]);if(UI&&UI.screen==='players'&&typeof rPlayers==='function')rPlayers()});
+  cloudFetch(cloudConfig().dataBase+'/api/v1/children',{auth:true}).then(list=>{cloudKidLoading=false;cloudRememberKids(list||[]);cloudStampListedCode(list||[]);cloudPaintId();if(UI&&UI.screen==='players'&&typeof rPlayers==='function')rPlayers()}).catch(()=>{cloudKidLoading=false;if(!cloudKidList)cloudRememberKids([]);if(UI&&UI.screen==='players'&&typeof rPlayers==='function')rPlayers()});
 }
 function cloudLookEmoji(look){try{const L=LOOKS.find(l=>l.id===look);if(L)return L.e}catch(e){}return look==='boy'?'👦':'👧'}
 function cloudPlayersHtml(){
@@ -52,7 +52,7 @@ function cloudPlayersHtml(){
   if(!cloudKidList){cloudLoadKids();return '<p class="muted">Loading the kids on this Google account…</p>'}
   if(!cloudKidList.length)return '<p class="muted">This Google account has no kids yet. Add the first child below.</p>';
   const active=cloudIsAccount()?cloudRead().childId:null;
-  return `<p class="syncnote">${esc(cloudSyncNotice())}</p><div class="players">${cloudKidList.map(ch=>`<button class="player" data-act="cloudSwitch" data-id="${esc(ch.id)}"><div class="e">${cloudLookEmoji(ch.look)}</div><div class="nm">${esc(ch.displayName)}</div><div class="muted"><span class="tag good">${esc(typeof gradeName==='function'?gradeName(ch.grade):ch.grade||'')}</span>${ch.id===active?' · Playing now':''}${cloudStamp(ch.updatedAt)?` · Last sync ${esc(cloudWhen(ch.updatedAt))}`:''}</div></button>`).join('')}</div>`;
+  return `<p class="syncnote">${esc(cloudSyncNotice())}</p><div class="players">${cloudKidList.map(ch=>{const when=cloudStamp(ch.updatedAt)?cloudWhen(ch.updatedAt):'';return `<button class="player" data-act="cloudSwitch" data-id="${esc(ch.id)}"><div class="e">${cloudLookEmoji(ch.look)}</div><div class="nm">${esc(ch.displayName)}</div>${ch.username?`<div class="pcode">${esc(ch.username)}</div>`:''}<div class="muted"><span class="tag good">${esc(typeof gradeName==='function'?gradeName(ch.grade):ch.grade||'')}</span>${ch.id===active?' · Playing now':''}${when?` · Last sync ${esc(when)}`:' · Not synced yet'}</div></button>`}).join('')}</div>`;
 }
 function cloudSaveLocalHtml(){
   if(!cloudToken()||!cloudKidList||!cloudRoom())return '';
@@ -62,7 +62,7 @@ function cloudSaveLocalHtml(){
 }
 function cloudBarHtml(){
   const c=cloudRead(),signed=!!cloudToken(),label=c.session&&(c.session.email||c.session.displayName),who=signed&&label?`Signed in as ${esc(label)}. `:'';
-  if(c.mode==='account')return `<div class="cloudbar"><h3>Saved farm</h3><p class="syncnote">${esc(cloudSyncNotice(c.childId))}</p><p class="muted">${who}If the copies differ, the newer one is kept. If both changed, you choose. This device then uploads about once a minute.</p><div class="row">
+  if(c.mode==='account')return `<div class="cloudbar"><h3>Saved farm</h3><p class="syncnote">${esc(cloudSyncNotice(c.childId))}</p><p class="muted">${who}A new change on the same sync copy uploads by itself. If the sync copies differ, you choose. The dialog recommends the copy worth more.</p><div class="row">
     <button class="b" data-act="cloudSync">☁️ Sync</button><button class="b ghost" data-act="cloudChildren">Saved farms</button>
     <button class="b ghost" data-act="cloudAskGuest">Guest farm</button>
     ${signed?'<button class="b ghost" data-act="cloudSwitchAccount">Switch account</button><button class="b ghost" data-act="cloudLogout">Sign out</button>':'<button class="b" data-act="cloudLogin">Sign in</button>'}</div></div>`;
@@ -78,7 +78,7 @@ function cloudRefresh(){if(typeof render==='function'&&typeof SCREENS!=='undefin
 function cloudWrap(player){const p=JSON.parse(JSON.stringify(player));return {v:2,updated:Date.now(),current:p.id,players:[p]}}
 function cloudStash(){const c=cloudRead(),raw=JSON.stringify(DATA);if(c.mode==='account'&&c.childId)localStorage.setItem('hmf-account-cache-'+c.childId,raw);else localStorage.setItem('hmf-guest-backup',raw)}
 function cloudCommit(mode,childId){const c=cloudRead();c.mode=mode;c.childId=childId||null;cloudWrite(c)}
-function cloudAdopt(player,revision){const id=cloudRead().childId;DATA=cloudWrap(player);if(id)cloudSetRevision(id,revision||0);save()}
+function cloudAdopt(player,revision){const id=cloudRead().childId;const code=cloudPlayerCode(typeof cur==='function'?cur():null);DATA=cloudWrap(cloudKeepCode(player,(player&&player.code)||code));if(id)cloudSetRevision(id,revision||0);save()}
 let cloudBusy=false,cloudPending=null,cloudLastKey=null,cloudLastMaterial=null,cloudCreateId='',cloudOpenId='',cloudOpenHow='load',cloudPickingAccount=false,cloudSavedMaterial=null,cloudAutoHold=false;
 async function cloudFetch(url,opts){
   const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),20000),headers={Accept:'application/json'};
@@ -152,12 +152,12 @@ function cloudDrawChildren(list){
   cloudRememberKids(list||[]);
   const c=cloudRead(),room=cloudRoom();
   const saves=cloudUnsavedLocals().slice(0,room).map(p=>`<button class="b ghost sm" data-act="cloudCreate" data-id="${esc(p.id)}">Save ${esc(p.name)} to this account</button>`).join('');
-  const rows=(cloudKidList||[]).map(ch=>{const when=cloudStamp(ch.updatedAt)?cloudWhen(ch.updatedAt):'';return `<button class="player" data-act="cloudSwitch" data-id="${esc(ch.id)}"><div class="nm">${esc(ch.displayName)}</div><div class="muted">${esc(typeof gradeName==='function'?gradeName(ch.grade):ch.grade||'')} · saved copy ${Number(ch.revision)||0}${when?` · Last sync ${esc(when)}`:''}</div></button>`}).join('')||'<p class="muted">No kids on this account yet.</p>';
+  const rows=(cloudKidList||[]).map(ch=>{const when=cloudStamp(ch.updatedAt)?cloudWhen(ch.updatedAt):'Not synced yet';return `<button class="player" data-act="cloudSwitch" data-id="${esc(ch.id)}"><div class="nm">${esc(ch.displayName)}</div>${ch.username?`<div class="pcode">${esc(ch.username)}</div>`:''}<div class="muted">${esc(typeof gradeName==='function'?gradeName(ch.grade):ch.grade||'')} · Last sync ${esc(when)}</div></button>`}).join('')||'<p class="muted">No kids on this account yet.</p>';
   const el=$('#dlg');if(!el)return;el.className='show';
   el.innerHTML=`<div class="dlg cloudpick"><div style="flex:1"><div class="dlg-name">Kids on this account</div>
     <p class="syncnote">${esc(cloudSyncNotice())}</p>
-    <p class="muted">One Google account keeps 2 separate kids. Opening one keeps the newer copy. If both changed, you choose. Then this device uploads about once a minute.</p><div class="players">${rows}</div>
-    ${room?'':`<p class="muted">This Google account already has its 2 kids.</p>`}
+    <p class="muted">One Google account keeps up to ${CLOUD_KID_MAX} kids. A new change on the same sync copy uploads by itself. If the sync copies differ, you choose.</p><div class="players">${rows}</div>
+    ${room?'':`<p class="muted">This Google account already has its ${CLOUD_KID_MAX} kids.</p>`}
     <div class="dlg-btns">${saves}${room?'<button class="b ghost sm" data-act="cloudCreateEmpty">Add a child</button>':''}
     ${c.mode==='account'?'<button class="b ghost sm" data-act="cloudAskGuest">Guest farm</button>':''}
     <button class="b ghost sm" data-act="cloudSwitchAccount">Switch account</button>
@@ -172,15 +172,15 @@ function cloudAskCreate(id){
 }
 async function cloudSubmitChild(body,localId){
   if(cloudBusy)return;
-  if(cloudKidList&&cloudKidList.length>=CLOUD_KID_MAX){cloudTell('This Google account already has 2 kids.');return}
+  if(cloudKidList&&cloudKidList.length>=CLOUD_KID_MAX){cloudTell('This Google account already has '+CLOUD_KID_MAX+' kids.');return}
   cloudBusy=true;
   try{
     cloudStash();
     const created=await cloudFetch(cloudConfig().dataBase+'/api/v1/children',{method:'POST',auth:true,json:body});
     if(!created||!created.player)throw new Error('empty');
     if(localId)cloudLink(localId,created.id);
-    cloudRememberKids((cloudKidList||[]).filter(ch=>ch.id!==created.id).concat([{id:created.id,displayName:created.displayName||body.displayName,grade:created.grade||body.grade,look:created.look||body.look,revision:created.revision||1}]));
-    DATA=cloudWrap(created.player);cloudCommit('account',created.id);cloudMarkSynced(created.id,created.revision||1);save();cloudClose();go('town');
+    cloudRememberKids((cloudKidList||[]).filter(ch=>ch.id!==created.id).concat([{id:created.id,username:created.username,displayName:created.displayName||body.displayName,grade:created.grade||body.grade,look:created.look||body.look,revision:created.revision||1,updatedAt:created.updatedAt}]));
+    DATA=cloudWrap(cloudKeepCode(created.player,created.username));cloudCommit('account',created.id);cloudMarkSynced(created.id,created.revision||1);save();cloudClose();go('town');
   }catch(e){cloudTell(e.status===422&&e.message?e.message:'The child was not added. This device was not changed.')}
   finally{cloudBusy=false}
 }
@@ -216,7 +216,7 @@ async function cloudOpenYes(){
     cloudStash();
     let fresh=false;
     if(how==='cache'){const data=JSON.parse(localStorage.getItem('hmf-account-cache-'+id)||'null');if(!data||!data.players)throw new Error('cache');const stamp=data.updated||0;DATA=data;cloudLink(data.players[0]&&data.players[0].id,id);cloudCommit('account',id);save();DATA.updated=stamp;try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}}
-    else{const state=await cloudFetch(cloudConfig().dataBase+'/api/v1/children/'+encodeURIComponent(id),{auth:true});if(!state||!state.player)throw new Error('empty');DATA=cloudWrap(state.player);cloudLink(state.player.id,id);cloudCommit('account',id);cloudMarkSynced(id,state.revision||0);fresh=true;save()}
+    else{const state=await cloudFetch(cloudConfig().dataBase+'/api/v1/children/'+encodeURIComponent(id),{auth:true});if(!state||!state.player)throw new Error('empty');DATA=cloudWrap(cloudKeepCode(state.player,state.username));cloudLink(state.player.id,id);cloudCommit('account',id);cloudMarkSynced(id,state.revision||0);fresh=true;save()}
     cloudClose();go('town');
     if(!fresh)cloudReconcile();
   }catch(e){cloudTell('That farm did not open. This device was not changed.')}
@@ -261,32 +261,81 @@ function cloudSameFarm(a,b){
   const pick=p=>({gems:p.gems||0,time:p.time||0,name:p.name||'',grade:p.grade||'',look:p.look||'',lv:p.lv||{},farm:p.farm||{},sessions:p.sessions||[],seen:p.seen||{}});
   try{return JSON.stringify(pick(a))===JSON.stringify(pick(b))}catch(e){return false}
 }
-function cloudFacts(p){
-  if(!p)return [];
-  const f=p.farm||{};
-  const level=typeof farmLevel==='function'?farmLevel(f.xp||0).l:1;
-  const cleared=p.lv?Object.values(p.lv).filter(r=>r&&r.stars>0).length:0;
-  const animals=(f.animals||[]).length;
-  const goods=Object.values(f.barn||{}).reduce((a,n)=>a+(Number(n)||0),0);
-  const grade=typeof gradeName==='function'?gradeName(p.grade||''):(p.grade||'');
-  return [['Coins',p.gems||0],['Farm level',level],['Stars',cloudStarsOf(p)],['Levels cleared',cleared],['Grade',grade||'–'],['Animals',animals],['Barn goods',goods],['Minutes played',Math.round((p.time||0)/60)]];
+function cloudCropValue(cost,n){return n>0?Math.max(1,Math.round(n*cost*1.2/4)):0}
+function cloudWorth(p){
+  const lines=[];
+  if(!p)return {lines,total:0,stars:0};
+  const f=p.farm||{},barn=f.barn||{};
+  const add=(label,detail,coins)=>{lines.push({label,detail:detail==null?'':String(detail),coins:coins||0})};
+  const coins=Number(p.gems)||0;
+  add('Coins',coins+' 🪙',coins);
+  let cropCoins=0;const cropBits=[];
+  (typeof SEEDS==='undefined'?[]:SEEDS).forEach(S=>{const n=Number(barn[S.id])||0;if(n<1)return;const pay=cloudCropValue(S.cost,n);cropCoins+=pay;cropBits.push(S.name+' '+n+' = '+pay)});
+  if(cropBits.length)add('Crops',cropBits.join(', '),cropCoins);
+  let fishCoins=0;const fishBits=[];
+  const catches=f.fish&&f.fish.catches||{};
+  (typeof FISH_CATCH==='undefined'?[]:FISH_CATCH).forEach(F=>{const n=Number(catches[F.id])||0;if(n<1)return;const pay=F.worth*n;fishCoins+=pay;fishBits.push(F.name+' '+n+' = '+pay)});
+  if(fishBits.length)add('Fish',fishBits.join(', '),fishCoins);
+  let animalCoins=0;const animalBits=[];
+  (f.animals||[]).forEach(a=>{const A=typeof ANIMALS!=='undefined'&&ANIMALS.find(x=>x.id===a.type);if(!A)return;animalCoins+=A.cost;animalBits.push(A.name)});
+  if(animalBits.length)add('Animals',animalBits.join(', '),animalCoins);
+  let decorCoins=0;const decorBits=[];
+  (f.decor||[]).forEach(id=>{const D=typeof DECOR!=='undefined'&&DECOR.find(d=>d.id===id);if(!D)return;decorCoins+=D.cost;decorBits.push(D.name)});
+  if(decorBits.length)add('Decorations',decorBits.join(', '),decorCoins);
+  let landCoins=0;const landBits=[];
+  const unlocked=Number(f.unlocked)||6;
+  for(let u=6;u<unlocked&&u<12;u++){const c=12+4*(u-6);landCoins+=c;landBits.push('patch '+c)}
+  (f.lands||[]).forEach(id=>{const L=typeof LANDS!=='undefined'&&LANDS.find(x=>x.id===id);if(!L)return;landCoins+=L.cost;landBits.push(L.name)});
+  if(landCoins)add('Land',landBits.join(', '),landCoins);
+  let clothCoins=0;const clothBits=[];
+  (f.owned||[]).forEach(key=>{const parts=String(key).split(':'),kind=parts[0],id=parts[1];
+    const item=kind==='shirt'?(typeof SHIRTS!=='undefined'&&SHIRTS.find(s=>s[0]===id)):(typeof HATS!=='undefined'&&HATS.find(h=>h[0]===id));
+    if(!item||!item[3])return;clothCoins+=item[3];clothBits.push(item[1])});
+  if(clothCoins)add('Clothes',clothBits.join(', '),clothCoins);
+  const fish=f.fish||{};
+  let gear=0;const gearBits=[];
+  if((fish.pond||0)>=1){gear+=24;gearBits.push('pond 24')}
+  if((fish.pond||0)>=2){gear+=36;gearBits.push('wide pond 36')}
+  const rods={bamboo:12,river:28,gold:48},tackle={bobber:8,net:16,bucket:10,lantern:14};
+  (fish.owned||[]).forEach(id=>{if(String(id).indexOf('rod:')===0){const c=rods[id.slice(4)]||0;if(c){gear+=c;gearBits.push(id.slice(4)+' '+c)}}else if(tackle[id]){gear+=tackle[id];gearBits.push(id+' '+tackle[id])}});
+  if(gear)add('Fishing gear',gearBits.join(', '),gear);
+  let grow=0,growN=0;
+  (f.plots||[]).forEach(pl=>{if(!pl||!pl.crop)return;const S=typeof SEEDS!=='undefined'&&SEEDS.find(s=>s.id===pl.crop);if(!S)return;grow+=cloudCropValue(S.cost,4);growN++});
+  if(growN)add('Crops growing',growN+(growN===1?' plot':' plots'),grow);
+  const goods=[];
+  (typeof ANIMALS==='undefined'?[]:ANIMALS).forEach(A=>{const n=Number(barn[A.prod])||0;if(n)goods.push(A.pn+' '+n)});
+  if(goods.length)add('Animal goods, kept',goods.join(', '),0);
+  const stars=cloudStarsOf(p);
+  add('Stars',stars,0);
+  const level=typeof farmLevel==='function'?farmLevel((f.xp||0)).l:1;
+  add('Farm level',level,0);
+  return {lines,total:coins+cropCoins+fishCoins+animalCoins+decorCoins+landCoins+clothCoins+gear+grow,stars};
 }
-function cloudSideHtml(title,p,when,copy,newer){
-  const lines=p?cloudFacts(p).map(([k,v])=>`<p>${esc(k)}: <b>${esc(v)}</b></p>`).join(''):'<p>Nothing saved yet</p>';
-  return `<div class="synccard${newer?' newer':''}"><div class="syncwho">${title}${newer?' <span class="tag good">Newer</span>':''}</div><p><b>${esc(p&&p.name||'Farm')}</b></p>${lines}<p class="muted">${esc(when)}</p><p class="muted">${esc(copy)}</p></div>`;
+function cloudAdvice(local,remote){
+  const a=cloudWorth(local),b=cloudWorth(remote);
+  if(!remote)return {side:'local',text:'There is no saved farm yet. Recommended: keep this device.'};
+  if(a.total!==b.total){
+    const side=a.total>b.total?'local':'server';
+    const high=Math.max(a.total,b.total),low=Math.min(a.total,b.total);
+    const who=side==='local'?'This device':'The saved farm';
+    return {side,text:who+' is worth more ('+high+' 🪙 vs '+low+' 🪙). Recommended: keep '+(side==='local'?'this device':'the saved farm')+'.'};
+  }
+  if(a.stars!==b.stars){
+    const side=a.stars>b.stars?'local':'server';
+    return {side,text:'Both are worth '+a.total+' 🪙. '+(side==='local'?'This device':'The saved farm')+' has more stars ('+Math.max(a.stars,b.stars)+' vs '+Math.min(a.stars,b.stars)+'). Recommended: keep '+(side==='local'?'this device':'the saved farm')+'.'};
+  }
+  return {side:null,text:'Both are worth '+a.total+' 🪙, with '+a.stars+' stars. Either copy is fine.'};
 }
-/* same: copies match. upload: only this device changed. download: only the saved farm changed. conflict: both changed. */
-function cloudChoose(localRev,serverRev,same,localChanged,localMs,serverMs){
+function cloudSideHtml(title,p,when,copy,recommended){
+  const w=cloudWorth(p);
+  const lines=p?w.lines.map(l=>{const extra=l.coins&&!String(l.detail).includes('🪙')?' · '+l.coins+' 🪙':'';return `<p>${esc(l.label)}: <b>${esc(l.detail)}</b>${extra}</p>`}).join('')+`<p class="synctotal">Total value: <b>${w.total} 🪙</b></p>`:'<p>Nothing saved yet</p>';
+  return `<div class="synccard${recommended?' newer':''}"><div class="syncwho">${esc(title)}${recommended?' <span class="tag good">Recommended</span>':''}</div><p><b>${esc(p&&p.name||'Farm')}</b></p>${lines}<p class="muted">${esc(when)}</p><p class="muted">${esc(copy)}</p></div>`;
+}
+/* same: the farms match. upload: same sync copy, this device has new changes. conflict: the sync copies differ. */
+function cloudChoose(localRev,serverRev,same){
   if(same)return 'same';
-  if(serverRev===localRev)return 'upload';
-  if(localChanged===false)return 'download';
-  if(localChanged===true)return 'conflict';
-  if(localMs>serverMs+1500)return 'conflict';
-  return 'download';
-}
-function cloudRelationText(choice){
-  if(choice==='conflict')return 'Both copies changed. Compare the coins, farm level and progress, then choose which one to keep.';
-  return 'These copies match. Neither side needs to be replaced.';
+  if(Number(serverRev)===Number(localRev))return 'upload';
+  return 'conflict';
 }
 function cloudDrawSync(remote){
   const el=$('#dlg');if(!el)return;
@@ -295,27 +344,57 @@ function cloudDrawSync(remote){
   const remoteRev=remote&&Number(remote.revision)||0;
   const localMs=cloudStamp(typeof DATA!=='undefined'?DATA.updated:0);
   const serverMs=cloudStamp(remote&&remote.updatedAt);
-  let newer=null;
-  if(localMs&&serverMs&&Math.abs(localMs-serverMs)>1500)newer=localMs>serverMs?'local':'server';
-  else if(remoteRev>localRev)newer='server';
-  else newer='local';
+  const advice=cloudAdvice(local,remote&&remote.player);
   cloudSyncRemote=remote&&remote.player?{player:remote.player,revision:remoteRev,updatedAt:remote.updatedAt||null}:null;
+  const keepLocal=`<button class="b${advice.side==='server'?' ghost':''} sm" data-act="cloudUpload" ${local?'':'disabled'}>Keep this device</button>`;
+  const keepServer=`<button class="b${advice.side==='local'?' ghost':''} sm" data-act="cloudDownload" ${cloudSyncRemote?'':'disabled'}>Keep the saved farm</button>`;
   el.className='show';
   el.innerHTML=`<div class="dlg syncdlg"><div style="flex:1"><div class="dlg-name">Which copy should we keep?</div>
-    <p>${esc(cloudRelationText('conflict'))}</p>
+    <p>${esc(advice.text)}</p>
+    <p class="muted syncmath">Total value adds coins, crops at the market sell price, fish at their prices, animals, decorations, land, clothes, fishing gear, and crops still growing. Stars and animal goods are shown, and they are not added as coins.</p>
     <div class="synccards">
-      ${cloudSideHtml('This device',local,cloudWhen(localMs),'Last synced copy '+localRev,newer==='local')}
-      ${cloudSideHtml('Saved farm',remote&&remote.player,cloudWhen(serverMs),remote&&remote.player?'Saved copy '+remoteRev:'Not on the server yet',newer==='server')}
+      ${cloudSideHtml('This device',local,cloudWhen(localMs),'Sync copy '+localRev,advice.side==='local')}
+      ${cloudSideHtml('Saved farm',remote&&remote.player,cloudWhen(serverMs),remote&&remote.player?'Sync copy '+remoteRev:'Not on the server yet',advice.side==='server')}
     </div>
     <div class="dlg-btns">
-      <button class="b sm" data-act="cloudUpload" ${local?'':'disabled'}>Keep this device</button>
-      <button class="b ghost sm" data-act="cloudDownload" ${cloudSyncRemote?'':'disabled'}>Keep the saved farm</button>
+      ${advice.side==='server'?keepServer+keepLocal:keepLocal+keepServer}
       <button class="b ghost sm" data-act="cloudClose">Not now</button>
     </div></div></div>`;
+}
+function cloudCodeOk(code){return /^P\d{7}$/.test(code||'')}
+function cloudKeepCode(player,username){if(player&&cloudCodeOk(username))player.code=username;return player}
+function cloudPlayerCode(p){
+  if(p&&cloudCodeOk(p.code))return p.code;
+  if(!cloudIsAccount()||!cloudKidList)return '';
+  const ch=cloudKidList.find(k=>k&&k.id===cloudRead().childId);
+  return ch&&cloudCodeOk(ch.username)?ch.username:'';
+}
+function cloudSyncLine(){
+  if(!cloudIsAccount())return '';
+  const ms=cloudLastSync(cloudRead().childId);
+  return ms?'Synced '+cloudWhen(ms):'Not synced yet';
+}
+function cloudStampListedCode(list){
+  if(!cloudIsAccount()||typeof cur!=='function')return;
+  const ch=(list||[]).find(k=>k&&k.id===cloudRead().childId);
+  const p=cur();
+  if(!ch||!p||!cloudCodeOk(ch.username)||p.code===ch.username)return;
+  p.code=ch.username;save();
+}
+function cloudPaintId(){
+  const p=typeof cur==='function'?cur():null;
+  const code=cloudPlayerCode(p),sync=cloudSyncLine();
+  const fc=document.getElementById('fcode'),fs=document.getElementById('fsync');
+  if(fc){fc.textContent=code;fc.hidden=!code}
+  if(fs){fs.textContent=sync;fs.hidden=!sync}
+  const hud=document.querySelector('.fhud');if(hud)hud.classList.toggle('hasid',!!(code||sync));
+  document.querySelectorAll('.pillcode').forEach(el=>{el.textContent=code;el.hidden=!code});
+  document.querySelectorAll('.synctime').forEach(el=>{el.textContent=sync;el.hidden=!sync});
 }
 function cloudMarkSynced(id,revision,material){
   if(id)cloudSetRevision(id,revision||0);
   cloudRememberSync(id);
+  cloudPaintId();
   const mat=material==null?cloudMaterial():material;
   cloudSavedMaterial=mat;cloudWriteBase(id,mat);cloudConflictSig=null;cloudAutoHold=false;cloudPending=null;
 }
@@ -381,10 +460,9 @@ async function cloudReconcile(opts){
     const state=await cloudFetch(cloudConfig().dataBase+'/api/v1/children/'+encodeURIComponent(c.childId),{auth:true});
     const localRev=cloudRevision(c.childId),serverRev=Number(state&&state.revision)||0;
     const same=!!(state&&state.player&&cloudSameFarm(local,state.player));
-    const base=cloudReadBase(c.childId);
-    const localChanged=base==null?null:base!==material;
-    const choice=cloudChoose(localRev,serverRev,same,localChanged,cloudStamp(DATA.updated),cloudStamp(state&&state.updatedAt));
+    const choice=cloudChoose(localRev,serverRev,same);
     if(choice==='same'){
+      cloudKeepCode(local,state&&state.username);if(local&&local.code)save();
       cloudMarkSynced(c.childId,serverRev,material);
       if(manual){cloudClose();cloudTell('Already the same. Nothing was changed.')}
       return;
@@ -393,13 +471,6 @@ async function cloudReconcile(opts){
       cloudBusy=false;
       await cloudRunSync('upload',true,true);
       if(manual&&!cloudAutoHold){cloudClose();cloudTell('Uploaded. The saved farm now matches this device.')}
-      return;
-    }
-    if(choice==='download'){
-      if(!state||!state.player){if(manual){cloudClose();cloudTell('There is no saved farm yet. This device was not changed.')}return}
-      cloudAdopt(state.player,serverRev);cloudMarkSynced(c.childId,serverRev);
-      if(!['level','result'].includes(UI&&UI.screen))cloudRefresh();
-      if(manual){cloudClose();cloudTell('Downloaded. This device now matches the saved farm.')}
       return;
     }
     const sig=serverRev+'|'+material;
@@ -413,7 +484,7 @@ async function cloudReconcile(opts){
   }finally{cloudBusy=false}
 }
 function cloudAutoSave(){return cloudReconcile()}
-function cloudBoot(){if(cloudIsAccount())cloudReconcile()}
+function cloudBoot(){cloudLoadKids();cloudPaintId();if(cloudIsAccount())cloudReconcile()}
 setInterval(cloudAutoSave,60000);
 Object.assign(ACT,{
   cloudLogin:()=>cloudLogin(),cloudLogout:()=>cloudLogout(),cloudSwitchAccount:()=>cloudSwitchAccount(),cloudSwitchAccountYes:()=>cloudSwitchAccountYes(),cloudSync:()=>cloudOpenSync(),cloudChildren:()=>cloudShowChildren(),
