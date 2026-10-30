@@ -475,8 +475,9 @@ function rLevel(){
   let work='';
   if(q.type==='pair')work=pairHTML(q);
   if(q.type==='zerobox')work=zeroHTML(q);
-  if(q.type==='friends')work=friendsHTML(q);
-  if(q.type==='hats')work=hatsHTML(q);
+  const trickShow=(q.type==='friends'||q.type==='hats')&&(UI.phase==='demo'||UI.phase==='answer'||(UI.phase==='right'&&q.demo>=2));
+  if(q.type==='friends')work=trickShow?trickDemoHTML(q):friendsHTML(q);
+  if(q.type==='hats')work=trickShow?trickDemoHTML(q):hatsHTML(q);
   if(q.type==='basket')work=basketHTML(q);
   const voice=voiceArm(q);
   const pad=UI.phase==='answer'?`${voice}<div class="display" id="disp" aria-live="polite"></div><div class="pad" id="pad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join('')}<button data-k="back" aria-label="Delete">⌫</button><button data-k="0">0</button><button data-k="ok" class="ok" aria-label="Attack">⚡</button></div>`:'';
@@ -484,6 +485,7 @@ function rLevel(){
   $('#bpanel').innerHTML=`<div class="bnpc ${UI.bubble.kind||''}"><span class="bface">${ico(npcKey(D.npc),D.npc.e)}</span><div>${UI.bubble.html}</div></div>${work}${pad}${next}`;
   if(UI.phase==='answer')PAD={v:''};
   voiceArmStart();
+  if(trickShow){const demo=document.querySelector('.basketdemo');if(demo)demo.scrollIntoView({block:'nearest'})}
   if(UI.phase==='right')$('#nextBtn').focus({preventScroll:true});
 }
 function pairHTML(q){
@@ -547,7 +549,7 @@ function friendsHTML(q){
   const chips=t.map((x,i)=>used.has(i)?'':`<button class="chip ${x.s==='+'?'plus':'minus'} ${q.sel.includes(i)?'sel':''}" data-act="friendTap" data-i="${i}" ${UI.phase!=='work'?'disabled':''}>${q.plain?'':`<span class="s">${sg(x.s)}</span>`}<span class="n">${x.n}</span></button>`).join('');
   const joined=q.pairs.map(([a,b],k)=>{const v=val(t[a])+val(t[b]);return `<span class="coinwrap"><span class="coin wide ${v<0?'neg':''} ${k===q.pairs.length-1&&q.justMade?'pop':''}">${q.plain?'':v<0?MINUS:'+'}${Math.abs(v)}</span><small>${q.plain?`${t[a].n} + ${t[b].n}`:`${sg(t[a].s)}${t[a].n} ${sg(t[b].s)} ${t[b].n}`}</small></span>`}).join('');
   q.justMade=false;
-  return `${chips?`<div class="row">${chips}</div>`:''}${joined?`<div class="row friends">${joined}</div>`:''}`;
+  return `${chips?`<div class="row">${chips}</div>`:''}${joined?`<div class="row friends">${joined}</div>`:''}${bigReadHTML(t.map(x=>x.n))}`;
 }
 /* Can the terms not yet used all still be paired into round numbers? (keeps a child from getting stuck) */
 function friendsCanFinish(q,used){
@@ -565,8 +567,7 @@ function friendTap(i){
       if(!friendsCanFinish(q,used))UI.bubble={kind:'bad',html:`${txt} is round, but then someone is left with no friend. Try another pair!`};
       else{q.pairs.push([a,b]);q.justMade=true;bat(batSparkle);const r=`${txt} = <b>${q.plain?'':v<0?MINUS:'+'}${Math.abs(v)}</b>`;
         if(used.size<t.length)UI.bubble={kind:'good',html:`Best friends! ${r}. Find the next pair.`};
-        else{UI.phase='answer';UI.bubble={kind:'good',html:`Best friends! ${r}. Now add up the round numbers and attack ⚡`}}}}
-  }
+        else return trickStartDemo(q)}}}
   rLevel();
 }
 /* ---------- Hat and Cloak: tap each number to put on a hat (round it up); the cloak keeps what was added ---------- */
@@ -576,7 +577,9 @@ function hatsHTML(q){
   let sum='';
   if(q.hats.length===q.nums.length){const H=q.nums.map((_,i)=>q.hatsInfo(i));
     sum=`<div class="livesum">🎩 ${H.map(h=>h.R).join(' + ')} = <b>${H.reduce((a,h)=>a+h.R,0)}</b><br>🧥 ${H.map(h=>h.d).join(' + ')} = <b>${H.reduce((a,h)=>a+h.d,0)}</b></div>`}
-  return `<div class="row hats">${chips}</div>${sum}`;
+  const shown=q.nums.slice();
+  if(q.hats.length)q.hats.forEach(i=>{const h=q.hatsInfo(i);shown.push(h.R,h.d)});
+  return `<div class="row hats">${chips}</div>${sum}${bigReadHTML(shown)}`;
 }
 /* ---------- Same Basket: A baskets of B, and A baskets of C. Drag one from each orchard into one big basket. ---------- */
 function fruitRow(n,emoji){const show=Math.min(n,4);return `<span class="fruits" aria-hidden="true">${Array.from({length:show},()=>`<i>${emoji}</i>`).join('')}</span>`}
@@ -658,12 +661,100 @@ function basketDemoDone(q){
   UI.bubble={kind:'',html:`Your turn. What is <b>${q.a} × (${q.b} + ${q.c})</b>? ${basketVoiceHint(q)}`};
   rLevel();
 }
+function trickDemoHTML(q){
+  const step=q.demo|0,ask=UI.phase==='answer',solved=UI.phase==='right',show=ask||solved?2:step;
+  const block=(n,title,body)=>show>=n?`<section class="demo-step"><p class="demo-k">${n+1}. ${title}</p>${body}</section>`:'';
+  const tail=solved?q.answer:'?';
+  if(q.type==='friends'){
+    const t=q.terms,rounds=q.pairs.map(([a,b])=>{const v=val(t[a])+val(t[b]);const txt=q.plain?`${t[a].n} + ${t[b].n}`:`${sg(t[a].s)}${t[a].n} ${sg(t[b].s)} ${t[b].n}`;return {v,txt}});
+    const cards=rounds.map(r=>`<div class="demo-card"><span>${esc(r.txt)}</span><small>=</small><span class="stay">${r.v<0?MINUS:''}${Math.abs(r.v)}</span></div>`).join('');
+    const line=rounds.map((r,i)=>`${i?(r.v<0?` ${MINUS} `:' + '):''}${Math.abs(r.v)}`).join('');
+    const reads=bigReadHTML(rounds.map(r=>r.v).concat(t.map(x=>x.n)));
+    return `<div class="basketdemo step${show}${ask?' ask':''}" aria-live="polite">${block(0,'Best friends',`<p class="demo-note">Each pair makes a round number.</p><div class="demo-row demo-scroll">${cards}<span class="demo-pad" aria-hidden="true"></span></div>`)}${block(1,'Line them up',`<p class="demo-note">Add the round numbers. A minus pair is taken away.</p><div class="demo-result demo-scroll"><span>${line}</span><span class="demo-pad" aria-hidden="true"></span></div>`)}${block(2,'Add them up',`<p class="demo-note">Now the whole sum.</p><div class="demo-result demo-scroll"><span>${line}</span><small>=</small><span class="blank">${tail}</span><span class="demo-pad" aria-hidden="true"></span></div>`)}${reads}</div>`;
+  }
+  const H=q.nums.map((n,i)=>Object.assign({n},q.hatsInfo(i)));
+  const hatSum=H.reduce((a,h)=>a+h.R,0),cloakSum=H.reduce((a,h)=>a+h.d,0);
+  const dressed=H.map(h=>`<div class="demo-card"><span>${h.n}</span><small>=</small><span class="stay">${h.R}</span><small>${MINUS}</small><span>${h.d}</span></div>`).join('');
+  const reads=bigReadHTML(q.nums.concat(H.map(h=>h.R)));
+  return `<div class="basketdemo step${show}${ask?' ask':''}" aria-live="polite">${block(0,'Put on the hats',`<p class="demo-note">Each number grows to the next round number. The cloak remembers what was added.</p><div class="demo-row demo-scroll">${dressed}<span class="demo-pad" aria-hidden="true"></span></div>`)}${block(1,'Add the hats',`<p class="demo-note">Add the round hats first.</p><div class="demo-result demo-scroll"><span>${H.map(h=>h.R).join(' + ')}</span><small>=</small><span class="stay">${hatSum}</span><span class="demo-pad" aria-hidden="true"></span></div>`)}${block(2,'Take off the cloaks',`<p class="demo-note">Then take away every cloak.</p><div class="demo-result demo-scroll"><span class="stay">${hatSum}</span><small>${MINUS}</small><span>${H.map(h=>h.d).join(' + ')}</span><small>=</small><span class="blank">${tail}</span><span class="demo-pad" aria-hidden="true"></span></div>`)}${reads}</div>`;
+}
+function trickStartDemo(q){
+  UI.phase='demo';q.demo=0;
+  UI.bubble={kind:'good',html:q.type==='hats'?'Watch slowly. Step 1: every number puts on a hat.':'Watch slowly. Step 1: each pair is a round number.'};
+  rLevel();
+  clearTimeout(UI.basketTimer);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches){UI.basketTimer=setTimeout(()=>trickDemoDone(q),400);return}
+  UI.basketTimer=setTimeout(()=>trickDemoStep(q,1),3000);
+}
+function trickDemoStep(q,step){
+  if(UI.screen!=='level'||!UI.qs||UI.qs[UI.idx]!==q||UI.phase!=='demo')return;
+  q.demo=step;
+  UI.bubble={kind:'good',html:q.type==='hats'?(step===1?'Step 2: add the hats.':'Step 3: take off the cloaks.'):(step===1?'Step 2: line up the round numbers.':'Step 3: add them up.')};
+  rLevel();
+  clearTimeout(UI.basketTimer);
+  UI.basketTimer=setTimeout(()=>step>=2?trickDemoDone(q):trickDemoStep(q,step+1),3000);
+}
+function trickDemoDone(q){
+  if(UI.screen!=='level'||!UI.qs||UI.qs[UI.idx]!==q||UI.phase==='answer'||UI.phase==='right')return;
+  q.demo=2;UI.phase='answer';
+  const ask=q.type==='hats'?'Add the hats, then take away the cloaks.':'Add the round numbers.';
+  UI.bubble={kind:'',html:`Your turn. ${ask} ${basketVoiceHint(q)}`};
+  rLevel();
+}
+const SAY_SMALL=['zero','one','two','three','four','five','six','seven','eight','nine','ten','eleven','twelve','thirteen','fourteen','fifteen','sixteen','seventeen','eighteen','nineteen'];
+const SAY_TENS=['','','twenty','thirty','forty','fifty','sixty','seventy','eighty','ninety'];
+function sayUnder100(n){if(n<20)return SAY_SMALL[n];const t=Math.floor(n/10),o=n%10;return SAY_TENS[t]+(o?'-'+SAY_SMALL[o]:'')}
+function sayGroup(n){const h=Math.floor(n/100),r=n%100,hw=h?SAY_SMALL[h]+' hundred':'',rw=r?sayUnder100(r):'';return hw&&rw?hw+' and '+rw:hw||rw}
+function englishNumber(n){
+  if(n<0)return 'minus '+englishNumber(-n);
+  if(n===0)return 'zero';
+  const parts=[],scales=[[1e9,'billion'],[1e6,'million'],[1000,'thousand']];
+  let rest=n;
+  for(const [v,name] of scales){if(rest>=v){parts.push(sayGroup(Math.floor(rest/v))+' '+name);rest%=v}}
+  if(rest){const tail=sayGroup(rest);if(parts.length&&rest<100)parts[parts.length-1]+=' and '+tail;else parts.push(tail)}
+  return parts.join(', ');
+}
+const ZH_DIGIT='零一二三四五六七八九';
+function zhGroup(n){
+  if(!n)return '';
+  const unit=['','十','百','千'];let s='',zero=false;
+  for(let i=3;i>=0;i--){const d=Math.floor(n/Math.pow(10,i))%10;if(!d){if(s)zero=true;continue}if(zero){s+='零';zero=false}if(!(d===1&&i===1&&!s))s+=ZH_DIGIT[d];s+=unit[i]}
+  return s;
+}
+function chineseNumber(n){
+  if(n<0)return '负'+chineseNumber(-n);
+  if(n===0)return '零';
+  const yi=Math.floor(n/1e8),wan=Math.floor(n%1e8/1e4),ge=n%10000;let s='';
+  if(yi)s+=zhGroup(yi)+'亿';
+  if(wan){if(yi&&wan<1000)s+='零';s+=zhGroup(wan)+'万'}else if(yi&&ge)s+='零';
+  if(ge){if((yi||wan)&&ge<1000)s+='零';s+=zhGroup(ge)}
+  return s;
+}
+function sayNumber(n){return UI.lang==='zh-CN'?chineseNumber(n):englishNumber(n)}
+function capSay(s){return s?s.charAt(0).toUpperCase()+s.slice(1):s}
+function similarBig(n){
+  const sign=n<0?-1:1,a=Math.abs(n),s=String(a).split('');
+  for(let k=s.length-1;k>=0;k--){const d=+s[k];for(const delta of [1,-1,2,-2]){const nd=d+delta;if(nd<0||nd>9||(k===0&&nd===0))continue;const t=s.slice();t[k]=String(nd);const m=+t.join('');if(m!==a&&m>=10000)return sign*m}}
+  return sign*(a+1);
+}
+function bigReadHTML(nums){
+  const rows=[];
+  (nums||[]).forEach(n=>{const a=Math.abs(n);if(a>=10000&&!rows.some(r=>r.n===n))rows.push({n,a})});
+  if(!rows.length)return '';
+  const zh=UI.lang==='zh-CN';
+  return `<p class="bigread">${rows.map(r=>`<b>${r.n<0?MINUS:''}${r.a.toLocaleString('en-US')}</b> ${zh?'读作':'is'} “${esc(capSay(sayNumber(r.a)))}.”`).join('<br>')}</p>`;
+}
 function basketVoiceExample(q){
+  if(Math.abs(q.answer)>=10000)return capSay(sayNumber(Math.abs(similarBig(q.answer))));
   const zh=UI.lang==='zh-CN';
   const samples=zh?[[18,'十八'],[42,'四十二'],[112,'一百一十二']]:[[18,'eighteen'],[42,'forty-two'],[112,'one hundred twelve']];
   return (samples.find(s=>s[0]!==q.answer)||samples[1])[1];
 }
 function basketVoiceHint(q){
+  if(Math.abs(q.answer)>=10000){
+    const sim=similarBig(q.answer),words=capSay(sayNumber(Math.abs(sim))),shown=Math.abs(sim).toLocaleString('en-US');
+    return UI.lang==='zh-CN'?`大数可以这样读。${shown} 读作「${words}」。用同样的方法说出得数。`:`A number like ${shown} is “${words}.” Say yours the same way.`;
+  }
   const eg=basketVoiceExample(q);
   return UI.lang==='zh-CN'?`说出得数。例如：「${eg}」。`:`Say the number. For example: “${eg}”.`;
 }
@@ -916,9 +1007,8 @@ function breakPick(i){
 function hatTap(i){
   const q=UI.qs[UI.idx];if(UI.phase!=='work'||q.hats.includes(i))return;
   q.hats.push(i);bat(batSparkle);const h=q.hatsInfo(i);
-  if(q.hats.length<q.nums.length)UI.bubble={kind:'good',html:`${q.nums[i]} puts on a hat and grows to <b>${h.R}</b>. Its cloak remembers ${MINUS}${h.d}.`};
-  else{UI.phase='answer';UI.bubble={kind:'good',html:'Everyone has a hat! Add the hats, take away the cloaks, and attack ⚡'}}
-  rLevel();
+  if(q.hats.length<q.nums.length){UI.bubble={kind:'good',html:`${q.nums[i]} puts on a hat and grows to <b>${h.R}</b>. Its cloak remembers ${MINUS}${h.d}.`};rLevel()}
+  else trickStartDemo(q);
 }
 function padKey(k){
   if(!PAD||UI.screen!=='level'||UI.phase!=='answer')return;
