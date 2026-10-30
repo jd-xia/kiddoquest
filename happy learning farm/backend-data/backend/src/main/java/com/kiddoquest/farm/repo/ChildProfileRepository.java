@@ -28,6 +28,8 @@ public interface ChildProfileRepository extends JpaRepository<ChildProfile, Stri
 
     Optional<ChildProfile> findByIdAndOwnerUserId(String id, String ownerUserId);
 
+    Optional<ChildProfile> findByUsername(String username);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from ChildProfile c where c.id = :id and c.ownerUserId = :owner")
     Optional<ChildProfile> lockByIdAndOwner(@Param("id") String id, @Param("owner") String owner);

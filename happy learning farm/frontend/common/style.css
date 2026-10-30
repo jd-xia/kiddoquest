@@ -833,3 +833,55 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 @keyframes rise{0%{transform:translateY(0);opacity:0}12%{opacity:.85}100%{transform:translateY(-210px);opacity:0}}
 @keyframes rays{from{transform:translateX(0)}to{transform:translateX(-48px)}}
 @media (prefers-reduced-motion:reduce){.under .swimmer,.under .bub,.under .rays,.fighter.tug .swimmer,.fighter.reel .swimmer,.schoolfish,.under.waiting .line.dropping,.leap-fish,.leap-splash,.struggle,.struggle .catchfish,.struggle .hand,.struggle .spray{animation:none}.struggle{opacity:1}}
+
+/* Leaderboard, chat, and the server lamp. */
+.linklamp{width:22px;height:22px;padding:0;border-radius:50%;border:2px solid #F2C46B;background:#8A93B5;box-shadow:0 0 0 3px rgba(0,0,0,.25);cursor:pointer;flex:none;display:inline-grid;place-items:center;color:#102018;font-weight:800;font-size:13px;line-height:1}
+.linklamp.on{background:#3DDC97;box-shadow:0 0 10px #3DDC97}
+.linklamp.on::after{content:"✓"}
+.linklamp.off{background:#FF5D73;box-shadow:0 0 10px #FF5D73}
+.linklamp.off::after{content:"!"}
+.linklamp.wait{background:#FFD447;animation:lamps 1.2s ease-in-out infinite}
+.pill.hallpill,.fround.hallbtn{position:relative}
+.halldot{position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#FF5D73;border:2px solid #fff}
+.hallcorner{position:fixed;z-index:6;top:calc(env(safe-area-inset-top,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 10px);display:flex;align-items:center;gap:8px}
+.hallpanel{position:fixed;inset:0;z-index:16}
+.hallpanel[hidden]{display:none !important}
+.hallback{position:absolute;inset:0;border:0;padding:0;background:rgba(4,8,24,.55);cursor:pointer}
+.hallbox{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(880px,calc(100% - 20px));height:min(640px,calc(100% - 20px));display:flex;flex-direction:column;background:#141B3A;color:#F4F7FF;border:2px solid #F2C46B;border-radius:22px;box-shadow:0 18px 40px rgba(0,0,0,.45);overflow:hidden}
+.halltop{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px 0;font-size:20px}
+.hallrule{margin:6px 14px 8px;font-size:13px;line-height:1.35;color:#D5DCF5}
+.hallsplit{display:flex;min-height:0;flex:1}
+.hallside{flex:1;min-width:0;display:flex;flex-direction:column;border-right:1px solid rgba(242,196,107,.35)}
+.halllist{flex:1;overflow:auto;padding:0 10px 8px}
+.hallall{margin:0 10px 12px}
+.hallrow{display:flex;align-items:center;gap:8px;width:100%;margin:0 0 8px;padding:8px;border-radius:16px;border:2px solid #2A3870;background:#1C2754;color:inherit;text-align:left;cursor:pointer;font:inherit}
+.hallrow.me{border-color:#F2C46B}
+.hallrank{width:34px;flex:none;text-align:center;font-size:18px}
+.halle{font-size:26px;line-height:1;flex:none}
+.hallwho{flex:1;min-width:0;display:flex;flex-direction:column}
+.hallwho b,.hallwho small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hallwho small{color:#C9D3F5;font-size:12px}
+.hallstat{flex:none;text-align:right;display:flex;flex-direction:column}
+.hallstat b{color:#FFE793}
+.hallstat small{color:#C9D3F5;font-size:12px}
+.ondot{display:inline-block;width:8px;height:8px;margin-left:6px;border-radius:50%;background:#3DDC97;box-shadow:0 0 6px #3DDC97;vertical-align:middle}
+.hallchat{width:min(340px,42%);display:flex;flex-direction:column;min-height:0}
+.hallchat[hidden]{display:none !important}
+.hallbackbtn{display:none}
+.halllog{flex:1;overflow:auto;padding:8px 12px}
+.hallmsg{display:flex;gap:8px;margin:0 0 10px}
+.hallmsg p{margin:2px 0 0;white-space:pre-wrap;word-break:break-word}
+.hallmsg small{color:#C9D3F5;font-weight:600}
+.hallmsg.mine{flex-direction:row-reverse;text-align:right}
+.hallform{display:flex;gap:8px;padding:8px 12px}
+.hallform[hidden]{display:none !important}
+.hallform input{flex:1;min-width:0;border-radius:999px;border:2px solid #2A3870;background:#0E1430;color:#fff;padding:8px 12px;font:inherit}
+.hallfine{margin:0 12px 10px;font-size:12px;color:#C9D3F5}
+@media (max-width:720px){
+  .hallchat{width:100%}
+  .hallpanel:not(.split) .hallchat{display:none !important}
+  .hallpanel.split .hallside{display:none}
+  .hallbackbtn{display:inline-flex}
+}
+@keyframes lamps{50%{opacity:.45}}
+@media (prefers-reduced-motion:reduce){.linklamp.wait{animation:none}}

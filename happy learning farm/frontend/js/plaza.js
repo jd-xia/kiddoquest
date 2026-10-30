@@ -8,6 +8,7 @@ function rPlayers(){
   const canAdd=signed?(typeof cloudKidCount==='function'&&cloudKidCount()!=null&&cloudKidCount()<CLOUD_KID_MAX):DATA.players.length<6;
   const addAct=signed?'cloudAddKid':'addPlayer';
   $('#app').innerHTML=`
+  <div class="hallcorner">${typeof linkLampHTML==='function'?linkLampHTML():''}${typeof hallMarkHTML==='function'?hallMarkHTML('pill hallpill'):''}</div>
   <h1>Happy Learning Farm</h1>
   ${npcHTML(MAYOR,signed?`Hello! This Google account can have ${CLOUD_KID_MAX} kids. Tap who is playing.`:'Hello! Who is playing today? Tap your name.')}
   ${accountList!=null?accountList:`<div class="players">${DATA.players.map(p=>`<div class="playerrow"><button class="player" data-act="choose" data-id="${p.id}"><div class="e">${avE(p)}</div><div class="nm">${esc(p.name)}</div>${p.code?`<div class="pcode">${esc(p.code)}</div>`:''}<div class="muted"><span class="tag good">${gradeName(gradeOf(p))}</span> ⭐ ${totalStars(p)} · 🪙 ${p.gems}</div></button><button class="b ghost sm" data-act="cloudCloseAsk" data-id="${p.id}">Close</button></div>`).join('')}</div>`}
@@ -463,6 +464,8 @@ function farmHud(){const p=cur();
     <button class="fcard" data-act="toPlayers" aria-label="Switch player"><span class="fav">${avE(p)}</span>
       <span class="fmeta"><b class="fname">${esc(p.name)}</b><span class="fcode" id="fcode"${code?'':' hidden'}>${esc(code)}</span><span class="fsync" id="fsync"${sync?'':' hidden'}>${esc(sync)}</span><span class="flvl" id="flvl"></span></span></button>
     <div class="fright"><span class="fpill" id="coins">🪙 ${p.gems}</span><span class="fpill">⭐ ${totalStars(p)}</span>
+      ${typeof linkLampHTML==='function'?linkLampHTML():''}
+      ${typeof hallMarkHTML==='function'?hallMarkHTML('fround hallbtn'):''}
       <button class="fround art" data-act="toStudio" aria-label="Art Studio: draw your own pictures" title="Art Studio">🎨</button>
       <button class="fround" data-act="openProgress" aria-label="Progress board and settings" title="Progress board">⚙️</button></div>
   </div>`}
@@ -515,7 +518,7 @@ function rTown(){
     <div class="paintbar" id="paintbar">🎨 Paint mode: tap anyone or anything on the farm to draw your own!</div>
   </div>
   <p class="muted townhint">Tap the ground to walk and drag sideways to turn the camera. Tap a field patch to plant. Walk into a building to go inside. Harvested crops can be sold at the market.</p>
-  <div class="places" id="places" role="menu"><b class="places-title">🗺️ Go to…</b>${quick}<button class="b ghost sm" data-act="mayorTalk">🐻 How to play</button></div>
+  <div class="places" id="places" role="menu"><b class="places-title">🗺️ Go to…</b>${quick}<button class="b ghost sm" data-act="hallOpen">🏆 Leaderboard</button><button class="b ghost sm" data-act="mayorTalk">🐻 How to play</button></div>
   <div class="sidebtns">${typeof cloudIsAccount==='function'&&cloudIsAccount()?'<button class="sbtn" data-act="cloudSync" aria-label="Sync this farm">☁️<span>Sync</span></button>':''}<button class="sbtn" data-act="places" aria-label="Places" aria-expanded="false">🗺️<span>Places</span></button>
     <button class="sbtn paintbtn ${PAINT?'on':''}" data-act="paint" aria-pressed="${PAINT}" aria-label="Paint the farm">🖌️<span>Paint</span></button>
     <button class="sbtn bag" data-act="quick" data-id="barn" aria-label="Backpack: open the barn">🎒<span>Backpack</span></button></div>

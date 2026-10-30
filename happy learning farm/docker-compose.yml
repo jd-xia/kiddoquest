@@ -1,6 +1,6 @@
 # Nginx on port 8080 serves the local frontend and proxies the APIs.
 # Public API address is http://localhost:8080.
-# /api/v1/auth/ goes to OpenID on 8081. /api/v1/children goes to the farm API on 8082.
+# /api/v1/auth/ goes to OpenID on 8081. Other /api/v1/ routes go to the farm API on 8082.
 # Account and farm rows live in MySQL. docker compose down keeps that data.
 # docker compose down -v deletes the MySQL volume.
 # From this directory: docker compose up --build

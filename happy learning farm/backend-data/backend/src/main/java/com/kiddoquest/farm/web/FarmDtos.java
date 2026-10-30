@@ -50,4 +50,14 @@ public final class FarmDtos {
     public record SyncResponse(String status, long revision, String childId, JsonNode player, JsonNode serverPlayer,
             List<String> notes) {
     }
+
+    public record BoardEntry(int rank, String username, String name, String grade, String look, int cleared,
+            int questions, int firstTry, Integer accuracy, int stars, int score, boolean online) {
+    }
+
+    public record ChatLine(String id, String from, String name, String look, String text, Instant at) {
+    }
+
+    public record ChatTicket(String ticket) {
+    }
 }

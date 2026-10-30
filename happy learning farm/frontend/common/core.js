@@ -112,6 +112,8 @@ function topBar(title,backAct){
   return `<div class="top">${backAct?`<button class="back" data-act="${backAct}" aria-label="Back">←</button>`:''}
   <div class="title">${title}</div>
   <span class="stat" aria-label="Stars">⭐ ${totalStars(p)}</span><span class="stat" id="coins" aria-label="Coins">🪙 ${p.gems}</span>
+  ${typeof linkLampHTML==='function'?linkLampHTML():''}
+  ${typeof hallMarkHTML==='function'?hallMarkHTML('pill hallpill'):''}
   ${PAGE_FILE==='studio.html'?'':'<button class="pill artpill" data-act="toStudio" aria-label="Art Studio: draw your own pictures" title="Art Studio">🎨</button>'}
   ${typeof cloudTopActions==='function'?cloudTopActions():''}
   <button class="pill" data-act="toPlayers" aria-label="Switch player"><span class="av">${avE(p)}</span><span class="who"><b>${esc(p.name)}</b>${typeof cloudPlayerCode==='function'&&cloudPlayerCode(p)?`<small class="pillcode">${esc(cloudPlayerCode(p))}</small>`:''}${typeof cloudSyncLine==='function'&&cloudSyncLine()?`<small class="synctime">${esc(cloudSyncLine())}</small>`:''}</span></button></div>`;
