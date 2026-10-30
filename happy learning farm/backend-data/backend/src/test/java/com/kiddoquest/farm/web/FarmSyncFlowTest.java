@@ -126,6 +126,24 @@ class FarmSyncFlowTest {
                 .andExpect(jsonPath("$.length()").value(5));
     }
 
+    @Test
+    void oneEmailCannotReuseAChildName() throws Exception {
+        String ada = bearer("user-a", "Ada@Example.com");
+        String bea = bearer("user-b", "bea@example.com");
+        createNamed(ada, "Jayden");
+        mvc.perform(post("/api/v1/children").header("Authorization", "Bearer " + ada)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"displayName\":\"jayden\",\"grade\":\"p1\",\"look\":\"boy\"}"))
+                .andExpect(status().isUnprocessableEntity());
+        createNamed(bea, "Jayden");
+        mvc.perform(get("/api/v1/children").header("Authorization", "Bearer " + ada))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].email").value("ada@example.com"));
+        mvc.perform(get("/api/v1/children").header("Authorization", "Bearer " + bea))
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].displayName").value("Jayden"));
+    }
+
     private String create(String token, ObjectNode player) throws Exception {
         ObjectNode body = json.createObjectNode();
         body.put("displayName", "Mia");
@@ -141,6 +159,16 @@ class FarmSyncFlowTest {
         String username = body(result).path("username").asText();
         org.junit.jupiter.api.Assertions.assertTrue(username.matches("P\\d{7}"));
         return body(result).path("id").asText();
+    }
+
+    private void createNamed(String token, String name) throws Exception {
+        ObjectNode body = json.createObjectNode();
+        body.put("displayName", name);
+        body.put("grade", "p1");
+        body.put("look", "girl");
+        mvc.perform(post("/api/v1/children").header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(body)))
+                .andExpect(status().isCreated());
     }
 
     private MvcResult sync(String token, String child, String key, long base, String policy, ObjectNode player) throws Exception {
@@ -202,16 +230,22 @@ class FarmSyncFlowTest {
     }
 
     private static String bearer(String userId) throws Exception {
+        return bearer(userId, null);
+    }
+
+    private static String bearer(String userId, String email) throws Exception {
         Instant now = Instant.now();
-        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+        JWTClaimsSet.Builder claims = new JWTClaimsSet.Builder()
                 .issuer("http://localhost:8080")
                 .subject(userId)
                 .audience("kiddoquest")
                 .issueTime(Date.from(now))
                 .expirationTime(Date.from(now.plusSeconds(3600)))
-                .jwtID(UUID.randomUUID().toString())
-                .build();
-        SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+                .jwtID(UUID.randomUUID().toString());
+        if (email != null) {
+            claims.claim("email", email);
+        }
+        SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims.build());
         jwt.sign(new MACSigner(SECRET.getBytes(StandardCharsets.UTF_8)));
         return jwt.serialize();
     }

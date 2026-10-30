@@ -145,6 +145,8 @@ button:focus-visible,input:focus-visible{outline:3px solid var(--accent);outline
 
 /* players */
 .players{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.playerrow{display:flex;flex-direction:column;gap:6px}
+.playerrow .b{width:100%}
 .player{background:var(--surface);border:3px solid var(--line);border-radius:20px;padding:16px;text-align:center;cursor:pointer}
 .player .e{font-size:54px;line-height:1.1}
 .player .nm{font-weight:700;font-size:20px}

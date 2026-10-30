@@ -52,7 +52,7 @@ function cloudPlayersHtml(){
   if(!cloudKidList){cloudLoadKids();return '<p class="muted">Loading the kids on this Google account…</p>'}
   if(!cloudKidList.length)return '<p class="muted">This Google account has no kids yet. Add the first child below.</p>';
   const active=cloudIsAccount()?cloudRead().childId:null;
-  return `<p class="syncnote">${esc(cloudSyncNotice())}</p><div class="players">${cloudKidList.map(ch=>{const when=cloudStamp(ch.updatedAt)?cloudWhen(ch.updatedAt):'';return `<button class="player" data-act="cloudSwitch" data-id="${esc(ch.id)}"><div class="e">${cloudLookEmoji(ch.look)}</div><div class="nm">${esc(ch.displayName)}</div>${ch.username?`<div class="pcode">${esc(ch.username)}</div>`:''}<div class="muted"><span class="tag good">${esc(typeof gradeName==='function'?gradeName(ch.grade):ch.grade||'')}</span>${ch.id===active?' · Playing now':''}${when?` · Last sync ${esc(when)}`:' · Not synced yet'}</div></button>`}).join('')}</div>`;
+  return `<p class="syncnote">${esc(cloudSyncNotice())}</p><div class="players">${cloudKidList.map(ch=>{const when=cloudStamp(ch.updatedAt)?cloudWhen(ch.updatedAt):'';return `<div class="playerrow"><button class="player" data-act="cloudSwitch" data-id="${esc(ch.id)}"><div class="e">${cloudLookEmoji(ch.look)}</div><div class="nm">${esc(ch.displayName)}</div>${ch.username?`<div class="pcode">${esc(ch.username)}</div>`:''}<div class="muted"><span class="tag good">${esc(typeof gradeName==='function'?gradeName(ch.grade):ch.grade||'')}</span>${ch.id===active?' · Playing now':''}${when?` · Last sync ${esc(when)}`:' · Not synced yet'}</div></button><button class="b ghost sm" data-act="cloudCloseAsk" data-id="${esc(ch.id)}">Close</button></div>`}).join('')}</div>`;
 }
 function cloudSaveLocalHtml(){
   if(!cloudToken()||!cloudKidList||!cloudRoom())return '';
@@ -63,7 +63,7 @@ function cloudSaveLocalHtml(){
 function cloudBarHtml(){
   const c=cloudRead(),signed=!!cloudToken(),label=c.session&&(c.session.email||c.session.displayName),who=signed&&label?`Signed in as ${esc(label)}. `:'';
   if(c.mode==='account')return `<div class="cloudbar"><h3>Saved farm</h3><p class="syncnote">${esc(cloudSyncNotice(c.childId))}</p><p class="muted">${who}A new change on the same sync copy uploads by itself. If the sync copies differ, you choose. The dialog recommends the copy worth more.</p><div class="row">
-    <button class="b" data-act="cloudSync">☁️ Sync</button><button class="b ghost" data-act="cloudChildren">Saved farms</button>
+    <button class="b" data-act="cloudSync">☁️ Sync</button><button class="b ghost" data-act="cloudChildren">Saved farms</button><button class="b ghost" data-act="cloudCloseCurrent">Close this child</button>
     <button class="b ghost" data-act="cloudAskGuest">Guest farm</button>
     ${signed?'<button class="b ghost" data-act="cloudSwitchAccount">Switch account</button><button class="b ghost" data-act="cloudLogout">Sign out</button>':'<button class="b" data-act="cloudLogin">Sign in</button>'}</div></div>`;
   return `<div class="cloudbar"><h3>On this device</h3><p class="muted">${who}No sign-in needed. The farm does not contact the server until you choose to.</p><div class="row">
@@ -132,6 +132,104 @@ async function cloudExchange(idToken){
   }catch(e){cloudPickingAccount=false;cloudTell(e.status===409&&e.message?e.message:(e.status===503?'Google sign-in is not configured on the server. This farm was not changed.':'Sign-in did not finish. This account was not changed.'))}
 }
 function cloudLogout(){cloudDetachAccount();const c=cloudRead();c.session=null;c.mode='guest';c.childId=null;cloudWrite(c);cloudKidList=null;cloudKidStamp=0;cloudClose();cloudTell('Signed out. This Google account stays saved. The farm on this device is unchanged.');if(typeof go==='function')go('players');else if(typeof rPlayers==='function')rPlayers()}
+let cloudCloseId='',cloudCloseName='',cloudCloseRemote=false;
+function cloudChildLabel(id){
+  const ch=(cloudKidList||[]).find(k=>k&&k.id===id);
+  if(ch)return {name:(ch.displayName||'').trim(),remote:true};
+  const pools=[typeof DATA!=='undefined'?DATA:null];
+  try{pools.push(JSON.parse(localStorage.getItem('hmf-guest-backup')||'null'))}catch(e){}
+  for(const data of pools){const p=data&&(data.players||[]).find(x=>x&&x.id===id);if(p)return {name:(p.name||'').trim(),remote:false}}
+  if(cloudIsAccount()&&cloudRead().childId===id&&typeof cur==='function'&&cur())return {name:(cur().name||'').trim(),remote:true};
+  return null;
+}
+function cloudCloseReady(){
+  const input=document.getElementById('closeName'),btn=document.getElementById('closeYes');
+  if(!btn)return;
+  const typed=(input&&input.value||'').trim().toLowerCase();
+  btn.disabled=!cloudCloseName||typed!==cloudCloseName.trim().toLowerCase();
+}
+function cloudCloseCurrent(){
+  const c=cloudRead();
+  if(c.mode==='account'&&c.childId)return cloudCloseAsk(c.childId);
+  const p=typeof cur==='function'?cur():null;
+  if(p)return cloudCloseAsk(p.id);
+  cloudTell('Choose a child first.');
+}
+function cloudCloseAsk(id){
+  const who=cloudChildLabel(id);
+  if(!who||!who.name){cloudTell('Choose a child first.');return}
+  cloudCloseId=id;cloudCloseName=who.name;cloudCloseRemote=!!who.remote;
+  const el=$('#dlg');if(!el||DLG)return;el.className='show';
+  const where=who.remote?'this device and the saved account':'this device';
+  el.innerHTML=`<div class="dlg"><div style="flex:1"><div class="dlg-name">Close this child</div>
+    <p>Type <b>${esc(who.name)}</b> to remove this farm from ${where}. Coins, stars and progress go with it.</p>
+    <p><input id="closeName" maxlength="16" autocomplete="off" autocapitalize="off" placeholder="Type the name" aria-label="Type the child name to confirm"></p>
+    <div class="dlg-btns"><button class="b sm" id="closeYes" data-act="cloudCloseYes" disabled>Close</button><button class="b ghost sm" data-act="cloudClose">Not now</button></div></div></div>`;
+  const input=document.getElementById('closeName');
+  if(input){input.addEventListener('input',cloudCloseReady);input.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault();cloudCloseYes()}});input.focus()}
+}
+function cloudWipeArt(pid){
+  if(!pid||typeof ART==='undefined')return;
+  Object.keys(ART[pid]||{}).forEach(k=>{if(typeof deleteArt==='function')deleteArt(pid,k)});
+}
+function cloudLocalIdFor(childId){
+  const links=cloudLinks();
+  const hit=Object.keys(links).find(k=>links[k]===childId);
+  if(hit)return hit;
+  if(cloudIsAccount()&&cloudRead().childId===childId&&typeof DATA!=='undefined'&&DATA.players&&DATA.players[0])return DATA.players[0].id;
+  return null;
+}
+function cloudForgetRemote(childId){
+  ['hmf-account-cache-','hmf-rev-','hmf-sync-at-','hmf-sync-base-'].forEach(p=>{try{localStorage.removeItem(p+childId)}catch(e){}});
+  const localId=cloudLocalIdFor(childId);
+  const links=cloudLinks();
+  Object.keys(links).forEach(k=>{if(links[k]===childId||k===localId)delete links[k]});
+  try{localStorage.setItem(cloudLinkKey(),JSON.stringify(links))}catch(e){}
+  if(localId)cloudWipeArt(localId);
+  const c=cloudRead();
+  if(c.mode==='account'&&c.childId===childId){
+    let next=null;
+    try{next=JSON.parse(localStorage.getItem('hmf-guest-backup')||'null')}catch(e){}
+    DATA=next&&next.players?next:{v:3,updated:Date.now(),current:null,players:[]};
+    c.mode='guest';c.childId=null;cloudWrite(c);
+  }else if(localId&&typeof DATA!=='undefined'){
+    DATA.players=(DATA.players||[]).filter(p=>p.id!==localId);
+    if(DATA.current===localId)DATA.current=DATA.players[0]?DATA.players[0].id:null;
+  }
+  if(cloudKidList)cloudKidList=cloudKidList.filter(ch=>ch.id!==childId);
+  save();
+}
+function cloudForgetGuest(localId){
+  if(typeof DATA==='undefined'||!localId)return;
+  cloudWipeArt(localId);
+  DATA.players=(DATA.players||[]).filter(p=>p.id!==localId);
+  if(DATA.current===localId)DATA.current=DATA.players[0]?DATA.players[0].id:null;
+  try{const g=JSON.parse(localStorage.getItem('hmf-guest-backup')||'null');if(g&&g.players){g.players=g.players.filter(p=>p.id!==localId);localStorage.setItem('hmf-guest-backup',JSON.stringify(g))}}catch(e){}
+  save();
+}
+async function cloudCloseYes(){
+  cloudCloseReady();
+  const btn=document.getElementById('closeYes');
+  if(!cloudCloseId||!cloudCloseName||(btn&&btn.disabled)){cloudTell('Type the child\'s name to close the farm.');return}
+  const id=cloudCloseId,name=cloudCloseName,remote=cloudCloseRemote;
+  if(remote){
+    if(!cloudToken()){cloudTell('Sign in again before closing this saved child.');return}
+    if(cloudBusy)return;
+    cloudBusy=true;cloudAutoHold=true;
+    try{
+      await cloudFetch(cloudConfig().dataBase+'/api/v1/children/'+encodeURIComponent(id),{method:'DELETE',auth:true});
+    }catch(e){
+      if(e.status!==404){cloudBusy=false;cloudAutoHold=false;cloudTell(e.status===401?'Please sign in again. Nothing was closed.':'The saved farm could not be closed. Nothing was removed.');return}
+    }
+    cloudForgetRemote(id);
+    cloudBusy=false;cloudAutoHold=false;
+  }else cloudForgetGuest(id);
+  cloudCloseId='';cloudCloseName='';cloudCloseRemote=false;
+  cloudClose();
+  cloudTell(name+' is closed. The farm is gone from '+(remote?'this device and the saved account.':'this device.'));
+  if(typeof go==='function')go('players');
+  else if(typeof rPlayers==='function')rPlayers();
+}
 function cloudSwitchAccount(){
   const el=$('#dlg');if(!el||DLG)return;const who=cloudRead().session&&(cloudRead().session.email||cloudRead().session.displayName);
   el.className='show';
@@ -152,7 +250,7 @@ function cloudDrawChildren(list){
   cloudRememberKids(list||[]);
   const c=cloudRead(),room=cloudRoom();
   const saves=cloudUnsavedLocals().slice(0,room).map(p=>`<button class="b ghost sm" data-act="cloudCreate" data-id="${esc(p.id)}">Save ${esc(p.name)} to this account</button>`).join('');
-  const rows=(cloudKidList||[]).map(ch=>{const when=cloudStamp(ch.updatedAt)?cloudWhen(ch.updatedAt):'Not synced yet';return `<button class="player" data-act="cloudSwitch" data-id="${esc(ch.id)}"><div class="nm">${esc(ch.displayName)}</div>${ch.username?`<div class="pcode">${esc(ch.username)}</div>`:''}<div class="muted">${esc(typeof gradeName==='function'?gradeName(ch.grade):ch.grade||'')} · Last sync ${esc(when)}</div></button>`}).join('')||'<p class="muted">No kids on this account yet.</p>';
+  const rows=(cloudKidList||[]).map(ch=>{const when=cloudStamp(ch.updatedAt)?cloudWhen(ch.updatedAt):'Not synced yet';return `<div class="playerrow"><button class="player" data-act="cloudSwitch" data-id="${esc(ch.id)}"><div class="nm">${esc(ch.displayName)}</div>${ch.username?`<div class="pcode">${esc(ch.username)}</div>`:''}<div class="muted">${esc(typeof gradeName==='function'?gradeName(ch.grade):ch.grade||'')} · Last sync ${esc(when)}</div></button><button class="b ghost sm" data-act="cloudCloseAsk" data-id="${esc(ch.id)}">Close</button></div>`}).join('')||'<p class="muted">No kids on this account yet.</p>';
   const el=$('#dlg');if(!el)return;el.className='show';
   el.innerHTML=`<div class="dlg cloudpick"><div style="flex:1"><div class="dlg-name">Kids on this account</div>
     <p class="syncnote">${esc(cloudSyncNotice())}</p>
@@ -170,9 +268,15 @@ function cloudAskCreate(id){
     <p class="muted">The guest farm stays on this device.</p>
     <div class="dlg-btns"><button class="b sm" data-act="cloudCreateYes">Save</button><button class="b ghost sm" data-act="cloudChildren">Back</button></div></div></div>`;
 }
+function cloudNameTaken(name){
+  const n=(name||'').trim().toLowerCase();
+  if(!n||!cloudKidList)return false;
+  return cloudKidList.some(ch=>ch&&(ch.displayName||'').trim().toLowerCase()===n);
+}
 async function cloudSubmitChild(body,localId){
   if(cloudBusy)return;
   if(cloudKidList&&cloudKidList.length>=CLOUD_KID_MAX){cloudTell('This Google account already has '+CLOUD_KID_MAX+' kids.');return}
+  if(cloudNameTaken(body&&body.displayName)){cloudTell('This account already has a child named '+((body.displayName||'').trim())+'.');return}
   cloudBusy=true;
   try{
     cloudStash();
@@ -492,5 +596,5 @@ Object.assign(ACT,{
   cloudOpen:d=>cloudAskOpen(d.id),cloudOpenYes:()=>cloudOpenYes(),cloudSwitch:d=>cloudSwitch(d.id),cloudAskGuest:()=>cloudAskGuest(),cloudUseGuest:()=>cloudUseGuest(),
   cloudUpload:()=>cloudUpload(),cloudDownload:()=>cloudDownload(),
   cloudKeepLocal:()=>cloudUpload(),cloudKeepServer:()=>cloudDownload(),cloudMerge:()=>{cloudClose();cloudRunSync('merge',false)},
-  cloudClose:()=>cloudClose()
+  cloudClose:()=>cloudClose(),cloudCloseAsk:d=>cloudCloseAsk(d.id),cloudCloseCurrent:()=>cloudCloseCurrent(),cloudCloseYes:()=>cloudCloseYes()
 });

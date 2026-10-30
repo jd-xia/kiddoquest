@@ -42,7 +42,7 @@ function rProgress(){
     </div>`;
   }).join('');
   $('#app').innerHTML=topBar('Progress Board','toTown')+`<p class="muted">“Right first try” counts questions answered correctly without losing a heart. Levels below 70% are flagged for practice. ${typeof cloudStatusLine==='function'?cloudStatusLine():'Progress is saved on this device.'}</p>`+sections+
-  `<div class="card section"><h2>Start again</h2><p class="muted">Every child on this device goes back to a new farm with 1000 coins. Stars, crops and earned coins are cleared. A saved farm stays until you open Sync and tap Upload.</p><button class="b ghost" data-act="resetAll">${resetArmed?'Tap again to reset every child':'Reset every child'}</button></div>`;
+  `<div class="card section"><h2>Start again</h2><p class="muted">Every child on this device goes back to a new farm with 1000 coins. Stars, crops and earned coins are cleared. A saved farm stays until you open Sync and tap Upload.</p><button class="b ghost" data-act="resetAll">${resetArmed?'Tap again to reset every child':'Reset every child'}</button><p class="muted">Close removes this child after the name is typed again. A saved child is removed here and on the account.</p><button class="b ghost" data-act="cloudCloseCurrent">Close this child</button></div>`;
 }
 
 Object.assign(ACT,{

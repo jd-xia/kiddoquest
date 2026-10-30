@@ -75,6 +75,7 @@ public class ChildService {
         child.setEmail(cleanEmail(email));
         child.setUsername(nextUsername());
         child.setDisplayName(validator.cleanName(request.displayName(), "Farmer"));
+        requireUniqueName(child.getEmail(), child.getDisplayName(), child.getId());
         child.setGrade(validator.cleanGrade(request.grade(), "p3"));
         child.setLook(validator.cleanLook(request.look()));
         child.setCreatedAt(now);
@@ -96,7 +97,9 @@ public class ChildService {
         }
         boolean changed = false;
         if (request.displayName() != null) {
-            child.setDisplayName(validator.cleanName(request.displayName(), child.getDisplayName()));
+            String nextName = validator.cleanName(request.displayName(), child.getDisplayName());
+            requireUniqueName(child.getEmail(), nextName, child.getId());
+            child.setDisplayName(nextName);
             changed = true;
         }
         if (request.grade() != null) {
@@ -152,7 +155,9 @@ public class ChildService {
             snap.setPlayerJson(mapper.writeValueAsString(player));
             snap.setContentHash(ContentHash.sha256(mapper, player));
             snap.setUpdatedAt(now);
-            child.setDisplayName(player.path("name").asText(child.getDisplayName()));
+            String nextName = player.path("name").asText(child.getDisplayName());
+            requireUniqueName(child.getEmail(), nextName, child.getId());
+            child.setDisplayName(nextName);
             child.setGrade(player.path("grade").asText(child.getGrade()));
             child.setLook(player.path("look").asText(child.getLook()));
             child.setUpdatedAt(now);
@@ -193,6 +198,15 @@ public class ChildService {
             }
         }
         throw new SyncRejectedException("A player number could not be chosen. This device was not changed.");
+    }
+
+    private void requireUniqueName(String email, String name, String exceptId) {
+        if (email == null || email.isBlank() || name == null || name.isBlank()) {
+            return;
+        }
+        if (children.nameTaken(email, name, exceptId == null ? "" : exceptId)) {
+            throw new SyncRejectedException("This account already has a child named " + name + ".");
+        }
     }
 
     private static String cleanEmail(String email) {

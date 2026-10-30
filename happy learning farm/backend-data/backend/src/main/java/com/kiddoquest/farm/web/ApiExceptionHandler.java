@@ -36,6 +36,11 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     ResponseEntity<ApiError> conflict(DataIntegrityViolationException ex) {
+        String text = String.valueOf(ex.getMostSpecificCause().getMessage());
+        if (text.contains("uk_farm_child_email_name")) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                    .body(new ApiError("rejected", "This account already has a child with that name."));
+        }
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ApiError("interrupted", "Sync was interrupted. This device was not changed. Try again."));
     }

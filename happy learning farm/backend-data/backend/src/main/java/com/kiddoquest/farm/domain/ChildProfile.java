@@ -11,7 +11,10 @@ import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(name = "farm_child", indexes = @Index(name = "ix_farm_child_owner", columnList = "owner_user_id"),
-        uniqueConstraints = @UniqueConstraint(name = "uk_farm_child_username", columnNames = "username"))
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_farm_child_username", columnNames = "username"),
+                @UniqueConstraint(name = "uk_farm_child_email_name", columnNames = {"email", "display_name"})
+        })
 public class ChildProfile {
 
     @Id

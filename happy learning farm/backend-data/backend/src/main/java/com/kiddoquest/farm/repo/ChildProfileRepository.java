@@ -20,6 +20,12 @@ public interface ChildProfileRepository extends JpaRepository<ChildProfile, Stri
 
     boolean existsByUsername(String username);
 
+    @Query("""
+            select case when count(c) > 0 then true else false end from ChildProfile c
+            where c.email = :email and lower(c.displayName) = lower(:name) and c.id <> :id
+            """)
+    boolean nameTaken(@Param("email") String email, @Param("name") String name, @Param("id") String id);
+
     Optional<ChildProfile> findByIdAndOwnerUserId(String id, String ownerUserId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
