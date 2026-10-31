@@ -1,12 +1,23 @@
 /* Farm Chat. The lamp checks the farm server. The list shows every saved child, with farm level, stars, and coins.
    Chat needs a signed-in saved child. A voice message is a short recording. */
 let LINK='wait';
-const HALL={open:false,rows:[],thread:null,lines:[],note:'',unread:0,ws:null,opening:false,ready:false,childId:null};
+const HALL={open:false,rows:[],thread:null,lines:[],note:'',unread:0,ws:null,opening:false,ready:false,childId:null,lens:{}};
 let HALL_WAIT=1500,HALL_POLL=null;
 
+/* Signed out, the lamp stays gray. Signed in, it shows the server check. */
+function linkSigned(){try{return typeof cloudToken==='function'&&!!cloudToken()}catch(e){return false}}
+function linkShown(){return linkSigned()?LINK:'idle'}
+function linkLabel(s){return s==='idle'?'Not signed in':s==='on'?'Server connected':s==='off'?'Server not connected':'Checking the server'}
 function linkLampHTML(){
-  const label=LINK==='on'?'Server connected':LINK==='off'?'Server not connected':'Checking the server';
-  return `<button type="button" class="linklamp ${LINK}" data-act="linkLamp" aria-label="${label}" title="${label}"></button>`;
+  const s=linkShown(),label=linkLabel(s);
+  return `<button type="button" class="linklamp ${s}" data-act="linkLamp" aria-label="${label}" title="${label}"></button>`;
+}
+function linkPaint(){
+  const s=linkShown(),label=linkLabel(s);
+  document.querySelectorAll('.linklamp').forEach(el=>{
+    if(el.className==='linklamp '+s)return;
+    el.className='linklamp '+s;el.setAttribute('aria-label',label);el.title=label;
+  });
 }
 function hallMarkHTML(cls){
   return `<button type="button" class="${cls}" data-act="hallOpen" aria-label="Farm Chat">💬${HALL.unread?'<i class="halldot" aria-hidden="true"></i>':''}</button>`;
@@ -14,11 +25,7 @@ function hallMarkHTML(cls){
 function linkSet(next){
   if(LINK===next)return;
   LINK=next;
-  document.querySelectorAll('.linklamp').forEach(el=>{
-    el.className='linklamp '+LINK;
-    const label=LINK==='on'?'Server connected':LINK==='off'?'Server not connected':'Checking the server';
-    el.setAttribute('aria-label',label);el.title=label;
-  });
+  linkPaint();
 }
 function linkWatch(){
   const ping=()=>{
@@ -28,9 +35,10 @@ function linkWatch(){
   };
   ping();
   setInterval(ping,12000);
+  setInterval(linkPaint,1000);
 }
 function linkLamp(){
-  const text=LINK==='on'?'The farm server is connected.':LINK==='off'?'The farm server is not connected.':'Still checking the farm server.';
+  const text=!linkSigned()?'Sign in to connect to the farm server.':LINK==='on'?'The farm server is connected.':LINK==='off'?'The farm server is not connected.':'Still checking the farm server.';
   if(typeof toast==='function'&&$('#toast'))toast(text,3200);
   else if(typeof notice==='function')notice(text);
 }
@@ -114,10 +122,11 @@ function hallPaintChat(){
   hallPaintPeer();
   const mine=hallMine(),signed=typeof cloudIsAccount==='function'&&cloudIsAccount();
   log.innerHTML=(HALL.lines||[]).map(m=>{
-    const body=m.kind==='voice'||m.voice?`<button type="button" class="hallvoice" data-act="hallPlay" data-id="${esc(m.id)}">▶ Voice</button>`:`<p>${esc(m.text||'')}</p>`;
+    const body=m.kind==='voice'||m.voice?hallVoiceHTML(m):`<p>${esc(m.text||'')}</p>`;
     return `<div class="hallmsg${m.from===mine?' mine':''}"><span class="halle">${hallLook(m.look)}</span><div><b>${esc(m.name||m.from||'')}</b> <small>${esc(hallWhen(m.at))}</small>${body}</div></div>`;
   }).join('')||`<p class="muted">${signed?'No messages yet. Say hello, or send a voice message.':'Sign in and open a saved child to chat.'}</p>`;
   log.scrollTop=log.scrollHeight;
+  (HALL.lines||[]).forEach(m=>{if(m.voice&&!(m.id in HALL.lens))hallVoiceMeasure(m)});
   const form=$('#hallForm');
   if(form)form.hidden=!signed;
   if(!HALL.voiceRec)fine.textContent=signed?(HALL.ready?'Be kind. A grown-up can read this chat. Tap the mic to send a voice message.':'Connecting the chat…'):'Sign in and open a saved child to chat.';
@@ -290,12 +299,13 @@ function hallVoiceBegin(){
       const blob=new Blob(chunks,{type:rec.mimeType||pick||'audio/webm'});
       if(blob.size<400){hallFine('Hold a little longer, then tap the mic to send.');return}
       if(blob.size>400000){hallFine('That voice message is too long. Try a shorter one.');return}
+      const secs=Math.max(1,Math.min(15,Math.round((Date.now()-(HALL.voiceT0||Date.now()))/1000)));
       const reader=new FileReader();
-      reader.onload=()=>{const s=String(reader.result||''),i=s.indexOf(',');hallSendVoice(i>=0?s.slice(i+1):s,hallVoiceCleanMime(blob.type))};
+      reader.onload=()=>{const s=String(reader.result||''),i=s.indexOf(',');hallSendVoice(i>=0?s.slice(i+1):s,hallVoiceCleanMime(blob.type),secs)};
       reader.onerror=()=>hallFine('That voice message did not send.');
       reader.readAsDataURL(blob);
     };
-    try{rec.start(250)}catch(e){hallVoiceCancel();hallFine('This browser cannot record a voice message.');return}
+    try{rec.start(250);HALL.voiceT0=Date.now()}catch(e){hallVoiceCancel();hallFine('This browser cannot record a voice message.');return}
     hallVoicePaint(true);
     if(HALL.voiceStopPending){HALL.voiceStopPending=false;hallVoiceFinish(true);return}
     HALL.voiceTimer=setTimeout(()=>hallVoiceFinish(true),15000);
@@ -310,7 +320,7 @@ function hallVoiceFinish(send){
   HALL.voiceStopping=true;
   try{if(typeof rec.requestData==='function')rec.requestData();rec.stop()}catch(e){hallVoiceCancel();hallFine('That voice message did not send.')}
 }
-async function hallSendVoice(b64,mime){
+async function hallSendVoice(b64,mime,secs){
   if(!HALL.thread||!b64)return;
   if(!(typeof cloudIsAccount==='function'&&cloudIsAccount())){hallFine('Sign in and open a saved child to chat.');return}
   const c=cloudRead(),as=c.childId;
@@ -319,6 +329,7 @@ async function hallSendVoice(b64,mime){
   try{
     const line=await cloudFetch(cloudConfig().dataBase+'/api/v1/chat/voice',{method:'POST',auth:true,timeoutMs:90000,json:{as, to:HALL.thread, voice:b64, mime:mime||'audio/webm'}});
     HALL.voiceWaiting=false;
+    if(line&&line.id&&secs)HALL.lens[line.id]=secs;
     if(HALL.open&&HALL.thread){
       if(!HALL.lines.some(l=>l.id===line.id))HALL.lines.push(line);
       hallPaintChat();
@@ -331,14 +342,41 @@ async function hallSendVoice(b64,mime){
     hallFine(msg);
   }
 }
+/* Voice bubble like WeChat: ▶ to play, ■ to stop, length in seconds, wider for longer clips. */
+function hallVoiceSrc(m){return 'data:'+hallVoiceCleanMime(m.mime||'audio/webm')+';base64,'+m.voice}
+function hallVoiceHTML(m){
+  const secs=HALL.lens[m.id],playing=HALL.audioId===m.id&&HALL.audio&&!HALL.audio.paused;
+  const w=secs?Math.min(220,84+secs*9):96;
+  return `<button type="button" class="hallvoice${playing?' playing':''}" data-act="hallPlay" data-id="${esc(m.id)}" style="width:${w}px" aria-label="${playing?'Stop':'Play'} voice message${secs?', '+secs+' seconds':''}"><i class="hvicon" aria-hidden="true"></i><span class="hvwave" aria-hidden="true"><i></i><i></i><i></i></span><span class="hvlen">${secs?secs+'″':''}</span></button>`;
+}
+function hallVoiceMark(id){
+  const m=(HALL.lines||[]).find(l=>l.id===id);if(!m)return;
+  const log=$('#hallLog');if(!log)return;
+  log.querySelectorAll('.hallvoice').forEach(btn=>{if(btn.dataset.id===String(id))btn.outerHTML=hallVoiceHTML(m)});
+}
+function hallVoiceMeasure(m){
+  HALL.lens[m.id]=0;
+  const a=new Audio();a.preload='metadata';
+  const done=sec=>{a.onloadedmetadata=a.ontimeupdate=a.onerror=null;if(sec>0&&Number.isFinite(sec)){HALL.lens[m.id]=Math.max(1,Math.round(sec));hallVoiceMark(m.id)}};
+  a.onloadedmetadata=()=>{
+    if(Number.isFinite(a.duration)&&a.duration>0)return done(a.duration);
+    /* Recorder webm has no length in its header. Seeking to the end makes the browser work it out. */
+    a.ontimeupdate=()=>{if(Number.isFinite(a.duration)&&a.duration>0){done(a.duration);try{a.currentTime=0}catch(e){}}};
+    try{a.currentTime=1e7}catch(e){}
+  };
+  a.onerror=()=>done(0);
+  a.src=hallVoiceSrc(m);
+}
 function hallPlay(d){
   const m=(HALL.lines||[]).find(l=>l.id===d.id);if(!m||!m.voice)return;
-  if(HALL.audio&&HALL.audioId===m.id&&!HALL.audio.paused){HALL.audio.pause();return}
-  if(HALL.audio){try{HALL.audio.pause()}catch(e){}}
-  const mime=hallVoiceCleanMime(m.mime||'audio/webm');
-  const audio=new Audio('data:'+mime+';base64,'+m.voice);
+  const prev=HALL.audioId;
+  if(HALL.audio&&HALL.audioId===m.id&&!HALL.audio.paused){HALL.audio.pause();HALL.audio=null;HALL.audioId=null;hallVoiceMark(m.id);return}
+  if(HALL.audio){try{HALL.audio.pause()}catch(e){}HALL.audio=null;HALL.audioId=null;if(prev)hallVoiceMark(prev)}
+  const audio=new Audio(hallVoiceSrc(m));
   HALL.audio=audio;HALL.audioId=m.id;
-  audio.play().catch(()=>hallFine('This voice message could not play.'));
+  const end=()=>{if(HALL.audio!==audio)return;HALL.audio=null;HALL.audioId=null;hallVoiceMark(m.id)};
+  audio.onended=end;audio.onerror=end;
+  audio.play().then(()=>hallVoiceMark(m.id)).catch(()=>{end();hallFine('This voice message could not play.')});
 }
 Object.assign(ACT,{linkLamp,hallOpen,hallClose,hallHold,hallChat,hallHall,hallList,hallMe,hallMic,hallPlay});
 linkWatch();

@@ -842,6 +842,7 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .linklamp.off{background:#FF5D73;box-shadow:0 0 10px #FF5D73}
 .linklamp.off::after{content:"!"}
 .linklamp.wait{background:#FFD447;animation:lamps 1.2s ease-in-out infinite}
+.linklamp.idle{background:#8A93B5;border-color:#B7BFD8;box-shadow:0 0 0 3px rgba(0,0,0,.25)}
 .pill.hallpill,.fround.hallbtn{position:relative}
 .halldot{position:absolute;top:2px;right:2px;width:10px;height:10px;border-radius:50%;background:#FF5D73;border:2px solid #fff}
 .hallcorner{position:fixed;z-index:6;top:calc(env(safe-area-inset-top,0px) + 10px);right:calc(env(safe-area-inset-right,0px) + 10px);display:flex;align-items:center;gap:8px}
@@ -880,8 +881,21 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .hallform input{flex:1;min-width:0;border-radius:999px;border:2px solid #2A3870;background:#0E1430;color:#fff;padding:8px 12px;font:inherit}
 .hallform .hallmic{flex:none;min-width:48px;padding:8px 12px}
 .hallform .hallmic.live{background:#FF5D73;color:#fff}
-.hallvoice{margin:2px 0 0;border:0;border-radius:999px;background:#31427A;color:#fff;font:inherit;font-weight:700;padding:8px 14px;cursor:pointer}
-.hallmsg.mine .hallvoice{background:#3E6BFF}
+.hallvoice{margin:4px 0 0;max-width:100%;min-height:40px;display:flex;align-items:center;gap:8px;border:0;border-radius:6px 16px 16px 16px;background:#31427A;color:#fff;font:inherit;font-weight:700;padding:8px 12px;cursor:pointer;text-align:left}
+.hallmsg.mine .hallvoice{background:#3E6BFF;flex-direction:row-reverse;border-radius:16px 6px 16px 16px;margin-left:auto;text-align:right}
+.hallvoice .hvicon{flex:none;width:0;height:0;border-style:solid;border-width:7px 0 7px 12px;border-color:transparent transparent transparent currentColor}
+.hallvoice.playing .hvicon{width:12px;height:12px;border:0;border-radius:2px;background:currentColor}
+.hallvoice .hvwave{flex:1;display:flex;align-items:center;gap:3px;min-width:0}
+.hallmsg.mine .hallvoice .hvwave{justify-content:flex-end}
+.hallvoice .hvwave i{display:block;width:3px;height:8px;border-radius:2px;background:currentColor;opacity:.75}
+.hallvoice .hvwave i:nth-child(2){height:14px}
+.hallvoice .hvwave i:nth-child(3){height:10px}
+.hallvoice.playing .hvwave i{animation:hvwave .8s ease-in-out infinite}
+.hallvoice.playing .hvwave i:nth-child(2){animation-delay:.15s}
+.hallvoice.playing .hvwave i:nth-child(3){animation-delay:.3s}
+@keyframes hvwave{0%,100%{transform:scaleY(.5)}50%{transform:scaleY(1.2)}}
+.hallvoice .hvlen{flex:none;font-size:14px;min-width:1.6em}
+@media (prefers-reduced-motion:reduce){.hallvoice.playing .hvwave i{animation:none}}
 .hallfine{margin:0 12px 10px;font-size:12px;color:#C9D3F5}
 @media (max-width:720px){
   .hallchat{width:100%}
