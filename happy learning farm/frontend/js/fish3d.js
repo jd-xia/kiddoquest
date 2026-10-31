@@ -215,8 +215,9 @@ function fishViewSpecies(id){
   const look=FISH_LOOK[id]||FISH_LOOK.minnow;
   if(g.kind===id&&g.fish)return;
   if(g.fish){g.scene.remove(g.fish);if(!g.own)fishDispose(g.fish);g.fish=null}   // a child's model shares its parts with every copy: never dispose it
-  const own=typeof modelOf==='function'&&modelOf('fish:'+id),built=own?ownFish(own):id==='octopus'?makeOctopus(look):makeFish(look);g.own=!!own;
-  if(id!=='octopus'&&!own)built.group.scale.setScalar(1.18);
+  const plain=()=>{const b=id==='octopus'?makeOctopus(look):makeFish(look);if(id!=='octopus')b.group.scale.setScalar(1.18);b.plain=true;return b};
+  const built=typeof modelOf==='function'?ownOr('fish:'+id,()=>{const o=modelOf('fish:'+id);return o&&ownFish(o)},plain):plain();
+  g.own=!built.plain;
   g.scene.add(built.group);g.fish=built.group;g.mouth=built.mouth;g.kind=id;
   g.anchor=-built.mouth.position.x*(built.group.scale.x||1);
   g.y=fishDepthY();built.group.position.set(g.anchor,g.y,0);

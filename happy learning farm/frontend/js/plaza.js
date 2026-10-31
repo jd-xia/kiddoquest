@@ -395,7 +395,15 @@ function buildProps(S){
    What we built stays (hidden), so walls, taps and doors work exactly as before. */
 function swapModel(g,key,spots,label){
   const a=artOf(key);if(!a||!a.obj)return false;
+  const kids=g.children.slice(),mixers=F.mixers.length;
+  try{return placeModel(g,key,spots,label)}
+  catch(e){   // put the original back exactly as it was
+    console.warn('Own 3D model skipped:',key,e);
+    g.children.slice().forEach(c=>{if(!kids.includes(c))g.remove(c)});kids.forEach(c=>c.visible=true);F.mixers.length=mixers;return false}
+}
+function placeModel(g,key,spots,label){
   const p=g.position.clone(),r=g.rotation.clone(),s=g.scale.clone();g.position.set(0,0,0);g.rotation.set(0,0,0);g.scale.set(1,1,1);g.updateMatrixWorld(true);
+  try{
   let top=0;
   if(!spots){const b=new THREE.Box3().setFromObject(g),sz=b.getSize(new THREE.Vector3()),c=b.getCenter(new THREE.Vector3());spots=[[c.x,c.z,sz.x,sz.z,sz.y*1.4]]}
   g.children.forEach(c=>c.visible=false);
@@ -403,7 +411,8 @@ function swapModel(g,key,spots,label){
     m.updateMatrixWorld(true);top=Math.max(top,new THREE.Box3().setFromObject(m).max.y);
     const an=modelAnim(obj);if(an){an.play();F.mixers.push(an)}}
   if(label){const t=labelSprite(label,{h:.5});t.position.set(spots[0][0],top+.6,spots[0][1]);g.add(t)}
-  g.position.copy(p);g.rotation.copy(r);g.scale.copy(s);return true;
+  return true;
+  }finally{g.position.copy(p);g.rotation.copy(r);g.scale.copy(s)}
 }
 function ownBuilding(g,id,label){g.userData.art='building:'+id;F.buildings.push(g);swapModel(g,'building:'+id,null,label)}
 function buildDecor(){
@@ -468,10 +477,11 @@ function syncAnimals(){
   const f=farmOf(cur());clearGroup(F.animalGroup);
   F.hits=F.hits.filter(h=>!(h.userData.act&&h.userData.act.kind==='animal'));
   F.animals=f.animals.map((a,idx)=>{const A=ANIMALS.find(x=>x.id===a.type),key='animal:'+A.id;
-    const model=modelOf(key);let g;
-    if(model)g=buildModelBeast(model,{chicken:.9,sheep:1.15,cow:1.45}[A.id]||1);   // the child's own 3D model
-    else if(artOf(key))g=buildPicBeast(key,{chicken:.95,sheep:1.1,cow:1.25}[A.id]||1);   // the child's own animal picture, as a 3D cut-out
-    else{g=buildBeast(BEAST[A.id]||BEAST.chicken);g.scale.setScalar(A.id==='cow'?1.2:1)}
+    const g=ownOr(key,()=>{const model=modelOf(key);
+      if(model)return buildModelBeast(model,{chicken:.9,sheep:1.15,cow:1.45}[A.id]||1);   // the child's own 3D model
+      if(artOf(key))return buildPicBeast(key,{chicken:.95,sheep:1.1,cow:1.25}[A.id]||1);   // the child's own animal picture, as a 3D cut-out
+      return null},
+      ()=>{const b=buildBeast(BEAST[A.id]||BEAST.chicken);b.scale.setScalar(A.id==='cow'?1.2:1);return b});
     const pr=iconSprite('prod:'+A.prod,A.pe,.7);g.userData.art=key;pr.userData.art='prod:'+A.prod;pr.position.y=1.35;pr.visible=false;g.add(pr);
     const x=PEN.x0+1+Math.random()*(PEN.x1-PEN.x0-2),z=PEN.z0+1+Math.random()*(PEN.z1-PEN.z0-2);g.position.set(x,0,z);
     F.animalGroup.add(g);g.userData.act={kind:'animal',idx};F.hits.push(g);

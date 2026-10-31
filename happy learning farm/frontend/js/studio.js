@@ -145,14 +145,18 @@ function rEditor(){
   const it=artItem(UI.edit);if(!it){UI.edit=null;return rStudio()}
   const a=artOf(it.key);
   if(!EDIT||EDIT.key!==it.key){
-    EDIT={key:it.key,src:null,srcUrl:a&&a.src,style:(a&&a.style)||'sticker',bg:a?a.bg!==false:true,url:a&&a.url,note:'',dirty:false,model:a&&a.model||null,mname:a&&a.mname||''};
+    EDIT={key:it.key,src:null,srcUrl:a&&a.src,style:(a&&a.style)||'sticker',bg:a?a.bg!==false:true,url:a&&a.url,note:'',dirty:false,model:a&&a.model||null,mname:a&&a.mname||'',from:a&&a.from||''};
     if(a&&a.src){const i=new Image();i.onload=()=>{if(EDIT&&EDIT.key===it.key)EDIT.src=i};i.src=a.src}
   }
   if(UI.drawing)return rPad(it);
+  if(UI.gallery)return rGallery(it);
   const tip=it.key==='me'?'Draw yourself from head to toe. You will walk around the farm and fight monsters as your own drawing!'
     :`Draw your own ${esc(it.name)}! Big shapes, thick lines and bright colours work best.${canModel(it.key)?' Or upload a 3D model, and it will stand on your farm in real 3D!':''}`;
   const styles=ART_STYLES.map(([id,l])=>`<button class="b sm ${EDIT.style===id?'':'ghost'}" data-act="artStyle" data-id="${id}" aria-pressed="${EDIT.style===id}">${l}</button>`).join('');
-  const m3d=EDIT.model?`<p class="muted" style="text-align:center;margin:6px 0 0">🧊 3D model${EDIT.mname?': '+esc(EDIT.mname):''}</p>`:'';
+  const m3d=(EDIT.model?`<p class="muted" style="text-align:center;margin:6px 0 0">🧊 3D model${EDIT.mname?': '+esc(EDIT.mname):''}</p>`:'')
+    +(EDIT.from?`<p class="muted" style="text-align:center;margin:4px 0 0">🌍 by ${esc(EDIT.from)}</p>`:'');
+  const share=!canShare(it.key)?'':`<div class="btns" style="justify-content:center"><button class="b ghost" data-act="galOpen">🌍 Everyone's designs</button>
+      ${a&&!a.from?(cloudIsAccount()?`<button class="b ghost" data-act="galShare">📤 Share mine with everyone</button>`:'<span class="muted">Sign in to share yours with everyone.</span>'):''}</div>`;
   $('#app').innerHTML=topBar('Art Studio','artBack')+npcHTML(ARTIST,tip)+
   `<div class="card">
     <div class="ed-row">
@@ -165,6 +169,7 @@ function rEditor(){
     ${canModel(it.key)?'<p class="muted" style="text-align:center;margin-top:0">3D models: a .glb file (or a .gltf with everything inside), up to 20 MB.</p>':''}
     ${EDIT.model?'':`<h3>Style</h3><div class="btns" style="margin-top:0">${styles}</div>
     <div class="btns"><button class="b sm ${EDIT.bg?'':'ghost'}" data-act="artBg" aria-pressed="${EDIT.bg}">✂️ Cut out the paper</button></div>`}
+    ${share}
     ${EDIT.note?`<p class="muted">${EDIT.note}</p>`:''}
     <div class="btns">
       <button class="b" data-act="artSave" ${EDIT.dirty&&EDIT.url?'':'disabled'}>💾 Use it in my game</button>
@@ -226,7 +231,7 @@ function readFile(f){
   i.onerror=()=>{URL.revokeObjectURL(u);EDIT.note='Hmm, I could not open that picture. Try another one!';rEditor()};
   i.src=u;
 }
-function restyle(){if(!EDIT||!EDIT.src)return rEditor();EDIT.model=null;EDIT.mname='';if(EDIT.style==='3d')EDIT.style='sticker';
+function restyle(){if(!EDIT||!EDIT.src)return rEditor();EDIT.model=null;EDIT.mname='';EDIT.from='';if(EDIT.style==='3d')EDIT.style='sticker';
   const r=stylize(EDIT.src,EDIT);EDIT.url=r.url;EDIT.note=r.note;EDIT.dirty=true;rEditor()}
 /* ---------- a 3D model instead of a picture ----------
    The file is checked by reading it with GLTFLoader, and a snapshot of it becomes the picture that
@@ -237,9 +242,59 @@ function readModel(f){
   if(!/\.(glb|gltf)$/i.test(f.name))return fail('Please pick a .glb or .gltf 3D model file.');
   f.arrayBuffer().then(buf=>parseModel(buf).then(g=>{
     const o=THREE.SkeletonUtils?THREE.SkeletonUtils.clone(g.scene):g.scene;
-    EDIT.model=buf;EDIT.mname=f.name;EDIT.url=modelShot(o);EDIT.style='3d';EDIT.src=null;EDIT.srcUrl=null;EDIT.dirty=true;
+    EDIT.model=buf;EDIT.mname=f.name;EDIT.url=modelShot(o);EDIT.style='3d';EDIT.src=null;EDIT.srcUrl=null;EDIT.from='';EDIT.dirty=true;
     EDIT.note=(g.animations||[]).length?`It moves too! I found ${g.animations.length} animation${g.animations.length>1?'s':''}.`:'';rEditor()}))
     .catch(()=>fail('Hmm, I could not open that 3D model. A .glb file works best. A .gltf must have its pictures inside it.'));
+}
+/* ---------- everyone's gallery ----------
+   Pictures and 3D models other children shared for this item (GalleryController on the farm server).
+   Looking and picking work for guests too; sharing needs a signed-in farm. A picked design goes into
+   EDIT like any new picture, so "Use it in my game" saves it on this device as usual. */
+let GAL=null;   // {key, items, loading, err, busy}
+const galBase=()=>cloudConfig().dataBase+'/api/v1/gallery';
+function galLoad(key){
+  GAL={key,items:[],loading:true,err:'',busy:'',msg:''};
+  cloudFetch(galBase()+'?key='+encodeURIComponent(key),{auth:!!cloudToken()})
+    .then(list=>{if(!GAL||GAL.key!==key)return;GAL.items=Array.isArray(list)?list:[];GAL.loading=false;rEditor()})
+    .catch(()=>{if(!GAL||GAL.key!==key)return;GAL.loading=false;GAL.err='I could not reach the farm server. Check the internet and try again.';rEditor()});
+}
+function rGallery(it){
+  if(!GAL||GAL.key!==it.key)galLoad(it.key);
+  const mb=n=>(n/1048576).toFixed(n<1048576?2:1)+' MB';
+  const items=GAL.items.map(g=>`<div class="item"><div class="e"><img class="ico" src="${esc(g.picture)}" alt=""></div>
+      <div class="nm">by ${esc(g.name)}</div><p class="muted" style="font-size:14px">${g.model?`🧊 3D model · ${mb(g.modelBytes)}`:'🎨 Picture'}</p>
+      <div class="acts"><button class="b sm" data-act="galPick" data-id="${esc(g.id)}" ${GAL.busy?'disabled':''}>${GAL.busy===g.id?'Getting it…':'✅ Pick'}</button>
+      ${g.mine?`<button class="b sm ghost" data-act="galDrop" data-id="${esc(g.id)}" ${GAL.busy?'disabled':''}>🗑️ Stop sharing</button>`:''}</div></div>`).join('');
+  const body=GAL.loading?'<p class="muted">Looking for designs…</p>':GAL.err?`<p class="muted">${esc(GAL.err)}</p>`
+    :items?`<div class="items">${items}</div>`:`<p class="muted">Nobody has shared a ${esc(it.name)} yet. Make one and be the first!</p>`;
+  $('#app').innerHTML=topBar('Art Studio','galClose')+npcHTML(ARTIST,`These are ${esc(it.name)} designs from children on other farms. Pick one you like!`)+
+  `<div class="card"><h3 style="margin-top:0">🌍 Everyone's ${esc(it.name)}</h3>${GAL.msg?`<p class="muted">${esc(GAL.msg)}</p>`:''}${body}
+    <div class="btns"><button class="b ghost" data-act="galClose">Back</button></div></div>`;
+}
+function bufB64(buf){const u=new Uint8Array(buf);let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)}
+function galShare(){
+  const a=artOf(EDIT.key),as=cloudRead().childId;if(!a||!as)return;
+  if(a.model&&a.model.byteLength>SHARE_MODEL_MAX){EDIT.note='That 3D model is too big to share. Shared models must be under 10 MB.';return rEditor()}
+  EDIT.note='Sharing…';rEditor();
+  cloudFetch(galBase(),{method:'POST',auth:true,timeoutMs:120000,json:{as,key:EDIT.key,picture:a.url,style:a.style,model:a.model?bufB64(a.model):null,modelName:a.mname||null}})
+    .then(()=>{EDIT.note='🎉 Shared! Children on every farm can pick your design now.';GAL=null;rEditor()})
+    .catch(e=>{EDIT.note=esc(e&&e.status===401?'Please sign in again to share.':(e&&e.message)||'Sharing did not work. Try again.');rEditor()});
+}
+function galPick(id){
+  const g=GAL&&GAL.items.find(x=>x.id===id);if(!g)return;
+  const use=buf=>{Object.assign(EDIT,{url:g.picture,src:null,srcUrl:g.model?null:g.picture,style:g.style||'sticker',model:buf||null,mname:g.modelName||'',from:g.name,dirty:true,
+    note:`You picked ${esc(g.name)}'s design. Tap “💾 Use it in my game” to put it on your farm!`});UI.gallery=false;GAL.busy='';rEditor()};
+  if(!g.model)return use(null);
+  GAL.busy=id;rEditor();
+  fetch(galBase()+'/'+encodeURIComponent(id)+'/model').then(r=>{if(!r.ok)throw new Error('model');return r.arrayBuffer()})
+    .then(buf=>parseModel(buf).then(()=>use(buf)))
+    .catch(()=>{GAL.busy='';GAL.msg='Sorry, I could not get that 3D model. Try another one.';rEditor()});
+}
+function galDrop(id){
+  if(!GAL)return;GAL.busy=id;rEditor();
+  cloudFetch(galBase()+'/'+encodeURIComponent(id),{method:'DELETE',auth:true})
+    .then(()=>{GAL.items=GAL.items.filter(x=>x.id!==id);GAL.busy='';GAL.msg='That design is not shared any more. Your own copy stays on your farm.';rEditor()})
+    .catch(()=>{GAL.busy='';GAL.msg='That did not work. Try again.';rEditor()});
 }
 function modelShot(obj){
   const S=256,r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
@@ -359,9 +414,9 @@ Object.assign(ACT,{
     const done=()=>{UI.maker=false;MK=null;unmountStage();MKS=null;UI.tab='me';UI.msg=`Say hello to the new you, ${esc(p.name)}! 🎉 You will walk around the farm like this.`;rStudio()};
     if(shot)saveArt(p.id,'portrait',{url:shot,src:null,style:'3d',bg:false}).catch(()=>{}).then(done);else done()},
   pickLook:d=>{const p=cur(),L=LOOKS.find(l=>l.id===d.id);if(!L)return;p.look=L.id;save();UI.msg=`Hello, ${L.e} ${esc(p.name)}! That's you on the farm now.`;rStudio()},
-  artEdit:d=>{UI.edit=d.id;UI.msg=null;UI.resetting=false;UI.drawing=false;EDIT=null;DRAW=null;render();window.scrollTo({top:0})},
+  artEdit:d=>{UI.edit=d.id;UI.msg=null;UI.resetting=false;UI.drawing=false;UI.gallery=false;EDIT=null;DRAW=null;render();window.scrollTo({top:0})},
   artBack:()=>{if(UI.from==='town')return go('town');   // opened from paint mode on the farm
-    UI.edit=null;EDIT=null;UI.resetting=false;UI.drawing=false;DRAW=null;rStudio()},
+    UI.edit=null;EDIT=null;UI.resetting=false;UI.drawing=false;UI.gallery=false;DRAW=null;rStudio()},
   padOpen:()=>{UI.drawing=true;DRAW=null;rEditor();window.scrollTo({top:0})},
   padCancel:()=>{UI.drawing=false;DRAW=null;rEditor()},
   penColour:d=>{DRAW.colour=d.id;DRAW.erase=false;rEditor()},
@@ -372,10 +427,15 @@ Object.assign(ACT,{
   padDone:()=>{if(padEmpty()){DRAW.msg='The page is empty! Draw something first.';return rEditor()}
     const c=cv(DRAW_PX,DRAW_PX);c.getContext('2d').drawImage(DRAW.c,0,0);
     EDIT.src=c;EDIT.srcUrl=encode(c,.9);UI.drawing=false;DRAW=null;restyle()},
+  galOpen:()=>{UI.gallery=true;GAL=null;EDIT.note='';rEditor();window.scrollTo({top:0})},
+  galClose:()=>{UI.gallery=false;rEditor()},
+  galPick:d=>galPick(d.id),
+  galDrop:d=>galDrop(d.id),
+  galShare:()=>galShare(),
   artStyle:d=>{EDIT.style=d.id;restyle()},
   artBg:()=>{EDIT.bg=!EDIT.bg;restyle()},
   artSave:()=>{if(!EDIT||!EDIT.dirty||!EDIT.url)return;
-    saveArt(cur().id,EDIT.key,{url:EDIT.url,src:EDIT.srcUrl,style:EDIT.style,bg:EDIT.bg,model:EDIT.model,mname:EDIT.mname})
+    saveArt(cur().id,EDIT.key,{url:EDIT.url,src:EDIT.srcUrl,style:EDIT.style,bg:EDIT.bg,model:EDIT.model,mname:EDIT.mname,from:EDIT.from})
       .then(()=>{if(UI.from==='town')return go('town');UI.msg=pick(ART_PRAISE);UI.edit=null;EDIT=null;rStudio()})
       .catch(()=>{EDIT.note='Sorry, I could not save it on this device.';rEditor()})},
   artReset:()=>{if(!UI.resetting){UI.resetting=true;return rEditor()}

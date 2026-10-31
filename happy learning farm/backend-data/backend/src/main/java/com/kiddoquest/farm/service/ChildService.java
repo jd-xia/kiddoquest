@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.kiddoquest.farm.domain.ChildProfile;
 import com.kiddoquest.farm.domain.GameSnapshot;
+import com.kiddoquest.farm.gallery.GalleryService;
 import com.kiddoquest.farm.repo.ChildProfileRepository;
 import com.kiddoquest.farm.repo.FarmMessageRepository;
 import com.kiddoquest.farm.repo.GameSnapshotRepository;
@@ -36,16 +37,19 @@ public class ChildService {
     private final GameSnapshotRepository snapshots;
     private final SyncReceiptRepository receipts;
     private final FarmMessageRepository messages;
+    private final GalleryService gallery;
     private final GameStateValidator validator;
     private final ObjectMapper mapper;
     private final Clock clock;
 
     public ChildService(ChildProfileRepository children, GameSnapshotRepository snapshots, SyncReceiptRepository receipts,
-            FarmMessageRepository messages, GameStateValidator validator, ObjectMapper mapper, Clock clock) {
+            FarmMessageRepository messages, GalleryService gallery, GameStateValidator validator, ObjectMapper mapper,
+            Clock clock) {
         this.children = children;
         this.snapshots = snapshots;
         this.receipts = receipts;
         this.messages = messages;
+        this.gallery = gallery;
         this.validator = validator;
         this.mapper = mapper;
         this.clock = clock;
@@ -139,6 +143,7 @@ public class ChildService {
         ChildProfile child = children.lockByIdAndOwner(childId, ownerId).orElseThrow(NotFoundException::new);
         receipts.deleteByChildId(child.getId());
         snapshots.deleteById(child.getId());
+        gallery.clearChild(child.getId());
         String username = child.getUsername();
         if (username != null && username.matches("P\\d{7}")) {
             messages.clearUser(username, "%" + username + "%");

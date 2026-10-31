@@ -68,4 +68,18 @@ public final class FarmDtos {
             @NotBlank String voice,
             @Size(max = 80) String mime) {
     }
+
+    /** picture is a data URL; model is the base64 of a .glb or .gltf, or empty for a picture only. */
+    public record GalleryShare(
+            @NotBlank String as,
+            @NotBlank @Size(max = 48) String key,
+            @NotBlank String picture,
+            @Size(max = 12) String style,
+            String model,
+            @Size(max = 200) String modelName) {
+    }
+
+    public record GalleryItem(String id, String key, String from, String name, String picture, String style,
+            boolean model, long modelBytes, String modelName, Instant at, boolean mine) {
+    }
 }

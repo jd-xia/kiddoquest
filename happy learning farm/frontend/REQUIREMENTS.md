@@ -253,6 +253,13 @@ happy-math-farm/
 - 农场里：动物用 `buildModelBeast()`；建筑和装饰用 `plaza.js` 的 `swapModel()`，原来的模型只是隐藏，碰撞、点击和门都不变。模型默认朝 +z（glTF 的约定）。
 - 新的 3D 页面要用模型，记得在 `three.min.js` 后面加载 `vendor/GLTFLoader.js` 和 `vendor/SkeletonUtils.js`。
 
+### 6.8 大家的画廊（分享图片和 3D 模型）
+
+- 工坊里每个可分享的项目（`canShare()`：除了 `me`、照片脸和头像以外都可以）有“🌍 Everyone's designs”：看别的孩子分享的同一项目，点“✅ Pick”就放进编辑器，再点“💾 Use it in my game”保存到这台设备。游客也能看、能选。
+- 登录了云端账号、并且这个项目是自己做的（不是从画廊选来的，`from` 为空），会有“📤 Share mine with everyone”。分享后立刻公开，不审核。只有分享的人能“🗑️ Stop sharing”；删除孩子的云端农场时，它分享的东西也一起删掉。
+- 后端：`backend-data` 的 `GalleryController`（`/api/v1/gallery`）。`GET ?key=` 和 `GET /{id}/model` 不用登录；`POST` 和 `DELETE` 要登录。表 `shared_art`（图片和信息）和 `shared_model`（模型，LONGBLOB）。图片最大 400 KB（PNG 或 WebP），模型最大 10 MB；每个孩子最多同时分享 60 个，每个账号 5 秒一次、每小时 30 次。
+- 模型用 base64 放在 JSON 里发送，所以 nginx 的 `client_max_body_size` 是 16m。
+
 ## 7. 架构说明
 
 ### 7.1 页面路由

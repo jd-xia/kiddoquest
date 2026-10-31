@@ -3,7 +3,7 @@
    Loaded by every page right after core.js. HTML draws icons with ico(key, emoji);
    3D pages use iconSprite()/iconTex() in engine3d.js. See REQUIREMENTS.md §6.6. */
 const ART_DB='hmf-art',ART_STORE='art';
-let ART={};   // ART[playerId][key] = {id, pid, key, url, src, style, bg, t, img, model?, obj?, clips?}
+let ART={};   // ART[playerId][key] = {id, pid, key, url, src, style, bg, t, img, model?, obj?, clips?, from?}
 const npcKey=n=>'npc:'+n.name;
 /* Farm buildings a child can replace with their own 3D model. 'school' covers every school house. */
 const BUILDINGS=[['school','🏫','School houses'],['barn','🏚️','Barn'],['market','🏪','Farm Market'],['studio','🎨','Art Studio'],['board','📋','Progress Board'],['pond','🎣','Fishing pond']];
@@ -11,6 +11,10 @@ const BUILDINGS=[['school','🏫','School houses'],['barn','🏚️','Barn'],['m
 const MODEL_KINDS=['animal','decor','building','fish'];
 const canModel=key=>MODEL_KINDS.includes(String(key).split(':')[0]);
 const MODEL_MAX=20*1024*1024;
+/* Everyone's gallery (GalleryController on the farm server). "me", the photo face and the portrait show
+   the child, so they are never shared. A shared 3D model is at most 10 MB. */
+const canShare=key=>/^(seed|animal|prod|decor|building|fish|hat|npc):/.test(String(key));
+const SHARE_MODEL_MAX=10*1024*1024;
 
 /* Every picture a child can redraw, grouped for the Art Studio. key -> default emoji + name. */
 function artCatalog(){
@@ -60,7 +64,11 @@ function artModel(r){
     return r}).catch(()=>r);
 }
 function modelOf(key,p){const a=artOf(key,p);if(!a||!a.obj)return null;
-  const o=THREE.SkeletonUtils?THREE.SkeletonUtils.clone(a.obj):a.obj.clone(true);o.userData.clips=a.clips||[];return o}
+  try{const o=THREE.SkeletonUtils?THREE.SkeletonUtils.clone(a.obj):a.obj.clone(true);o.userData.clips=a.clips||[];return o}
+  catch(e){console.warn('Own 3D model skipped:',key,e);return null}}
+/* A child's own picture or model must never stop a page from drawing: if building it fails, the
+   original look is used and the console says which item it was. */
+function ownOr(key,build,fallback){try{const g=build();if(g)return g}catch(e){console.warn('Own picture or model skipped:',key,e)}return fallback()}
 /* Scales a model to fit a box {w,h,d} (any of them), centred on x/z and standing on y=0.
    Models come in every size and unit, so only the fit decides how big they are. */
 function fitModel(obj,box){
@@ -92,6 +100,7 @@ function loadArt(){
 function saveArt(pid,key,o){
   const rec={id:pid+'|'+key,pid,key,url:o.url,src:o.src,style:o.style,bg:o.bg,t:Date.now()};
   if(o.model){rec.model=o.model;rec.mname=o.mname||''}
+  if(o.from)rec.from=o.from;   // picked from everyone's gallery: whose design it is
   return artTx('readwrite',s=>s.put(rec)).then(()=>{(ART[pid]||(ART[pid]={}))[key]=rec;return artImg(rec).then(artModel)});
 }
 function deleteArt(pid,key){
