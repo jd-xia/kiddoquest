@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.kiddoquest.farm.web.FarmExceptions.NotFoundException;
+import com.kiddoquest.farm.web.FarmExceptions.PinException;
+import com.kiddoquest.farm.web.FarmExceptions.ScreenTakenException;
 import com.kiddoquest.farm.web.FarmExceptions.SyncRejectedException;
 
 @RestControllerAdvice
@@ -19,6 +21,17 @@ public class ApiExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ApiError("not_found", ex.getMessage()));
     }
 
+    @ExceptionHandler(PinException.class)
+    ResponseEntity<ApiError> pin(PinException ex) {
+        HttpStatus status = "pin_wait".equals(ex.getCode()) ? HttpStatus.TOO_MANY_REQUESTS : HttpStatus.FORBIDDEN;
+        return ResponseEntity.status(status).body(new ApiError(ex.getCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(ScreenTakenException.class)
+    ResponseEntity<ApiError> taken(ScreenTakenException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiError("screen_taken", ex.getMessage()));
+    }
+
     @ExceptionHandler(SyncRejectedException.class)
     ResponseEntity<ApiError> rejected(SyncRejectedException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(new ApiError("rejected", ex.getMessage()));
@@ -26,6 +39,11 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ApiError> invalid(MethodArgumentNotValidException ex) {
+        return ResponseEntity.badRequest().body(new ApiError("invalid_request", "The farm request is incomplete."));
+    }
+
+    @ExceptionHandler(jakarta.validation.ConstraintViolationException.class)
+    ResponseEntity<ApiError> badParam(jakarta.validation.ConstraintViolationException ex) {
         return ResponseEntity.badRequest().body(new ApiError("invalid_request", "The farm request is incomplete."));
     }
 

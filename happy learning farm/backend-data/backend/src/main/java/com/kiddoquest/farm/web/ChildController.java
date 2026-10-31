@@ -19,6 +19,8 @@ import com.kiddoquest.farm.web.FarmDtos.ChildPatch;
 import com.kiddoquest.farm.web.FarmDtos.ChildState;
 import com.kiddoquest.farm.web.FarmDtos.ChildSummary;
 import com.kiddoquest.farm.web.FarmDtos.ChildWrite;
+import com.kiddoquest.farm.web.FarmDtos.ScreenClaim;
+import com.kiddoquest.farm.web.FarmDtos.ScreenState;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -55,6 +57,18 @@ public class ChildController {
     @Operation(summary = "Load one child farm the account is allowed to open")
     public ChildState get(@AuthenticationPrincipal Jwt jwt, @PathVariable String childId) {
         return children.get(owner(jwt), childId);
+    }
+
+    @PostMapping("/{childId}/screen")
+    @Operation(summary = "Open this farm on this screen. The screen that had it before stops.")
+    public ScreenState claimScreen(@AuthenticationPrincipal Jwt jwt, @PathVariable String childId, @Valid @RequestBody ScreenClaim request) {
+        return children.claimScreen(owner(jwt), email(jwt), childId, request.screen(), request.device());
+    }
+
+    @GetMapping("/{childId}/screen")
+    @Operation(summary = "Which screen opened this farm last")
+    public ScreenState screen(@AuthenticationPrincipal Jwt jwt, @PathVariable String childId) {
+        return children.screen(owner(jwt), childId);
     }
 
     @PatchMapping("/{childId}")

@@ -25,7 +25,9 @@ import com.kiddoquest.farm.web.FarmDtos.ChildPatch;
 import com.kiddoquest.farm.web.FarmDtos.ChildState;
 import com.kiddoquest.farm.web.FarmDtos.ChildSummary;
 import com.kiddoquest.farm.web.FarmDtos.ChildWrite;
+import com.kiddoquest.farm.web.FarmDtos.ScreenState;
 import com.kiddoquest.farm.web.FarmExceptions.NotFoundException;
+import com.kiddoquest.farm.web.FarmExceptions.ScreenTakenException;
 import com.kiddoquest.farm.web.FarmExceptions.SyncRejectedException;
 
 @Service
@@ -60,7 +62,8 @@ public class ChildService {
         return children.findByOwnerUserIdOrderByCreatedAtAsc(ownerId).stream().map(child -> {
             GameSnapshot snap = snapshots.findById(child.getId()).orElse(null);
             return new ChildSummary(child.getId(), child.getUsername(), child.getEmail(), child.getDisplayName(),
-                    child.getGrade(), child.getLook(), snap == null ? 0 : snap.getRevision(), child.getUpdatedAt());
+                    child.getGrade(), child.getLook(), snap == null ? 0 : snap.getRevision(), child.getUpdatedAt(),
+                    child.isMain());
         }).toList();
     }
 
@@ -68,6 +71,48 @@ public class ChildService {
     public ChildState get(String ownerId, String childId) {
         ChildProfile child = require(ownerId, childId);
         return state(child, snapshots.findById(child.getId()).orElse(null));
+    }
+
+    /** The newest screen to open a farm takes it over; the older screen sees that and stops. */
+    @Transactional
+    public ScreenState claimScreen(String ownerId, String email, String childId, String screen, String device) {
+        ChildProfile child = children.lockByIdAndOwner(checked(childId), ownerId).orElseThrow(NotFoundException::new);
+        Instant now = clock.instant();
+        child.setScreenId(screen);
+        child.setScreenAt(now);
+        child.setScreenSeen(now);
+        child.setScreenDevice(device == null || device.isBlank() ? null : device.trim());
+        child.setScreenEmail(cleanEmail(email));
+        children.save(child);
+        return screenState(child);
+    }
+
+    @Transactional(readOnly = true)
+    public ScreenState screen(String ownerId, String childId) {
+        return screenState(require(ownerId, childId));
+    }
+
+    static ScreenState screenState(ChildProfile child) {
+        return new ScreenState(child.getScreenId(), child.getScreenAt(), child.getScreenDevice(), child.getScreenEmail(),
+                child.getScreenSeen());
+    }
+
+    /** A screen that is not the one that opened the farm last may not save. The one that did is still in use. */
+    static void requireScreen(ChildProfile child, String screen, Instant now) {
+        if (screen == null || child.getScreenId() == null) {
+            return;
+        }
+        if (!child.getScreenId().equals(screen)) {
+            throw new ScreenTakenException();
+        }
+        child.setScreenSeen(now);
+    }
+
+    private static String checked(String childId) {
+        if (!ChildIds.valid(childId)) {
+            throw new NotFoundException();
+        }
+        return childId;
     }
 
     @Transactional

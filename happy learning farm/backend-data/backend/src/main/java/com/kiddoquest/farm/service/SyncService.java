@@ -58,6 +58,7 @@ public class SyncService {
             throw new NotFoundException();
         }
         ChildProfile child = children.lockByIdAndOwner(childId, ownerId).orElseThrow(NotFoundException::new);
+        ChildService.requireScreen(child, request.screen(), clock.instant());
         var prior = receipts.findByChildIdAndIdempotencyKey(childId, request.idempotencyKey());
         if (prior.isPresent()) {
             try {
