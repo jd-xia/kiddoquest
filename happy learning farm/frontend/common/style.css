@@ -707,7 +707,8 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .famrow .nm{font-weight:700;margin-bottom:6px}
 .famrow .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .famrow p{margin:6px 0 0}
-.famleft{position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:15;padding:5px 14px;border-radius:999px;border:1.5px solid var(--frame);background:rgba(8,12,32,.82);color:var(--gold-hi);font-weight:700;font-size:15px;pointer-events:none;white-space:nowrap}
+.famleft{position:fixed;top:calc(8px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:15;padding:4px 12px;border-radius:999px;border:1.5px solid var(--frame);background:rgba(8,12,32,.82);color:var(--gold-hi);font-weight:700;font-size:14px;pointer-events:none;white-space:nowrap}
+@media (max-width:700px){.famleft{top:auto;bottom:calc(170px + env(safe-area-inset-bottom))}}   /* phones: the name card is on top, the joystick below */
 .famleft.low{border-color:#FF5D73;color:#FFD0D6;background:rgba(80,10,24,.85)}
 .famsel{font:inherit;font-size:16px;padding:6px 10px;border-radius:12px;border:2px solid var(--frame);background:#0C1330;color:var(--ink)}
 .synctotal{margin-top:8px;font-weight:700;color:var(--gold-hi)}
