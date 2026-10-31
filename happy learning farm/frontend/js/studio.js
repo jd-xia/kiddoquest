@@ -145,23 +145,26 @@ function rEditor(){
   const it=artItem(UI.edit);if(!it){UI.edit=null;return rStudio()}
   const a=artOf(it.key);
   if(!EDIT||EDIT.key!==it.key){
-    EDIT={key:it.key,src:null,srcUrl:a&&a.src,style:(a&&a.style)||'sticker',bg:a?a.bg!==false:true,url:a&&a.url,note:'',dirty:false};
+    EDIT={key:it.key,src:null,srcUrl:a&&a.src,style:(a&&a.style)||'sticker',bg:a?a.bg!==false:true,url:a&&a.url,note:'',dirty:false,model:a&&a.model||null,mname:a&&a.mname||''};
     if(a&&a.src){const i=new Image();i.onload=()=>{if(EDIT&&EDIT.key===it.key)EDIT.src=i};i.src=a.src}
   }
   if(UI.drawing)return rPad(it);
   const tip=it.key==='me'?'Draw yourself from head to toe. You will walk around the farm and fight monsters as your own drawing!'
-    :`Draw your own ${esc(it.name)}! Big shapes, thick lines and bright colours work best.`;
+    :`Draw your own ${esc(it.name)}! Big shapes, thick lines and bright colours work best.${canModel(it.key)?' Or upload a 3D model, and it will stand on your farm in real 3D!':''}`;
   const styles=ART_STYLES.map(([id,l])=>`<button class="b sm ${EDIT.style===id?'':'ghost'}" data-act="artStyle" data-id="${id}" aria-pressed="${EDIT.style===id}">${l}</button>`).join('');
+  const m3d=EDIT.model?`<p class="muted" style="text-align:center;margin:6px 0 0">🧊 3D model${EDIT.mname?': '+esc(EDIT.mname):''}</p>`:'';
   $('#app').innerHTML=topBar('Art Studio','artBack')+npcHTML(ARTIST,tip)+
   `<div class="card">
     <div class="ed-row">
       <div class="ed-box"><small>Now</small><div class="ed-pic">${ico(it.key,it.e)}</div></div>
       <div class="ed-arrow" aria-hidden="true">➜</div>
-      <div class="ed-box"><small>Your picture</small><div class="ed-pic">${EDIT.url?`<img class="ico" src="${EDIT.url}" alt="Your picture">`:'<span class="muted" style="font-size:15px">No picture yet</span>'}</div></div>
+      <div class="ed-box"><small>${EDIT.model?'Your 3D model':'Your picture'}</small><div class="ed-pic">${EDIT.url?`<img class="ico" src="${EDIT.url}" alt="Your picture">`:'<span class="muted" style="font-size:15px">No picture yet</span>'}</div>${m3d}</div>
     </div>
-    <div class="btns" style="justify-content:center"><button class="b" data-act="padOpen">✏️ Draw it here</button><label class="b ghost" for="artFile" tabindex="0">📷 Take a photo or pick a picture</label><input type="file" id="artFile" accept="image/*" hidden></div>
-    <h3>Style</h3><div class="btns" style="margin-top:0">${styles}</div>
-    <div class="btns"><button class="b sm ${EDIT.bg?'':'ghost'}" data-act="artBg" aria-pressed="${EDIT.bg}">✂️ Cut out the paper</button></div>
+    <div class="btns" style="justify-content:center"><button class="b" data-act="padOpen">✏️ Draw it here</button><label class="b ghost" for="artFile" tabindex="0">📷 Take a photo or pick a picture</label><input type="file" id="artFile" accept="image/*" hidden>
+      ${canModel(it.key)?'<label class="b ghost" for="modelFile" tabindex="0">🧊 Upload a 3D model</label><input type="file" id="modelFile" accept=".glb,.gltf,model/gltf-binary,model/gltf+json" hidden>':''}</div>
+    ${canModel(it.key)?'<p class="muted" style="text-align:center;margin-top:0">3D models: a .glb file (or a .gltf with everything inside), up to 20 MB.</p>':''}
+    ${EDIT.model?'':`<h3>Style</h3><div class="btns" style="margin-top:0">${styles}</div>
+    <div class="btns"><button class="b sm ${EDIT.bg?'':'ghost'}" data-act="artBg" aria-pressed="${EDIT.bg}">✂️ Cut out the paper</button></div>`}
     ${EDIT.note?`<p class="muted">${EDIT.note}</p>`:''}
     <div class="btns">
       <button class="b" data-act="artSave" ${EDIT.dirty&&EDIT.url?'':'disabled'}>💾 Use it in my game</button>
@@ -223,7 +226,33 @@ function readFile(f){
   i.onerror=()=>{URL.revokeObjectURL(u);EDIT.note='Hmm, I could not open that picture. Try another one!';rEditor()};
   i.src=u;
 }
-function restyle(){if(!EDIT||!EDIT.src)return rEditor();const r=stylize(EDIT.src,EDIT);EDIT.url=r.url;EDIT.note=r.note;EDIT.dirty=true;rEditor()}
+function restyle(){if(!EDIT||!EDIT.src)return rEditor();EDIT.model=null;EDIT.mname='';if(EDIT.style==='3d')EDIT.style='sticker';
+  const r=stylize(EDIT.src,EDIT);EDIT.url=r.url;EDIT.note=r.note;EDIT.dirty=true;rEditor()}
+/* ---------- a 3D model instead of a picture ----------
+   The file is checked by reading it with GLTFLoader, and a snapshot of it becomes the picture that
+   the Market, the Barn and every other 2D place shows. The farm and the pond use the model itself. */
+function readModel(f){
+  const fail=msg=>{EDIT.note=msg;rEditor()};
+  if(f.size>MODEL_MAX)return fail('That 3D model is too big. Please pick one under 20 MB.');
+  if(!/\.(glb|gltf)$/i.test(f.name))return fail('Please pick a .glb or .gltf 3D model file.');
+  f.arrayBuffer().then(buf=>parseModel(buf).then(g=>{
+    const o=THREE.SkeletonUtils?THREE.SkeletonUtils.clone(g.scene):g.scene;
+    EDIT.model=buf;EDIT.mname=f.name;EDIT.url=modelShot(o);EDIT.style='3d';EDIT.src=null;EDIT.srcUrl=null;EDIT.dirty=true;
+    EDIT.note=(g.animations||[]).length?`It moves too! I found ${g.animations.length} animation${g.animations.length>1?'s':''}.`:'';rEditor()}))
+    .catch(()=>fail('Hmm, I could not open that 3D model. A .glb file works best. A .gltf must have its pictures inside it.'));
+}
+function modelShot(obj){
+  const S=256,r=new THREE.WebGLRenderer({antialias:true,alpha:true,preserveDrawingBuffer:true});
+  r.setSize(S,S,false);r.setClearColor(0x000000,0);r.outputEncoding=THREE.sRGBEncoding;
+  const sc=new THREE.Scene();sc.add(new THREE.HemisphereLight(0xFFFFFF,0x8A7A66,1.1));
+  const sun=new THREE.DirectionalLight(0xFFFFFF,.9);sun.position.set(3,5,4);sc.add(sun);
+  const m=fitModel(obj,{w:1,h:1,d:1});sc.add(m);m.updateMatrixWorld(true);
+  const b=new THREE.Box3().setFromObject(m),c=b.getCenter(new THREE.Vector3()),R=b.getSize(new THREE.Vector3()).length()/2||1;
+  const cam=new THREE.PerspectiveCamera(30,1,.01,100);
+  cam.position.copy(c).addScaledVector(new THREE.Vector3(.9,.6,1.4).normalize(),R/Math.sin(15*Math.PI/180)*1.02);cam.lookAt(c);
+  r.render(sc,cam);const url=r.domElement.toDataURL('image/png');
+  r.dispose();if(r.forceContextLoss)r.forceContextLoss();return url;
+}
 
 /* ---------- turning a photo into a game sticker ---------- */
 const S_OUT=256,S_PAD=24,S_IN=S_OUT-2*S_PAD;
@@ -311,7 +340,7 @@ function frame(c,square){
   g.drawImage(c,S_PAD,S_PAD);return out;
 }
 
-document.addEventListener('change',e=>{if(e.target.id==='artFile'&&e.target.files[0]&&EDIT)readFile(e.target.files[0]);if(e.target.id==='mkFile'&&e.target.files[0]&&MK)mkPhoto(e.target.files[0])});
+document.addEventListener('change',e=>{if(e.target.id==='artFile'&&e.target.files[0]&&EDIT)readFile(e.target.files[0]);if(e.target.id==='modelFile'&&e.target.files[0]&&EDIT)readModel(e.target.files[0]);if(e.target.id==='mkFile'&&e.target.files[0]&&MK)mkPhoto(e.target.files[0])});
 document.addEventListener('keydown',e=>{const l=e.target.matches&&e.target.matches('label[for]')&&e.target;if(l&&(e.key==='Enter'||e.key===' ')){e.preventDefault();const i=$('#'+l.getAttribute('for'));if(i)i.click()}});
 Object.assign(ACT,{
   atab:d=>{UI.tab=d.id;UI.msg=null;rStudio()},
@@ -346,7 +375,7 @@ Object.assign(ACT,{
   artStyle:d=>{EDIT.style=d.id;restyle()},
   artBg:()=>{EDIT.bg=!EDIT.bg;restyle()},
   artSave:()=>{if(!EDIT||!EDIT.dirty||!EDIT.url)return;
-    saveArt(cur().id,EDIT.key,{url:EDIT.url,src:EDIT.srcUrl,style:EDIT.style,bg:EDIT.bg})
+    saveArt(cur().id,EDIT.key,{url:EDIT.url,src:EDIT.srcUrl,style:EDIT.style,bg:EDIT.bg,model:EDIT.model,mname:EDIT.mname})
       .then(()=>{if(UI.from==='town')return go('town');UI.msg=pick(ART_PRAISE);UI.edit=null;EDIT=null;rStudio()})
       .catch(()=>{EDIT.note='Sorry, I could not save it on this device.';rEditor()})},
   artReset:()=>{if(!UI.resetting){UI.resetting=true;return rEditor()}

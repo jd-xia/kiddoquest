@@ -242,8 +242,16 @@ happy-math-farm/
 
 - 在 `common/art.js` 的 `artCatalog()` 里加一项 `{key, e, name}`，工坊就会自动显示它。
 - HTML 里显示图标时，用 `ico(key, 默认emoji)` 代替直接写 emoji；3D 里用 `iconSprite(key, 默认emoji, 大小)` 代替 `emojiSprite`。
-- key 的格式：`me`、`seed:<id>`、`animal:<id>`、`prod:<产物id>`、`decor:<id>`、`hat:<id>`、`npc:<名字>`（用 `npcKey(npc)` 生成）。
+- key 的格式：`me`、`seed:<id>`、`animal:<id>`、`prod:<产物id>`、`decor:<id>`、`building:<id>`（见 `BUILDINGS`）、`fish:<id>`、`hat:<id>`、`npc:<名字>`（用 `npcKey(npc)` 生成）。
 - 图片处理全部在 `js/studio.js` 里完成（`stylize()`）：输出 256×256 的 WebP（不支持时用 PNG），约 10 KB 一张。
+
+### 6.7 孩子上传的 3D 模型
+
+- `animal:`、`decor:`、`building:`、`fish:` 这几类（`MODEL_KINDS`）在工坊里多一个“🧊 Upload a 3D model”按钮，接受 .glb，或把贴图都打包在里面的 .gltf，最大 20 MB。
+- 模型和图片存在同一条记录里（IndexedDB `hmf-art`，字段 `model`），只存在这台设备的这个网址下，不上传云端。`url` 是上传时拍的 3D 快照，所以市场、谷仓等 2D 地方照常用 `ico()` 显示。
+- 有 three.js 和 `vendor/GLTFLoader.js` 的页面（农场、工坊、钓鱼）在 `loadArt()` 时把模型读进来；用 `modelOf(key)` 取一份副本，`fitModel(副本, {w,h,d})` 缩放到指定大小、居中、站在地面上，`modelAnim(副本)` 播放模型自带的动画（例如 Walk、Idle）。
+- 农场里：动物用 `buildModelBeast()`；建筑和装饰用 `plaza.js` 的 `swapModel()`，原来的模型只是隐藏，碰撞、点击和门都不变。模型默认朝 +z（glTF 的约定）。
+- 新的 3D 页面要用模型，记得在 `three.min.js` 后面加载 `vendor/GLTFLoader.js` 和 `vendor/SkeletonUtils.js`。
 
 ## 7. 架构说明
 

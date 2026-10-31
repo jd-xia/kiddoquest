@@ -210,5 +210,14 @@ function buildPicBeast(key,h){
   g.userData={legs:[stub(),stub()],arms:[stub(),stub()],body,head:stub(),eyes:[],pic,top:h};
   return g;
 }
+/* A child's own 3D animal model (modelOf in art.js), h tall, facing +z like buildBeast. userData.anim plays
+   the model's own walk and idle animations, if it has them; animHero only bobs it. */
+function buildModelBeast(obj,h){
+  const g=new THREE.Group(),body=new THREE.Group();g.add(body);body.add(fitModel(obj,{h,w:h*1.8,d:h*1.8}));
+  g.add(shadowDisc(h*.42));
+  const stub=()=>new THREE.Object3D();
+  g.userData={legs:[stub(),stub()],arms:[stub(),stub()],body,head:stub(),eyes:[],anim:modelAnim(obj),top:h};
+  return g;
+}
 function buildNpc(npc){const id=NPC_KIND[npc&&npc.e]||'bear';const g=buildBeast(BEAST[id]||BEAST.bear);g.scale.setScalar(1.35);return g}
 

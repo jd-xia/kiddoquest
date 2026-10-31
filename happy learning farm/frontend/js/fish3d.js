@@ -173,6 +173,19 @@ function makeOctopus(spec){
   g.userData={tents};g.scale.setScalar(0.92);
   return {group:g,mouth:hook};
 }
+/* A child's own 3D fish (Art Studio). glTF models face +z, our fish swim nose-first along +x,
+   so the model is turned a quarter round. The hook sits at its nose. */
+function ownFish(obj){
+  const turn=new THREE.Group();turn.add(obj);turn.rotation.y=Math.PI/2;
+  const g=fitModel(turn,{w:2.6,h:1.3,d:1.3});g.updateMatrixWorld(true);
+  let b=new THREE.Box3().setFromObject(g);g.children[0].position.y-=(b.max.y+b.min.y)/2;   // centred on the fishing line, not standing on it
+  g.updateMatrixWorld(true);b=new THREE.Box3().setFromObject(g);
+  const hook=new THREE.Group();
+  const hk=fishMesh(new THREE.TorusGeometry(0.055,0.012,8,14,Math.PI*1.35),'#F2C14E',{m:0.65,r:0.22,coat:0.8});
+  hk.rotation.y=Math.PI/2;hk.rotation.z=0.6;hook.add(hk);hook.position.set(b.max.x+0.02,0,0);g.add(hook);
+  const anim=modelAnim(obj);if(anim)anim.play(/swim/i);
+  g.userData={anim};return {group:g,mouth:hook};
+}
 function fishDepthY(){
   const d=UI.fight?UI.fight.depth:50;
   return 0.72-(Math.max(0,Math.min(100,d))/100)*1.44;
@@ -201,9 +214,9 @@ function fishViewSpecies(id){
   const g=fishViewEnsure();if(!g)return;
   const look=FISH_LOOK[id]||FISH_LOOK.minnow;
   if(g.kind===id&&g.fish)return;
-  if(g.fish){g.scene.remove(g.fish);fishDispose(g.fish);g.fish=null}
-  const built=id==='octopus'?makeOctopus(look):makeFish(look);
-  if(id!=='octopus')built.group.scale.setScalar(1.18);
+  if(g.fish){g.scene.remove(g.fish);if(!g.own)fishDispose(g.fish);g.fish=null}   // a child's model shares its parts with every copy: never dispose it
+  const own=typeof modelOf==='function'&&modelOf('fish:'+id),built=own?ownFish(own):id==='octopus'?makeOctopus(look):makeFish(look);g.own=!!own;
+  if(id!=='octopus'&&!own)built.group.scale.setScalar(1.18);
   g.scene.add(built.group);g.fish=built.group;g.mouth=built.mouth;g.kind=id;
   g.anchor=-built.mouth.position.x*(built.group.scale.x||1);
   g.y=fishDepthY();built.group.position.set(g.anchor,g.y,0);
@@ -241,6 +254,7 @@ function fishViewFrame(now){
   fish.position.y=g.y+Math.sin(t*1.6)*0.03*wag;
   fish.rotation.y=(g.kind==='octopus'?0.15:0.48)+Math.sin(t*0.9)*0.07*wag;
   fish.rotation.z=Math.sin(t*1.2)*0.05*wag+g.lean*0.22;
+  if(ud.anim)ud.anim.mx.update(dt*(calm?0.3:1));
   if(ud.tail)ud.tail.rotation.y=Math.sin(t*7)*0.55*wag;
   if(ud.pecL){ud.pecL.rotation.z=Math.sin(t*5)*0.35*wag;ud.pecR.rotation.z=-Math.sin(t*5)*0.35*wag}
   if(ud.whiskers)ud.whiskers.forEach((w,i)=>{w.rotation.z=1.1+Math.sin(t*3+i)*0.15*wag});

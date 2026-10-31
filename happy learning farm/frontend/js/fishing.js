@@ -65,7 +65,7 @@ function rFish(){
   if(fish.pond<1)body=`<div class="card"><h2>Empty shore</h2><p>Build a pond here. Then buy tackle and fish.</p><button class="b" data-act="fishBuild" ${p.gems<POND_COST?'disabled':''}>Build the pond · ${POND_COST} 🪙</button></div>`;
   else if(tab==='shop')body=shopHTML(p,fish);
   else body=castHTML(p,fish);
-  const caught=FISH_CATCH.filter(f=>fish.catches[f.id]).map(f=>`${f.e} ${fish.catches[f.id]} · ${f.worth}🪙`).join('  ');
+  const caught=FISH_CATCH.filter(f=>fish.catches[f.id]).map(f=>`${ico('fish:'+f.id,f.e)} ${fish.catches[f.id]} · ${f.worth}🪙`).join('  ');
   $('#app').innerHTML=topBar('Fishing Pond','toTown')+npcHTML(ANGLER,UI.msg||(fish.pond?`The water is ready. You have ${fish.bait} worm${fish.bait===1?'':'s'}.`:'This shore is waiting for a pond.'))+
     `<div class="pond"><div class="btns" style="margin:0 0 14px">${tabs}</div>${body}${caught?`<p class="muted">Caught: ${caught}. Mo at the market buys each kind for a different price.</p>`:''}</div>`;
   const pulling=UI.phase==='land'&&(UI.land|0)===1;
@@ -154,7 +154,7 @@ function fightHTML(){
     <div class="surf"></div><div class="rays"></div>
     <div class="hook">🪝</div>
     <div class="line" id="fightLine" style="height:${y}%"></div>
-    <div class="fighter" id="fightFish" style="top:${y}%"><span class="swimmer">${f.fish.e}</span></div>
+    <div class="fighter" id="fightFish" style="top:${y}%"><span class="swimmer">${ico('fish:'+f.fish.id,f.fish.e)}</span></div>
     <span class="bub b1"></span><span class="bub b2"></span><span class="bub b3"></span><span class="bub b4"></span>
     <span class="weed l">🌿</span><span class="weed r">🌿</span><div class="silt"></div>${over}
   </div>
@@ -178,7 +178,7 @@ function castHTML(p,fish){
     return `${fightHTML()}<div class="pondstage">${fishLogHTML(true)}${wait}<button class="b" data-act="fishNext">${btn}</button></div>`;
   }
   if(UI.phase==='land'&&UI.fight&&UI.catch)return fishLogHTML(false)+heardHTML()+fishLandHTML()+fightHTML();
-  if(UI.phase==='caught'&&UI.catch)return fishLogHTML(false)+heardHTML()+fishLandHTML()+`<div class="pondstage"><div class="ask">${UI.catch.e}</div><p>A ${UI.catch.name}! ${UI.paid?`+${UI.paid} 🪙`:''}</p><button class="b" data-act="fishCast">Cast again</button></div>`;
+  if(UI.phase==='caught'&&UI.catch)return fishLogHTML(false)+heardHTML()+fishLandHTML()+`<div class="pondstage"><div class="ask">${ico('fish:'+UI.catch.id,UI.catch.e)}</div><p>A ${UI.catch.name}! ${UI.paid?`+${UI.paid} 🪙`:''}</p><button class="b" data-act="fishCast">Cast again</button></div>`;
   if(UI.phase==='lost')return fishLogHTML(false)+`<div class="pondstage"><div class="ask">💦</div><p>It got away.</p><button class="b" data-act="fishCast">Cast again</button></div>`;
   if(UI.phase==='wait'||UI.phase==='strike')return waitWater();
   const src=fishSources(p),quiz=UI.quiz==='unlocked'&&src.length?'unlocked':'times';
@@ -207,7 +207,7 @@ function fishSchoolHTML(){
     const f=pool[i%pool.length];
     const bite=!!(got&&!bitten&&f.id===got.id);
     if(bite)bitten=true;
-    return `<span class="schoolfish${bite?' biter':''}" data-id="${f.id}" style="left:${s[0]}%;top:${s[1]}%;animation-delay:${i*.35}s" aria-hidden="true">${f.e}</span>`;
+    return `<span class="schoolfish${bite?' biter':''}" data-id="${f.id}" style="left:${s[0]}%;top:${s[1]}%;animation-delay:${i*.35}s" aria-hidden="true">${ico('fish:'+f.id,f.e)}</span>`;
   }).join('')}</div>`;
 }
 function waitWater(){
@@ -284,8 +284,8 @@ function fishLandHTML(){
 function fishLeapHTML(){
   const got=UI.catch;
   return `<div class="leapshow" aria-label="The ${esc(got.name)} jumps out of the water and struggles in your hands.">
-    <div class="leap-pond"><div class="leap-splash"></div><div class="leap-fish">${got.e}</div></div>
-    <div class="struggle"><span class="spray">💦</span><span class="hold"><span class="hand">🤲</span><span class="catchfish">${got.e}</span></span><span class="spray r">💦</span></div>
+    <div class="leap-pond"><div class="leap-splash"></div><div class="leap-fish">${ico('fish:'+got.id,got.e)}</div></div>
+    <div class="struggle"><span class="spray">💦</span><span class="hold"><span class="hand">🤲</span><span class="catchfish">${ico('fish:'+got.id,got.e)}</span></span><span class="spray r">💦</span></div>
     <p class="leap-cap">It jumps clear. Hold on — it is still fighting.</p>
   </div>`;
 }

@@ -31,7 +31,7 @@ function farmHeight(x,z){const d=Math.max(Math.abs(x)/29,Math.abs(z)/20);return 
 function buildFarm(){
   if(!engine())return null;
   const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(38,1,.1,600);
-  F={scene,camera,hits:[],npcs:[],zones:[],baseObs:[],obs:[],plots:[],animals:[],fx:[],t:0,tick:0,camPos:new THREE.Vector3(),yaw:CAM.yaw,stuck:0,moving:false,
+  F={scene,camera,hits:[],npcs:[],zones:[],baseObs:[],obs:[],plots:[],animals:[],buildings:[],mixers:[],fx:[],t:0,tick:0,camPos:new THREE.Vector3(),yaw:CAM.yaw,stuck:0,moving:false,
     update:farmUpdate,onTap:farmTap,hover:farmHover,unhover:hideMarks,onDrag:dx=>{CAM.yaw-=dx*.008},rotate:d=>{CAM.yaw+=d*Math.PI/4},zoom:d=>{CAM.zoom=Math.max(.6,Math.min(farmZoomMax(),CAM.zoom*Math.pow(1.22,d)))},
     leave(){if(F.player&&!LASTPOS)LASTPOS={x:F.player.position.x,z:F.player.position.z};KEYS.clear()}};
   scene.add(skyDome('#4E95E0','#FFE7C4','#BFD9A2'));scene.fog=new THREE.Fog(col('#F5E3C6'),60,170);
@@ -77,30 +77,30 @@ function buildFarmWorld(){
   for(const [x,z] of[[-25,15],[25,-16],[-25,-16],[13.5,14]]){S.add(roundTree(x,z,1));F.baseObs.push({x0:x-.8,x1:x+.8,z0:z-.8,z1:z+.8})}
   F.clouds=[];for(let k=0;k<7;k++){const c=cloud(-70+k*22,24+(k%3)*4,-40+(k%2)*18-(k%3)*10,1.4+(k%3)*.4);S.add(c);F.clouds.push(c)}
   // buildings
-  for(const s of SITES){const D=schoolView(s.id),g=D.open?buildSchool(D.color,D.sign):buildSite(D.color,D.sign);g.position.set(s.x,0,s.z);S.add(g);markHit(g,{kind:'zone',id:s.id});
+  for(const s of SITES){const D=schoolView(s.id),g=D.open?buildSchool(D.color,D.sign):buildSite(D.color,D.sign);g.position.set(s.x,0,s.z);S.add(g);markHit(g,{kind:'zone',id:s.id});ownBuilding(g,'school',D.sign);
     F.baseObs.push({x0:s.x-3.8,x1:s.x+3.8,z0:s.z-2.9,z1:s.z+2.7});
     F.zones.push({id:s.id,kind:D.open?'school':'closed',x:s.x,z:s.z+3.3,r:.9,out:{x:s.x,z:s.z+4.9},name:D.sign});
     const soonFor=D.topics.length?` for ${gradeName(gradeOf(cur()))}`:'';   // Brain Boost exists but has no islands for this grade yet
     addNPC({npc:D.npc,x:s.x+3.2,z:s.z+3.8,line:D.open?'Hoo! Earn coins here!':'Opening soon!',
       talk:D.open?[`Hoo-hoo! I'm ${D.npc.name}.`,`${D.name} has ${D.topics.length} maths islands. Number monsters are waiting on every one!`,'Every answer you get right first time earns a coin 🪙 for your farm. Walk through my door to start!']
                  :[`Hello! I'm ${D.npc.name}.`,`This ${D.sign}${soonFor} is still being built. Come back soon!`]})}
-  const mk=buildMarket();mk.position.set(-17,0,5);mk.rotation.y=Math.PI/2;S.add(mk);markHit(mk,{kind:'zone',id:'market'});
+  const mk=buildMarket();mk.position.set(-17,0,5);mk.rotation.y=Math.PI/2;S.add(mk);markHit(mk,{kind:'zone',id:'market'});ownBuilding(mk,'market','Farm Market');
   F.baseObs.push({x0:-18.3,x1:-16.1,z0:2.7,z1:7.3});
   F.zones.push({id:'market',kind:'market',x:-15.2,z:5,r:.9,out:{x:-13.6,z:5},name:'Farm Market'});
   addNPC({npc:MERCHANT,x:-15,z:8.2,line:'Animals, decor, outfits!',talk:['Mo the Merchant, at your service!','Spend your coins here on animals, decorations, new outfits and new land.','I buy crops you planted and harvested, and fish you caught. A harvest of 4 sells for about 120% of the seed price. Each fish has its own price.','Walk up to my stall to shop. The West Meadow is also for sale up the hill on the left.']});
-  const barn=buildBarn();barn.position.set(22.5,0,-1);barn.rotation.y=-Math.PI/2;S.add(barn);markHit(barn,{kind:'zone',id:'barn'});
+  const barn=buildBarn();barn.position.set(22.5,0,-1);barn.rotation.y=-Math.PI/2;S.add(barn);markHit(barn,{kind:'zone',id:'barn'});ownBuilding(barn,'barn','Barn');
   F.baseObs.push({x0:19.9,x1:25.2,z0:-4.2,z1:2.2});
   F.zones.push({id:'barn',kind:'barn',x:19.3,z:-1,r:.9,out:{x:17.8,z:-1},name:'Barn'});
-  const st=buildStudio();st.position.set(24,0,9.2);st.rotation.y=-Math.PI/2;S.add(st);markHit(st,{kind:'zone',id:'studio'});   // on the right edge, door facing the path, so it never hides the player
+  const st=buildStudio();st.position.set(24,0,9.2);st.rotation.y=-Math.PI/2;S.add(st);markHit(st,{kind:'zone',id:'studio'});ownBuilding(st,'studio','Art Studio');   // on the right edge, door facing the path, so it never hides the player
   F.baseObs.push({x0:21.6,x1:26.4,z0:6.4,z1:12}); 
   F.zones.push({id:'studio',kind:'studio',x:21.2,z:9.2,r:.9,out:{x:19.6,z:9.2},name:'Art Studio'});
   addNPC({npc:ARTIST,x:21,z:12.9,line:'Draw your own farm!',talk:["Squawk! I'm Polly, the artist.",'In my Art Studio you can draw yourself, your animals, crops and friends. Take a photo or draw right on the screen!','Or tap 🎨 Paint, then tap anything on the farm to redraw it.']});
-  const bd=buildBoard();bd.position.set(-9,0,9);S.add(bd);markHit(bd,{kind:'zone',id:'board'});
+  const bd=buildBoard();bd.position.set(-9,0,9);S.add(bd);markHit(bd,{kind:'zone',id:'board'});ownBuilding(bd,'board','Progress Board');
   F.baseObs.push({x0:-10.5,x1:-7.5,z0:8.6,z1:9.4});
   F.zones.push({id:'board',kind:'board',x:-9,z:10,r:.8,out:{x:-9,z:11.6},name:'Progress Board'});
   addNPC({npc:ELLIE,x:-11.2,z:10.4,line:'Grown-ups: records here!',talk:['I\'m Ellie. I keep all the records.','Grown-ups can walk up to the board to see stars, scores and practice tips.']});
   addNPC({npc:MAYOR,x:2.6,z:11.4,line:'Welcome to the farm!',mayor:true});
-  const pondLv=fishOf(cur()).pond,pond=buildPond(pondLv>=2);pond.position.set(8,0,15);F.scene.add(pond);F.markHit(pond,{kind:'zone',id:'fish'});
+  const pondLv=fishOf(cur()).pond,pond=buildPond(pondLv>=2);pond.position.set(8,0,15);F.scene.add(pond);F.markHit(pond,{kind:'zone',id:'fish'});ownBuilding(pond,'pond','Fishing pond');
   const pw=pondLv>=2?4.2:2.8,pd=pondLv>=2?2.6:1.8;
   F.baseObs.push({x0:8-pw+0.4,x1:8+pw-0.4,z0:15-pd+0.3,z1:15+pd-0.2});
   F.zones.push({id:'fish',kind:'fish',x:8,z:15-pd-1.3,r:1.05,out:{x:8,z:15-pd-2.6},name:'Fishing Pond'});
@@ -389,18 +389,35 @@ function buildProps(S){
   mb.add(mesh(CYL(.06,.07,1,8),'#8B5A2B',0,.5,0));mb.add(mesh(rbox(.36,.32,.55,.12),'#D9452F',0,1.1,0,{r:.5}));mb.add(mesh(BOX(.04,.2,.1),'#FFD43B',.2,1.25,-.15));
   F.baseObs.push({x0:-7.6,x1:-6.2,z0:10.2,z1:11.6},{x0:-8.1,x1:-6.7,z0:12.4,z1:13.4},{x0:-9.2,x1:-8.2,z0:11.2,z1:12.2});
 }
+/* ---------- the child's own 3D models (Art Studio → 🧊 Upload a 3D model) ----------
+   swapModel() hides what we built and stands the model in its place. With no spots the model fills the
+   thing's own footprint; spots ([x, z, w, d, h] in the group's own space) put one copy on each spot.
+   What we built stays (hidden), so walls, taps and doors work exactly as before. */
+function swapModel(g,key,spots,label){
+  const a=artOf(key);if(!a||!a.obj)return false;
+  const p=g.position.clone(),r=g.rotation.clone(),s=g.scale.clone();g.position.set(0,0,0);g.rotation.set(0,0,0);g.scale.set(1,1,1);g.updateMatrixWorld(true);
+  let top=0;
+  if(!spots){const b=new THREE.Box3().setFromObject(g),sz=b.getSize(new THREE.Vector3()),c=b.getCenter(new THREE.Vector3());spots=[[c.x,c.z,sz.x,sz.z,sz.y*1.4]]}
+  g.children.forEach(c=>c.visible=false);
+  for(const [x,z,w,d,h] of spots){const obj=modelOf(key),m=fitModel(obj,{w,d,h});m.position.set(x,0,z);g.add(m);
+    m.updateMatrixWorld(true);top=Math.max(top,new THREE.Box3().setFromObject(m).max.y);
+    const an=modelAnim(obj);if(an){an.play();F.mixers.push(an)}}
+  if(label){const t=labelSprite(label,{h:.5});t.position.set(spots[0][0],top+.6,spots[0][1]);g.add(t)}
+  g.position.copy(p);g.rotation.copy(r);g.scale.copy(s);return true;
+}
+function ownBuilding(g,id,label){g.userData.art='building:'+id;F.buildings.push(g);swapModel(g,'building:'+id,null,label)}
 function buildDecor(){
-  const S=F.scene;F.decor={};const add=(id,g)=>{g.visible=false;g.userData.art='decor:'+id;S.add(g);F.decor[id]=g};
+  const S=F.scene;F.decor={};const add=(id,g,spots)=>{g.visible=false;g.userData.art='decor:'+id;S.add(g);F.decor[id]=g;swapModel(g,'decor:'+id,spots)};
   let g=new THREE.Group();const fc=['#FF6B9A','#FFD43B','#B56BFF','#FF8A3D','#FFFFFF'];
   for(const bx of[-7.7,7.7]){g.add(mesh(rbox(.9,.25,10,.08),'#7B4D2B',bx,.12,-.9));for(let k=0;k<10;k++){const z=-5.3+k*.95,x=bx+(k%2?.2:-.2);g.add(mesh(CYL(.03,.03,.4,4),'#3E8E41',x,.4,z));g.add(mesh(SPH(.17,10,8),fc[k%5],x,.65,z,{r:.5}))}}
-  add('flowers',g);
+  add('flowers',g,[-7.7,7.7].flatMap(x=>[-4.6,-.9,2.8].map(z=>[x,z,.9,1.6,.9])));
   g=new THREE.Group();F.lanterns=[];for(const [x,z] of[[-12.6,-5],[-12.6,0],[-12.6,4],[-6,8.8],[6,8.8],[12,8.8]]){g.add(mesh(CYL(.06,.07,2,8),'#3A3A3A',x,1,z,{m:.5,r:.4}));g.add(mesh(rbox(.42,.5,.42,.06),'#3A3A3A',x,2.1,z,{m:.5,r:.4}));const l=new THREE.Mesh(SPH(.17,12,10),new THREE.MeshBasicMaterial({color:'#FFE08A',toneMapped:false}));l.position.set(x,2.1,z);g.add(l);
     const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:dotTex(),color:'#FFD27A',transparent:true,opacity:.7,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));glow.scale.set(1.6,1.6,1);glow.position.set(x,2.1,z);g.add(glow);F.lanterns.push(glow)}
-  add('lanterns',g);
+  add('lanterns',g,[[-12.6,-5],[-12.6,0],[-12.6,4],[-6,8.8],[6,8.8],[12,8.8]].map(([x,z])=>[x,z,.8,.8,2.4]));
   g=new THREE.Group();g.position.set(0,0,-7);g.add(mesh(CYL(.07,.07,2.2,6),'#8B5A2B',0,1.1,0));g.add(mesh(BOX(1.6,.1,.1),'#8B5A2B',0,1.5,0));
   g.add(mesh(rbox(.7,.8,.35,.08),'#3E7BFA',0,1.45,0));g.add(mesh(SPH(.28,14,12),'#E8C99A',0,2.2,0));g.add(mesh(new THREE.ConeGeometry(.45,.45,14),'#E9C46A',0,2.55,0));
-  add('scarecrow',g);
-  g=new THREE.Group();for(const [x,z] of[[-22,10],[-22,-9],[22,15]])g.add(roundTree(x,z,1.1,true));add('apples',g);
+  add('scarecrow',g,[[0,0,1.8,1.2,2.9]]);
+  g=new THREE.Group();for(const [x,z] of[[-22,10],[-22,-9],[22,15]])g.add(roundTree(x,z,1.1,true));add('apples',g,[[-22,10],[-22,-9],[22,15]].map(([x,z])=>[x,z,3,3,4.6]));
   g=new THREE.Group();g.position.set(-3,0,14);
   const shore=new THREE.Mesh(new THREE.CircleGeometry(3.05,40),earthMat('lip'));shore.rotation.x=-Math.PI/2;shore.position.y=.03;g.add(shore);
   const wtr=new THREE.Mesh(pondSurface(),waterMat());wtr.rotation.x=-Math.PI/2;wtr.scale.set(2.55,2.55,1);wtr.position.y=.055;wtr.receiveShadow=true;g.add(wtr);F.water=wtr;
@@ -412,7 +429,7 @@ function buildDecor(){
   F.ducks=[0,1].map(()=>{const d=buildBeast(BEAST.duck);d.position.y=.08;g.add(d);return d});add('pond',g);
   g=new THREE.Group();g.position.set(-23,0,-2);g.add(mesh(CYL(.7,1.3,5,10),'#F3EEE6',0,2.5,0,{flat:true}));g.add(mesh(new THREE.ConeGeometry(1.15,1.3,10),'#C8442E',0,5.65,0,{flat:true}));
   const bl=new THREE.Group();bl.position.set(0,4.6,1.15);for(let k=0;k<4;k++){const pv=new THREE.Group();pv.rotation.z=k*Math.PI/2;pv.add(mesh(rbox(.38,2.6,.06,.02),'#FFFFFF',0,1.3,0));bl.add(pv)}
-  bl.add(mesh(SPH(.18,10,8),'#C8442E'));g.add(bl);F.blades=bl;add('windmill',g);
+  bl.add(mesh(SPH(.18,10,8),'#C8442E'));g.add(bl);F.blades=bl;add('windmill',g,[[0,0,3.2,3.2,6.6]]);
 }
 function decorObstacles(f){const o=[],has=id=>f.decor.includes(id);
   if(has('apples'))for(const [x,z] of[[-22,10],[-22,-9],[22,15]])o.push({x0:x-.8,x1:x+.8,z0:z-.8,z1:z+.8});
@@ -451,7 +468,9 @@ function syncAnimals(){
   const f=farmOf(cur());clearGroup(F.animalGroup);
   F.hits=F.hits.filter(h=>!(h.userData.act&&h.userData.act.kind==='animal'));
   F.animals=f.animals.map((a,idx)=>{const A=ANIMALS.find(x=>x.id===a.type),key='animal:'+A.id;
-    let g;if(artOf(key))g=buildPicBeast(key,{chicken:.95,sheep:1.1,cow:1.25}[A.id]||1);   // the child's own animal picture, as a 3D cut-out
+    const model=modelOf(key);let g;
+    if(model)g=buildModelBeast(model,{chicken:.9,sheep:1.15,cow:1.45}[A.id]||1);   // the child's own 3D model
+    else if(artOf(key))g=buildPicBeast(key,{chicken:.95,sheep:1.1,cow:1.25}[A.id]||1);   // the child's own animal picture, as a 3D cut-out
     else{g=buildBeast(BEAST[A.id]||BEAST.chicken);g.scale.setScalar(A.id==='cow'?1.2:1)}
     const pr=iconSprite('prod:'+A.prod,A.pe,.7);g.userData.art=key;pr.userData.art='prod:'+A.prod;pr.position.y=1.35;pr.visible=false;g.add(pr);
     const x=PEN.x0+1+Math.random()*(PEN.x1-PEN.x0-2),z=PEN.z0+1+Math.random()*(PEN.z1-PEN.z0-2);g.position.set(x,0,z);
@@ -546,7 +565,7 @@ function mayorTalk(){dialog(MAYOR,[
   'Start at Professor Hoot\'s Math School, at the top left of the farm. Good luck!'])}
 /* ---------- paint mode: tap anything on the farm to redraw its picture in the Art Studio ---------- */
 let PAINT=false;try{PAINT=sessionStorage.getItem('hmf-paint')==='1'}catch(e){}
-function paintTargets(){return [F.player,...F.npcs.map(n=>n.g),F.animalGroup,...F.plots.map(P=>P.crop),...Object.values(F.decor).filter(g=>g.visible)]}
+function paintTargets(){return [F.player,...F.npcs.map(n=>n.g),...F.buildings,F.animalGroup,...F.plots.map(P=>P.crop),...Object.values(F.decor).filter(g=>g.visible)]}
 function artAt(ray){   // -> {key, obj} of the paintable thing under the pointer
   for(const h of ray.intersectObjects(paintTargets(),true)){let o=h.object;while(o&&!o.userData.art)o=o.parent;if(o&&o.visible)return{key:o.userData.art,obj:h.object}}
   return null;
@@ -590,7 +609,7 @@ function actLabel(a){
 }
 function farmTap(e){
   const ray=rayFrom(e,F.camera);
-  if(PAINT){const hit=artAt(ray);if(hit)go('studio',{edit:hit.key,from:'town'});else toast('🎨 Tap a person, animal, crop or decoration to draw it!');return}
+  if(PAINT){const hit=artAt(ray);if(hit)go('studio',{edit:hit.key,from:'town'});else toast('🎨 Tap a person, animal, crop, decoration or building to draw it!');return}
   const a=actOf(ray.intersectObjects(F.hits,true));
   if(a&&doAct(a))return;
   const g=ray.intersectObject(F.ground);if(g.length)walkTo(g[0].point.x,g[0].point.z,null);
@@ -681,12 +700,15 @@ function farmUpdate(dt){
     const g=an.g;
     if(an.wait>0)an.wait-=dt;else{const ddx=an.tx-g.position.x,ddz=an.tz-g.position.z,d=Math.hypot(ddx,ddz);
       if(d<.05){an.wait=1+Math.random()*4;an.tx=PEN.x0+1+Math.random()*(PEN.x1-PEN.x0-2);an.tz=PEN.z0+1+Math.random()*(PEN.z1-PEN.z0-2)}
-      else{const st=Math.min(d,1.1*dt);g.position.x+=ddx/d*st;g.position.z+=ddz/d*st;g.position.y=Math.abs(Math.sin(t*8))*.04;if(g.userData.legs)animHero(g,'walk',t,dt)}}
+      else{const st=Math.min(d,1.1*dt);g.position.x+=ddx/d*st;g.position.z+=ddz/d*st;g.position.y=Math.abs(Math.sin(t*8))*.04;if(g.userData.legs)animHero(g,'walk',t,dt);
+        let turn=Math.atan2(ddx,ddz)-g.rotation.y;turn=Math.atan2(Math.sin(turn),Math.cos(turn));g.rotation.y+=turn*Math.min(1,dt*6)}}   // face where it walks
     if(an.wait>0)g.position.y=0;
-    const pic=g.userData.pic;if(pic){const cp=F.camera.position;pic.rotation.y=Math.atan2(cp.x-g.position.x,cp.z-g.position.z);
+    const ma=g.userData.anim;if(ma){ma.play(an.wait>0?/idle|eat|graze|stand/i:/walk|run|trot|gallop/i);ma.mx.update(dt)}
+    const pic=g.userData.pic;if(pic){const cp=F.camera.position;pic.rotation.y=Math.atan2(cp.x-g.position.x,cp.z-g.position.z)-g.rotation.y;
       pic.rotation.z=an.wait>0?Math.sin(t*2+an.tx)*.03:Math.sin(t*8)*.08}   // a picture waddles instead of moving its legs
-    an.pr.visible=now-an.a.last>=an.A.mins*60000;an.pr.position.y=1.45+Math.sin(t*3)*.08;
+    an.pr.visible=now-an.a.last>=an.A.mins*60000;an.pr.position.y=Math.max(1.45,(g.userData.top||0)+.35)+Math.sin(t*3)*.08;
   }
+  for(const m of F.mixers)m.mx.update(dt);   // the children's own 3D buildings and decorations, if they move
   if(F.blades)F.blades.rotation.z-=dt*.8;
   F.ducks.forEach((d,k)=>{const a=t*.3+k*Math.PI;d.position.set(Math.cos(a)*1.4,.08+Math.sin(t*2+k)*.03,Math.sin(a)*1.1)});
   F.butterflies.forEach((b,k)=>{const a=t*.5+k*2.1;b.position.set(Math.cos(a)*(5+k)+(k-1)*2,1.4+Math.sin(t*3+k)*.4,Math.sin(a*1.3)*4-1)});
