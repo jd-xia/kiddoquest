@@ -74,7 +74,8 @@ class ScreenFlowTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.screen").value(tablet))
                 .andExpect(jsonPath("$.device").value("Safari on iPad"))
                 .andExpect(jsonPath("$.email").value("parent@example.test"))
-                .andExpect(jsonPath("$.seen").isNotEmpty());
+                .andExpect(jsonPath("$.seen").isNotEmpty())
+                .andExpect(jsonPath("$.ip").value("121.6.217.23"));
         sync(parent, child, laptop, 30).andExpect(status().isConflict()).andExpect(jsonPath("$.error").value("screen_taken"));
         sync(parent, child, tablet, 40).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("synced"));
 
@@ -103,6 +104,7 @@ class ScreenFlowTest {
         body.put("screen", screen);
         body.put("device", screen.contains("tablet") ? "Safari on iPad" : "Chrome on Windows");
         return mvc.perform(post("/api/v1/children/" + child + "/screen").header("Authorization", "Bearer " + token)
+                .header("X-Forwarded-For", "121.6.217.23, 172.18.0.1")
                 .contentType(MediaType.APPLICATION_JSON).content(json.writeValueAsString(body)));
     }
 

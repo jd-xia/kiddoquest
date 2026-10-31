@@ -54,7 +54,7 @@ public final class FarmDtos {
     }
 
     /** seen: the last sync or play-time count from that screen, so the page can say whether it is in use. */
-    public record ScreenState(String screen, Instant at, String device, String email, Instant seen) {
+    public record ScreenState(String screen, Instant at, String device, String email, Instant seen, String ip) {
     }
 
     /** The family's own date, so a day of play time starts at the family's midnight. */

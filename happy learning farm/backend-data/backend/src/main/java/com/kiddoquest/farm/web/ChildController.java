@@ -24,6 +24,7 @@ import com.kiddoquest.farm.web.FarmDtos.ScreenState;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import java.util.List;
@@ -61,8 +62,18 @@ public class ChildController {
 
     @PostMapping("/{childId}/screen")
     @Operation(summary = "Open this farm on this screen. The screen that had it before stops.")
-    public ScreenState claimScreen(@AuthenticationPrincipal Jwt jwt, @PathVariable String childId, @Valid @RequestBody ScreenClaim request) {
-        return children.claimScreen(owner(jwt), email(jwt), childId, request.screen(), request.device());
+    public ScreenState claimScreen(@AuthenticationPrincipal Jwt jwt, @PathVariable String childId, @Valid @RequestBody ScreenClaim request,
+            HttpServletRequest http) {
+        return children.claimScreen(owner(jwt), email(jwt), childId, request.screen(), request.device(), clientIp(http));
+    }
+
+    /** nginx (and the gateway before it) add X-Forwarded-For; its first address is the device itself. */
+    static String clientIp(HttpServletRequest http) {
+        String forwarded = http.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return http.getRemoteAddr();
     }
 
     @GetMapping("/{childId}/screen")

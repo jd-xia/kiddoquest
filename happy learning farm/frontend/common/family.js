@@ -111,15 +111,19 @@ function famDraw(f){
   const rows=FAM.kids.map(k=>{
     const choices=FAM_MINUTES.includes(k.dailyMinutes||0)?FAM_MINUTES:FAM_MINUTES.concat([k.dailyMinutes]).sort((a,b)=>a-b);
     const opts=choices.map(m=>`<option value="${m}" ${(k.dailyMinutes||0)===m?'selected':''}>${m?m+' min a day':'No limit'}</option>`).join('');
-    const today=`${famMins(k.usedSeconds)} min played today${k.bonusMinutes?` · +${k.bonusMinutes} min added`:''}`;
+    const b=k.bonusMinutes||0;
+    const today=`${famMins(k.usedSeconds)} min played today${b>0?` · ${b} min added`:b<0?` · ${-b} min taken away`:''}`;
     return `<div class="famrow"><div class="nm">${cloudLookEmoji(k.look)} ${esc(k.displayName)} ${k.username?`<span class="pcode">${esc(k.username)}</span>`:''}</div>
       ${k.main?'<p class="muted">⭐ Main account · no time limit · opens with the PIN</p>':`<div class="row"><select data-kid="${esc(k.id)}" class="famsel" aria-label="Minutes a day for ${esc(k.displayName)}">${opts}</select>
-      <button class="b ghost sm" data-act="famAdd" data-id="${esc(k.id)}">+15 min today</button>
-      <button class="b ghost sm" data-act="famMain" data-id="${esc(k.id)}">Make main</button></div>`}
+      <button class="b ghost sm" data-act="famMain" data-id="${esc(k.id)}">Make main</button></div>
+      ${k.dailyMinutes?`<div class="row famtoday">Today:
+        <button class="b ghost sm" data-act="famAdd" data-id="${esc(k.id)}" data-sign="-1" aria-label="Take minutes away from ${esc(k.displayName)} today">−</button>
+        <input type="number" class="famn" data-kid="${esc(k.id)}" min="1" max="600" step="1" value="5" aria-label="Minutes">
+        <button class="b ghost sm" data-act="famAdd" data-id="${esc(k.id)}" data-sign="1" aria-label="Add minutes for ${esc(k.displayName)} today">+</button> min</div>`:''}`}
       <p class="muted">${today}</p></div>`}).join('')||'<p class="muted">No farms on this account yet.</p>';
   el.innerHTML=`<div class="dlg famdlg"><div style="flex:1"><div class="dlg-name">👪 Parent settings</div>
     <p class="muted">The main account has no time limit. Each child plays up to their minutes a day; a warning shows 5 minutes before the end. A new day starts at midnight.</p>
-    ${rows}
+    ${rows}<p class="syncwarn" id="famerr" aria-live="polite" style="display:none"></p>
     <div class="dlg-btns"><button class="b ghost sm" data-act="famPinChangeAsk">Change PIN</button><button class="b sm" data-act="famDone">Done</button></div></div></div>`;
   el.querySelectorAll('.famsel').forEach(s=>s.addEventListener('change',()=>famWrite(s.dataset.kid,{dailyMinutes:Number(s.value)})));
 }
@@ -131,6 +135,14 @@ async function famWrite(id,fields){
     if(id===cloudRead().childId)famBeat();   // the farm on screen gets its new time at once
   }catch(e){FAM.pin=null;cloudTell(famPinMsg(e))}
 }
+/* The minutes box: a whole number from 1 to 600; anything else is pointed out, not guessed. */
+function famN(input){
+  const n=Number(input&&input.value);
+  if(Number.isInteger(n)&&n>=1&&n<=600)return n;
+  if(input){input.focus();input.select&&input.select()}
+  const e=$('#famerr');if(e){e.textContent='Minutes must be a whole number from 1 to 600.';e.style.display=''}
+  return 0;
+}
 function cloudLoadKidsNow(){cloudKidStamp=0;cloudLoadKids()}
 function famDone(){FAM.pin=null;cloudClose();if(UI&&UI.screen==='players'&&typeof rPlayers==='function')rPlayers()}
 async function famPinChange(){
@@ -141,23 +153,25 @@ async function famPinChange(){
   catch(e){famErr(famPinMsg(e))}
 }
 /* Time is up: the parent adds 15 minutes for the farm on screen. */
-function famAddAsk(){famPinBox('Add time','Enter the parent PIN to add 15 minutes for today.','famAddNow')}
-function famAddNow(){famUnlock(async()=>{
+function famAddAsk(){famPinBox('Add time','Enter the parent PIN and how many minutes to add for today.','famAddNow',
+  '<label class="row famtoday">Add <input id="fampinmin" type="number" class="famn" min="1" max="600" step="1" value="15" aria-label="Minutes to add"> min</label>')}
+function famAddNow(){const n=famN($('#fampinmin'));if(!n)return;famUnlock(async()=>{
   const id=cloudRead().childId;
-  try{await cloudFetch(famApi('/family/kids/'+encodeURIComponent(id)),{method:'POST',auth:true,json:{pin:FAM.pin,day:famDay(),addMinutes:15},timeoutMs:8000})}catch(e){}
+  try{await cloudFetch(famApi('/family/kids/'+encodeURIComponent(id)),{method:'POST',auth:true,json:{pin:FAM.pin,day:famDay(),addMinutes:n},timeoutMs:8000})}catch(e){}
   FAM.pin=null;FAM.up=false;famTimeUp();famBeat();   // the next count closes the time-up screen if time was added
 })}
 
 /* ---------- the main farm opens only with the PIN ---------- */
 {const keepSwitch=cloudSwitch,keepAsk=cloudAskOpen;
   const gate=(keep,id)=>{const k=famKid(id);if(!k||!k.main||FAM.pin||cloudIsOpen(id))return keep(id);
+    cloudOpenLog('main account: asking for the parent PIN');
     FAM.gate=()=>keep(id);famPinBox('Main account',`${k.displayName} is the main account. Enter the parent PIN to open it.`,'famGateOk')};
   cloudSwitch=id=>gate(keepSwitch,id);cloudAskOpen=id=>gate(keepAsk,id)}
 function famGateOk(){famUnlock(()=>{const go=FAM.gate;FAM.gate=null;cloudClose();FAM.pin=null;if(go)go()})}
 
 Object.assign(ACT,{
   famOpen:()=>famOpen(),famPinNew:()=>famPinNew(),famUnlockSettings:()=>famUnlock(famOpen),famCancel:()=>famCancel(),
-  famAdd:d=>famWrite(d.id,{addMinutes:15}),famMain:d=>famWrite(d.id,{main:true}),famDone:()=>famDone(),
+  famAdd:d=>{const n=famN($(`.famn[data-kid="${d.id}"]`));if(n)famWrite(d.id,{addMinutes:n*Number(d.sign||1)})},famMain:d=>famWrite(d.id,{main:true}),famDone:()=>famDone(),
   famPinChangeAsk:()=>famPinBox('Change PIN','Choose a new 4-digit parent PIN.','famPinChange','<input id="fampin2" class="pininput" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="again">'),
   famPinChange:()=>famPinChange(),famAddAsk:()=>famAddAsk(),famAddNow:()=>famAddNow(),famGateOk:()=>famGateOk()
 });

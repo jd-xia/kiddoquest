@@ -93,7 +93,9 @@ public class FamilyService {
             child.setDailyMinutes(request.dailyMinutes() == 0 ? null : request.dailyMinutes());
         }
         if (request.addMinutes() != null) {
-            child.setBonusMinutes(Math.max(0, Math.min(600, child.getBonusMinutes() + request.addMinutes())));
+            // + adds time today, - takes it away; today can go down to 0 minutes but not below
+            int daily = child.getDailyMinutes() == null ? 0 : child.getDailyMinutes();
+            child.setBonusMinutes(Math.max(-daily, Math.min(600, child.getBonusMinutes() + request.addMinutes())));
         }
         children.save(child);
         return family(ownerId, request.day());

@@ -61,6 +61,18 @@ public class ChildProfile {
     @Column(name = "screen_email", length = 320)
     private String screenEmail;
 
+    /** The network address that screen came from (the first X-Forwarded-For address behind nginx). */
+    @Column(name = "screen_ip", length = 64)
+    private String screenIp;
+
+    public String getScreenIp() {
+        return screenIp;
+    }
+
+    public void setScreenIp(String screenIp) {
+        this.screenIp = screenIp;
+    }
+
     /** Last time that screen synced or counted play time: shows whether it is still in use. */
     @Column(name = "screen_seen")
     private Instant screenSeen;

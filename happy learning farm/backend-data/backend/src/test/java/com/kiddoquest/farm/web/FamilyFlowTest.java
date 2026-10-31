@@ -96,6 +96,12 @@ class FamilyFlowTest {
         // the parent adds 15 minutes for today
         write(parent, jayden, "1234", "{\"addMinutes\":15}").andExpect(status().isOk()).andExpect(jsonPath("$.kids[1].bonusMinutes").value(15));
         beat(parent, jayden, 0).andExpect(jsonPath("$.leftSeconds").value(870));
+        // and takes 3 minutes away again; today never goes below 0 minutes
+        write(parent, jayden, "1234", "{\"addMinutes\":-3}").andExpect(jsonPath("$.kids[1].bonusMinutes").value(12));
+        beat(parent, jayden, 0).andExpect(jsonPath("$.leftSeconds").value(690));
+        write(parent, jayden, "1234", "{\"addMinutes\":-100}").andExpect(jsonPath("$.kids[1].bonusMinutes").value(-30));
+        beat(parent, jayden, 0).andExpect(jsonPath("$.leftSeconds").value(0));
+        write(parent, jayden, "1234", "{\"addMinutes\":15}").andExpect(status().isOk());
 
         // a new day starts again without the extra minutes
         mvc.perform(post("/api/v1/children/" + jayden + "/play").header("Authorization", "Bearer " + parent)

@@ -75,7 +75,7 @@ public class ChildService {
 
     /** The newest screen to open a farm takes it over; the older screen sees that and stops. */
     @Transactional
-    public ScreenState claimScreen(String ownerId, String email, String childId, String screen, String device) {
+    public ScreenState claimScreen(String ownerId, String email, String childId, String screen, String device, String ip) {
         ChildProfile child = children.lockByIdAndOwner(checked(childId), ownerId).orElseThrow(NotFoundException::new);
         Instant now = clock.instant();
         child.setScreenId(screen);
@@ -83,6 +83,7 @@ public class ChildService {
         child.setScreenSeen(now);
         child.setScreenDevice(device == null || device.isBlank() ? null : device.trim());
         child.setScreenEmail(cleanEmail(email));
+        child.setScreenIp(ip == null || ip.isBlank() ? null : ip.trim().substring(0, Math.min(64, ip.trim().length())));
         children.save(child);
         return screenState(child);
     }
@@ -94,7 +95,7 @@ public class ChildService {
 
     static ScreenState screenState(ChildProfile child) {
         return new ScreenState(child.getScreenId(), child.getScreenAt(), child.getScreenDevice(), child.getScreenEmail(),
-                child.getScreenSeen());
+                child.getScreenSeen(), child.getScreenIp());
     }
 
     /** A screen that is not the one that opened the farm last may not save. The one that did is still in use. */
