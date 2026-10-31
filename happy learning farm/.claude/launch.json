@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "farm-static",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-m", "http.server", "5174", "--bind", "127.0.0.1", "--directory", "frontend"],
+      "port": 5174
+    }
+  ]
+}
