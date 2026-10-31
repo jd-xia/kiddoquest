@@ -450,8 +450,10 @@ function syncPlots(force){
 function syncAnimals(){
   const f=farmOf(cur());clearGroup(F.animalGroup);
   F.hits=F.hits.filter(h=>!(h.userData.act&&h.userData.act.kind==='animal'));
-  F.animals=f.animals.map((a,idx)=>{const A=ANIMALS.find(x=>x.id===a.type),g=buildBeast(BEAST[A.id]||BEAST.chicken);g.scale.setScalar(A.id==='cow'?1.2:1);
-    const pr=iconSprite('prod:'+A.prod,A.pe,.7);g.userData.art='animal:'+A.id;pr.userData.art='prod:'+A.prod;pr.position.y=1.35;pr.visible=false;g.add(pr);
+  F.animals=f.animals.map((a,idx)=>{const A=ANIMALS.find(x=>x.id===a.type),key='animal:'+A.id;
+    let g;if(artOf(key))g=buildPicBeast(key,{chicken:.95,sheep:1.1,cow:1.25}[A.id]||1);   // the child's own animal picture, as a 3D cut-out
+    else{g=buildBeast(BEAST[A.id]||BEAST.chicken);g.scale.setScalar(A.id==='cow'?1.2:1)}
+    const pr=iconSprite('prod:'+A.prod,A.pe,.7);g.userData.art=key;pr.userData.art='prod:'+A.prod;pr.position.y=1.35;pr.visible=false;g.add(pr);
     const x=PEN.x0+1+Math.random()*(PEN.x1-PEN.x0-2),z=PEN.z0+1+Math.random()*(PEN.z1-PEN.z0-2);g.position.set(x,0,z);
     F.animalGroup.add(g);g.userData.act={kind:'animal',idx};F.hits.push(g);
     return{g,sp:g,pr,a,A,tx:x,tz:z,wait:Math.random()*3}});
@@ -681,6 +683,8 @@ function farmUpdate(dt){
       if(d<.05){an.wait=1+Math.random()*4;an.tx=PEN.x0+1+Math.random()*(PEN.x1-PEN.x0-2);an.tz=PEN.z0+1+Math.random()*(PEN.z1-PEN.z0-2)}
       else{const st=Math.min(d,1.1*dt);g.position.x+=ddx/d*st;g.position.z+=ddz/d*st;g.position.y=Math.abs(Math.sin(t*8))*.04;if(g.userData.legs)animHero(g,'walk',t,dt)}}
     if(an.wait>0)g.position.y=0;
+    const pic=g.userData.pic;if(pic){const cp=F.camera.position;pic.rotation.y=Math.atan2(cp.x-g.position.x,cp.z-g.position.z);
+      pic.rotation.z=an.wait>0?Math.sin(t*2+an.tx)*.03:Math.sin(t*8)*.08}   // a picture waddles instead of moving its legs
     an.pr.visible=now-an.a.last>=an.A.mins*60000;an.pr.position.y=1.45+Math.sin(t*3)*.08;
   }
   if(F.blades)F.blades.rotation.z-=dt*.8;

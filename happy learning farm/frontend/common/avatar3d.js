@@ -192,5 +192,23 @@ function buildBeast(o){
   g.add(shadowDisc(o.shadow||.42));
   return g;
 }
+/* A child's own animal picture as a solid 3D cut-out: the picture on the front and back, darker layers
+   between them for a thick edge, standing on its feet. userData matches buildBeast so animHero can bob it;
+   userData.pic is the cut-out, which the farm turns toward the camera so it never shows its thin side. */
+function buildPicBeast(key,h){
+  const tex=iconTex(key,''),img=tex.image||{},iw=img.naturalWidth||img.width||1,ih=img.naturalHeight||img.height||1;
+  const g=new THREE.Group(),body=new THREE.Group(),pic=new THREE.Group();g.add(body);body.add(pic);
+  const geo=new THREE.PlaneGeometry(h*iw/ih,h);geo.translate(0,h/2,0);geo.userData.keep=true;
+  const face=new THREE.MeshStandardMaterial({map:tex,alphaTest:.5,side:THREE.DoubleSide,roughness:.7});
+  const edge=new THREE.MeshStandardMaterial({map:tex,alphaTest:.5,side:THREE.DoubleSide,roughness:.85,color:col('#8E8478')});
+  const N=12,depth=h*.12;
+  for(let k=0;k<N;k++){const m=new THREE.Mesh(geo,k===0||k===N-1?face:edge);m.position.z=depth*(k/(N-1)-.5);pic.add(m)}
+  const front=pic.children[N-1];front.castShadow=true;   // its shadow follows the picture's shape, not the square
+  front.customDepthMaterial=new THREE.MeshDepthMaterial({depthPacking:THREE.RGBADepthPacking,map:tex,alphaTest:.5});
+  g.add(shadowDisc(h*.38));
+  const stub=()=>new THREE.Object3D();
+  g.userData={legs:[stub(),stub()],arms:[stub(),stub()],body,head:stub(),eyes:[],pic,top:h};
+  return g;
+}
 function buildNpc(npc){const id=NPC_KIND[npc&&npc.e]||'bear';const g=buildBeast(BEAST[id]||BEAST.bear);g.scale.setScalar(1.35);return g}
 
