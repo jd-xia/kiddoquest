@@ -54,6 +54,16 @@ SQL 里有 `DROP TABLE IF EXISTS`。如果 data 应用或登录服务已经建�
 docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT COUNT(*) AS users FROM kiddoquest_openid.openid_user; SELECT COUNT(*) AS children FROM kiddoquest_farm.farm_child;"'
 ```
 
+## 语音聊天（Farm Chat）
+
+若语音发不出去、服务器日志里有 `Data too long for column 'voice_data'`，在 MySQL 里把该列改成 `LONGTEXT`（新版本的 farm 服务启动时也会自动尝试改）：
+
+```powershell
+docker compose exec mysql mysql -uroot -pkiddoquest-local -e "ALTER TABLE kiddoquest_farm.farm_message MODIFY voice_data LONGTEXT;"
+```
+
+若 `.env` 里没导出变量，密码默认与 `docker-compose.yml` 里一致（常见为 `kiddoquest-local`）。改完后执行 `docker compose up -d --build farm` 并强制刷新浏览器（`hall.js` / `cloud.js` 带新版本号）。
+
 ## 不要做的事
 
 `docker compose down` 会停容器，但 `mysql-data` 卷还在。`docker compose down -v` 会删掉这个卷，库就空了。换服务器时用 SQL 文件，不要靠删卷再重建。

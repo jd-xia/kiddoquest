@@ -1,6 +1,9 @@
 server:
   port: ${PORT:8082}
   forward-headers-strategy: framework
+  tomcat:
+    max-http-form-post-size: 8MB
+    max-swallow-size: 8MB
 
 spring:
   application:

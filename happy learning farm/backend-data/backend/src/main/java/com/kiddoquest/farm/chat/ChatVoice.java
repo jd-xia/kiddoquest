@@ -11,8 +11,8 @@ public final class ChatVoice {
     public static final int MAX_BYTES = 400_000;
 
     private static final int MIN_BYTES = 200;
-    private static final Set<String> TYPES = Set.of("audio/webm", "audio/mp4", "audio/ogg", "audio/mpeg", "audio/wav",
-            "audio/x-m4a");
+    private static final Set<String> TYPES = Set.of("audio/webm", "audio/mp4", "audio/aac", "audio/ogg", "audio/mpeg",
+            "audio/wav", "audio/x-m4a");
 
     private ChatVoice() {
     }

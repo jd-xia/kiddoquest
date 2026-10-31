@@ -41,6 +41,10 @@ public class ApiExceptionHandler {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                     .body(new ApiError("rejected", "This account already has a child with that name."));
         }
+        if (text.contains("voice_data") || text.contains("Data too long")) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                    .body(new ApiError("rejected", "That voice message could not be saved. Update the farm server, then try again."));
+        }
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(new ApiError("interrupted", "Sync was interrupted. This device was not changed. Try again."));
     }

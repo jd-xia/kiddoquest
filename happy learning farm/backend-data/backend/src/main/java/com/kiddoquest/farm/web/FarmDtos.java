@@ -61,4 +61,11 @@ public final class FarmDtos {
 
     public record ChatTicket(String ticket) {
     }
+
+    public record VoiceSend(
+            @NotBlank String as,
+            @NotBlank String to,
+            @NotBlank String voice,
+            @Size(max = 80) String mime) {
+    }
 }

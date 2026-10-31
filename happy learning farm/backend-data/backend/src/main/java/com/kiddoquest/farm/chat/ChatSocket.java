@@ -78,6 +78,8 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
             send(session, Map.of("type", "error", "message", "That farm was not found."));
         } catch (SyncRejectedException ex) {
             send(session, Map.of("type", "error", "message", ex.getMessage()));
+        } catch (Exception ex) {
+            send(session, Map.of("type", "error", "message", "That voice message could not be sent."));
         }
     }
 
@@ -119,6 +121,10 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
         fan(sent);
     }
 
+    public void broadcast(Sent sent) {
+        fan(sent);
+    }
+
     private void fan(Sent sent) {
         if ("hall".equals(sent.other())) {
             for (String username : Set.copyOf(byUser.keySet())) {
@@ -144,7 +150,6 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
         payload.put("text", line.text());
         payload.put("kind", line.kind() == null ? "text" : line.kind());
         if (line.voice() != null) {
-            payload.put("voice", line.voice());
             payload.put("mime", line.mime() == null ? "" : line.mime());
         }
         payload.put("at", line.at() == null ? "" : line.at().toString());

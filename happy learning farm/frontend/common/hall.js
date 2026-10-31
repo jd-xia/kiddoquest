@@ -147,12 +147,28 @@ async function hallOpenThread(id){
 }
 function hallChat(d){if(d&&d.id)hallOpenThread(d.id)}
 function hallHall(){hallOpenThread('hall')}
+async function hallVoiceFill(msg){
+  if(!msg||!(msg.kind==='voice'||msg.voice)||msg.voice||!cloudIsAccount())return msg;
+  const as=cloudRead().childId,withId=HALL.thread;
+  if(!as||!withId)return msg;
+  try{
+    const lines=await cloudFetch(cloudConfig().dataBase+'/api/v1/chat/history?as='+encodeURIComponent(as)+'&with='+encodeURIComponent(withId),{auth:true});
+    const full=Array.isArray(lines)?lines.find(l=>l.id===msg.id):null;
+    if(full&&full.voice)return full;
+  }catch(e){}
+  return msg;
+}
 function hallIncoming(msg){
   if(!msg||msg.type!=='chat')return;
   if(msg.kind==='voice'||msg.voice)HALL.voiceWaiting=false;
   if(HALL.open&&HALL.thread===msg.room){
-    if(!HALL.lines.some(l=>l.id===msg.id))HALL.lines.push(msg);
-    hallPaintChat();return;
+    hallVoiceFill(msg).then(m=>{
+      if(!HALL.open||HALL.thread!==msg.room)return;
+      if(!HALL.lines.some(l=>l.id===m.id))HALL.lines.push(m);
+      hallPaintChat();
+      if(m.kind==='voice'&&m.voice)hallFine('Voice message sent.');
+    });
+    return;
   }
   if(!HALL.open){HALL.unread++;hallPaintMarks()}
   const preview=msg.kind==='voice'||msg.voice?'Voice message':String(msg.text||'').slice(0,80);
@@ -244,7 +260,8 @@ function hallMic(){
   if(!HALL.thread)return;
   if(HALL.voiceRec){hallVoiceFinish(true);return}
   if(!(typeof cloudIsAccount==='function'&&cloudIsAccount())){hallFine('Sign in and open a saved child to chat.');return}
-  if(!HALL.ws||HALL.ws.readyState!==1||!HALL.ready){hallFine('Chat is still connecting.');return}
+  const as=cloudRead().childId;
+  if(!as||!cloudToken()){hallFine('Sign in and open a saved child to chat.');return}
   hallVoiceBegin();
 }
 function hallVoiceBegin(){
@@ -291,15 +308,28 @@ function hallVoiceFinish(send){
   if(rec.state==='inactive'){HALL.voiceStopPending=true;return}
   if(HALL.voiceStopping)return;
   HALL.voiceStopping=true;
-  try{rec.stop()}catch(e){hallVoiceCancel();hallFine('That voice message did not send.')}
+  try{if(typeof rec.requestData==='function')rec.requestData();rec.stop()}catch(e){hallVoiceCancel();hallFine('That voice message did not send.')}
 }
-function hallSendVoice(b64,mime){
+async function hallSendVoice(b64,mime){
   if(!HALL.thread||!b64)return;
-  if(!HALL.ws||HALL.ws.readyState!==1||!HALL.ready){hallFine('Chat is still connecting.');return}
-  HALL.voiceWaiting=true;
-  try{HALL.ws.send(JSON.stringify({type:'send',to:HALL.thread,voice:b64,mime:mime||'audio/webm'}))}
-  catch(e){HALL.voiceWaiting=false;hallFine('That voice message did not send.');return}
+  if(!(typeof cloudIsAccount==='function'&&cloudIsAccount())){hallFine('Sign in and open a saved child to chat.');return}
+  const c=cloudRead(),as=c.childId;
+  if(!as||!cloudToken()){hallFine('Sign in and open a saved child to chat.');return}
   hallFine('Sending the voice message…');
+  try{
+    const line=await cloudFetch(cloudConfig().dataBase+'/api/v1/chat/voice',{method:'POST',auth:true,timeoutMs:90000,json:{as, to:HALL.thread, voice:b64, mime:mime||'audio/webm'}});
+    HALL.voiceWaiting=false;
+    if(HALL.open&&HALL.thread){
+      if(!HALL.lines.some(l=>l.id===line.id))HALL.lines.push(line);
+      hallPaintChat();
+    }
+    hallFine('Voice message sent.');
+  }catch(e){
+    HALL.voiceWaiting=false;
+    let msg=e&&e.message?e.message:'That voice message did not send.';
+    if(e&&e.name==='AbortError')msg='The voice upload took too long. Try a shorter clip or check the network.';
+    hallFine(msg);
+  }
 }
 function hallPlay(d){
   const m=(HALL.lines||[]).find(l=>l.id===d.id);if(!m||!m.voice)return;

@@ -80,7 +80,8 @@ function cloudCommit(mode,childId){const c=cloudRead();c.mode=mode;c.childId=chi
 function cloudAdopt(player,revision){const id=cloudRead().childId;const code=cloudPlayerCode(typeof cur==='function'?cur():null);DATA=cloudWrap(cloudKeepCode(player,(player&&player.code)||code));if(id)cloudSetRevision(id,revision||0);save()}
 let cloudBusy=false,cloudPending=null,cloudLastKey=null,cloudLastMaterial=null,cloudCreateId='',cloudOpenId='',cloudOpenHow='load',cloudPickingAccount=false,cloudSavedMaterial=null,cloudAutoHold=false;
 async function cloudFetch(url,opts){
-  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),20000),headers={Accept:'application/json'};
+  const ms=opts&&opts.timeoutMs||20000;
+  const ctrl=new AbortController(),timer=setTimeout(()=>ctrl.abort(),ms),headers={Accept:'application/json'};
   if(opts.json)headers['Content-Type']='application/json';
   if(opts.auth){const token=cloudToken();if(!token){const err=new Error('Sign in is required');err.status=401;throw err}headers.Authorization='Bearer '+token}
   try{

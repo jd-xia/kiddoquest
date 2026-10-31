@@ -123,6 +123,18 @@ class HallFlowTest {
         assertEquals(clip, voiced.get(1).path("voice").asText());
         assertEquals("", voiced.get(1).path("text").asText());
         assertThrows(SyncRejectedException.class, () -> chat.sendVoice("user-a", child, "hall", clip, "text/plain"));
+
+        byte[] big = new byte[50_000];
+        java.util.Arrays.fill(big, (byte) 9);
+        String bigClip = Base64.getEncoder().encodeToString(big);
+        Thread.sleep(900);
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/v1/chat/voice")
+                .header("Authorization", "Bearer " + mia)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"as\":\"" + child + "\",\"to\":\"hall\",\"voice\":\"" + bigClip + "\",\"mime\":\"audio/webm\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.kind").value("voice"))
+                .andExpect(jsonPath("$.voice").value(bigClip));
         assertThrows(NotFoundException.class, () -> chat.history("user-b", child, "hall"));
         assertThrows(NotFoundException.class, () -> chat.send("user-a", child, "P0099999", "hi"));
 

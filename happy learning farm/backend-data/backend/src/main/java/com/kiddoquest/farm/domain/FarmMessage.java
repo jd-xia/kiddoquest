@@ -6,7 +6,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Index;
-import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 
 @Entity
@@ -40,8 +39,8 @@ public class FarmMessage {
     @Column(name = "voice_mime", length = 40)
     private String voiceMime;
 
-    @Lob
-    @Column(name = "voice_data")
+    /** Base64 audio. Needs LONGTEXT; a short clip is often over 64 KB. */
+    @Column(name = "voice_data", columnDefinition = "LONGTEXT")
     private String voiceData;
 
     @Column(name = "created_at", nullable = false)
