@@ -88,6 +88,17 @@ public class ChildService {
         return screenState(child);
     }
 
+    /** The screen moved to another farm or closed it: the farm is free again, nobody is asked about it. */
+    @Transactional
+    public void releaseScreen(String ownerId, String childId, String screen) {
+        ChildProfile child = children.lockByIdAndOwner(checked(childId), ownerId).orElseThrow(NotFoundException::new);
+        if (screen != null && screen.equals(child.getScreenId())) {
+            child.setScreenId(null);
+            child.setScreenSeen(null);
+            children.save(child);
+        }
+    }
+
     @Transactional(readOnly = true)
     public ScreenState screen(String ownerId, String childId) {
         return screenState(require(ownerId, childId));

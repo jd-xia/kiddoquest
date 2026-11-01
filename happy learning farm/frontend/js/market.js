@@ -5,7 +5,13 @@
    Each kind of fish has its own price, and so do eggs, wool and milk. */
 const HARVEST_COUNT=4;
 const cropPay=(S,n)=>Math.max(1,Math.round(n*S.cost*1.2/HARVEST_COUNT));
-const GOOD_PAY={egg:2,wool:4,milk:6};   // an animal pays for itself after about 10 of its goods
+/* Farm goods are a small extra; learning stays the main way to earn (40 coins a day, core.js).
+   About 1 coin for every 3 minutes an animal works, so an animal pays for itself after 17 to 20 of its
+   goods. Mo buys at most GOODS_DAY_MAX coins of goods a day; the rest wait in the barn for tomorrow.
+   The server keeps the same limit (GameStateValidator). */
+const GOOD_PAY={egg:1,wool:2,milk:3},GOODS_DAY_MAX=20;
+const goodsLeft=p=>{const D=dailyOf(p);return Math.max(0,GOODS_DAY_MAX-(D.goods||0))};
+const goodsSellable=(p,id,have)=>Math.min(have,Math.floor(goodsLeft(p)/(GOOD_PAY[id]||1)));
 function rMarket(){
   const p=cur(),f=farmOf(p),lv=farmLevel(f.xp).l,tab=UI.tab||'crops';
   const tabs=[['crops','🥕 Crops'],['land','🌿 Land'],['animals','🐔 Animals'],['decor','🌷 Decorations'],['outfits','👒 Outfits']].map(([id,l])=>`<button class="b sm ${tab===id?'':'ghost'}" data-act="mtab" data-id="${id}">${l}</button>`).join('');
@@ -14,12 +20,14 @@ function rMarket(){
     const grown=SEEDS.filter(S=>(f.barn[S.id]||0)>0);
     const crops=grown.map(S=>{const n=f.barn[S.id],pay=cropPay(S,n);
       return `<div class="item"><div class="e">${ico('seed:'+S.id,S.e)}</div><div class="nm">${S.name}</div><p class="muted" style="font-size:14px">You grew ${n}<br>Seed was ${S.cost} 🪙</p><div class="acts"><button class="b sm ghost" data-act="sellCrop" data-id="${S.id}">Sell ${n} for ${pay} 🪙</button></div></div>`}).join('');
-    const goods=ANIMALS.filter(A=>(f.barn[A.prod]||0)>0).map(A=>{const n=f.barn[A.prod],each=GOOD_PAY[A.prod]||1,pay=each*n;
-      return `<div class="item"><div class="e">${ico('prod:'+A.prod,A.pe)}</div><div class="nm">${A.pn}</div><p class="muted" style="font-size:14px">You collected ${n}<br>${each} 🪙 each</p><div class="acts"><button class="b sm ghost" data-act="sellGood" data-id="${A.prod}">Sell ${n} for ${pay} 🪙</button></div></div>`}).join('');
+    const goods=ANIMALS.filter(A=>(f.barn[A.prod]||0)>0).map(A=>{const have=f.barn[A.prod],each=GOOD_PAY[A.prod]||1,n=goodsSellable(p,A.prod,have);
+      const btn=n?`<button class="b sm ghost" data-act="sellGood" data-id="${A.prod}">Sell ${n} for ${n*each} 🪙</button>`:'<button class="b sm ghost" disabled>Mo is full today</button>';
+      return `<div class="item"><div class="e">${ico('prod:'+A.prod,A.pe)}</div><div class="nm">${A.pn}</div><p class="muted" style="font-size:14px">You collected ${have}<br>${each} 🪙 each</p><div class="acts">${btn}</div></div>`}).join('');
+    const goodsNote=goods?`<p class="muted" style="grid-column:1/-1;margin:0">Mo buys up to ${GOODS_DAY_MAX} 🪙 of eggs, wool and milk a day. ${goodsLeft(p)} 🪙 left today; the rest wait in your barn.</p>`:'';
     const fish=fishOf(p);
     const caught=FISH_CATCH.filter(F=>(fish.catches[F.id]||0)>0).map(F=>{const n=fish.catches[F.id],pay=F.worth*n;
       return `<div class="item"><div class="e">${F.e}</div><div class="nm">${F.name}</div><p class="muted" style="font-size:14px">You caught ${n}<br>${F.worth} 🪙 each</p><div class="acts"><button class="b sm ghost" data-act="sellFish" data-id="${F.id}">Sell ${n} for ${pay} 🪙</button></div></div>`}).join('');
-    items=crops+goods+caught||'<p class="muted">Nothing to sell yet. Harvest a crop you grew, collect eggs, wool or milk from your animals, or catch a fish. Animals and clothes stay yours.</p>';
+    items=crops+goodsNote+goods+caught||'<p class="muted">Nothing to sell yet. Harvest a crop you grew, collect eggs, wool or milk from your animals, or catch a fish. Animals and clothes stay yours.</p>';
   }
   if(tab==='land'){
     const next=f.unlocked<HOME_PLOTS?`<div class="item"><div class="e">🟫</div><div class="nm">Next field patch</div><p class="muted" style="font-size:14px">One more square in the home field.<br>${f.unlocked} of ${HOME_PLOTS} open</p><div class="acts"><button class="b sm" data-act="buyPlot" ${p.gems<plotCost(f)?'disabled':''}>Buy ${plotCost(f)} 🪙</button></div></div>`:'<div class="item"><div class="e">🟫</div><div class="nm">Home field</div><p class="muted" style="font-size:14px">All ${HOME_PLOTS} patches are open.</p></div>';
@@ -39,7 +47,7 @@ function rMarket(){
       const main=use?'<button class="b sm ghost" disabled>Wearing</button>':own?`<button class="b sm" data-act="wear" data-id="hat:${id}">Wear</button>`:`<button class="b sm" data-act="buyWear" data-id="hat:${id}" ${p.gems<cost?'disabled':''}>Buy ${cost} 🪙</button>`;
       return `<div class="item ${use?'using':''}"><div class="e">${ico('hat:'+id,e)}</div><div class="nm">${nm}</div><div class="acts">${main}</div></div>`}).join('');
   }
-  $('#app').innerHTML=topBar('Farm Market','toTown')+npcHTML(MERCHANT,UI.msg||`Welcome! You have ${p.gems} 🪙. I buy crops you grew, eggs, wool and milk, and fish you caught. New land is on the Land tab. A harvest of ${HARVEST_COUNT} sells for about 120% of the seed price. Egg 2, wool 4, milk 6. Minnow 2, carp 3, bass 5, koi 8, octopus 12.`)+`<div class="btns" style="margin:0 0 14px">${tabs}</div><div class="items">${items}</div>`;
+  $('#app').innerHTML=topBar('Farm Market','toTown')+npcHTML(MERCHANT,UI.msg||`Welcome! You have ${p.gems} 🪙. I buy crops you grew, eggs, wool and milk, and fish you caught. New land is on the Land tab. A harvest of ${HARVEST_COUNT} sells for about 120% of the seed price. Egg 1, wool 2, milk 3, up to ${GOODS_DAY_MAX} 🪙 a day. Minnow 2, carp 3, bass 5, koi 8, octopus 12.`)+`<div class="btns" style="margin:0 0 14px">${tabs}</div><div class="items">${items}</div>`;
 }
 function buyAnimal(id){const p=cur(),f=farmOf(p),A=ANIMALS.find(a=>a.id===id);if(!A||p.gems<A.cost||farmLevel(f.xp).l<A.lv||f.animals.filter(a=>a.type===id).length>=3)return;
   p.gems-=A.cost;f.animals.push({type:id,last:Date.now()});save();UI.msg=`Your new ${A.name} ${A.e} is waiting in the animal pen!`;rMarket()}
@@ -56,12 +64,12 @@ function sellCrop(id){
   UI.msg=`Sold ${n} ${S.name.toLowerCase()}${n>1?'s':''} for ${pay} 🪙.`;rMarket();
 }
 function sellGood(id){
-  const p=cur(),f=farmOf(p),A=ANIMALS.find(a=>a.prod===id),n=A?f.barn[id]||0:0;
+  const p=cur(),f=farmOf(p),A=ANIMALS.find(a=>a.prod===id),have=A?f.barn[id]||0:0,n=A?goodsSellable(p,id,have):0;
   if(!A||n<1)return;
-  const pay=(GOOD_PAY[id]||1)*n;
-  delete f.barn[id];
-  p.gems+=pay;save();
-  UI.msg=`Sold ${n} ${A.pn.toLowerCase()} ${A.pe} for ${pay} 🪙.`;rMarket();
+  const pay=(GOOD_PAY[id]||1)*n,D=dailyOf(p);
+  if(have>n)f.barn[id]=have-n;else delete f.barn[id];
+  D.goods=(D.goods||0)+pay;p.gems+=pay;save();
+  UI.msg=`Sold ${n} ${A.pn.toLowerCase()} ${A.pe} for ${pay} 🪙.${have>n?` ${have-n} stay in your barn: I can buy more tomorrow.`:''}`;rMarket();
 }
 function sellFish(id){
   const p=cur(),fish=fishOf(p),F=FISH_CATCH.find(f=>f.id===id),n=F?fish.catches[id]||0:0;

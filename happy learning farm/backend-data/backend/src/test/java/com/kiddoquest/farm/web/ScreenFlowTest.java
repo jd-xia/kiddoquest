@@ -1,5 +1,6 @@
 package com.kiddoquest.farm.web;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -86,6 +87,16 @@ class ScreenFlowTest {
 
         // a page from before screens existed still syncs
         sync(parent, child, null, 70).andExpect(status().isOk());
+
+        // the laptop switches to another child: only the screen that has the farm can let it go
+        mvc.perform(delete("/api/v1/children/" + child + "/screen").param("screen", tablet).header("Authorization", "Bearer " + parent))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/v1/children/" + child + "/screen").header("Authorization", "Bearer " + parent))
+                .andExpect(jsonPath("$.screen").value(laptop));
+        mvc.perform(delete("/api/v1/children/" + child + "/screen").param("screen", laptop).header("Authorization", "Bearer " + parent))
+                .andExpect(status().isNoContent());
+        mvc.perform(get("/api/v1/children/" + child + "/screen").header("Authorization", "Bearer " + parent))
+                .andExpect(jsonPath("$.screen").isEmpty()).andExpect(jsonPath("$.seen").isEmpty());
     }
 
     @Test

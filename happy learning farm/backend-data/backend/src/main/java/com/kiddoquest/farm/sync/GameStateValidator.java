@@ -21,6 +21,8 @@ public class GameStateValidator {
     static final Set<String> SEEDS = Set.of("carrot", "tomato", "sunflower", "strawberry", "corn", "pumpkin");
     static final Set<String> BARN = Set.of("carrot", "tomato", "sunflower", "strawberry", "corn", "pumpkin", "egg", "wool", "milk");
     static final Set<String> ANIMALS = Set.of("chicken", "sheep", "cow");
+    /** Coins a day the market pays for eggs, wool and milk (GOODS_DAY_MAX in market.js). */
+    static final long GOODS_DAY_MAX = 20;
     static final Set<String> DECOR = Set.of("flowers", "lanterns", "scarecrow", "apples", "pond", "windmill");
     static final Set<String> SHIRTS = Set.of("red", "blue", "green", "yellow", "purple", "pink");
     static final Set<String> HATS = Set.of("none", "straw", "cap", "flowers", "crown");
@@ -90,7 +92,7 @@ public class GameStateValidator {
         } else {
             long days = Math.max(1, ChronoUnit.DAYS.between(previousAt, now) + 1);
             days = Math.min(days, 400);
-            cap = previous + 40L * days + 40L;
+            cap = previous + (40L + GOODS_DAY_MAX) * days + 40L;   // learning 40 a day, farm goods 20 a day
         }
         if (next > cap) {
             throw new SyncRejectedException("Coin total is too far ahead of the saved farm. This device was not changed.");
@@ -322,6 +324,8 @@ public class GameStateValidator {
         ObjectNode daily = mapper.createObjectNode();
         daily.put("d", raw.path("d").asText());
         daily.put("coins", clamp(number(raw.get("coins")), 0, 40));
+        // coins from selling eggs, wool and milk today; the market buys at most GOODS_DAY_MAX a day (market.js)
+        daily.put("goods", clamp(number(raw.get("goods")), 0, GOODS_DAY_MAX));
         daily.put("chest", raw.path("chest").asBoolean(false));
         ObjectNode counts = daily.putObject("n");
         JsonNode n = raw.get("n");

@@ -132,7 +132,10 @@ async function cloudExchange(idToken){
     await cloudShowChildren();
   }catch(e){cloudPickingAccount=false;cloudTell(e.status===409&&e.message?e.message:(e.status===503?'Google sign-in is not configured on the server. This farm was not changed.':'Sign-in did not finish. This account was not changed.'))}
 }
-function cloudLogout(){cloudDetachAccount();const c=cloudRead();c.session=null;c.mode='guest';c.childId=null;cloudWrite(c);cloudKidList=null;cloudKidStamp=0;cloudClose();cloudTell('Signed out. This Google account stays saved. The farm on this device is unchanged.');if(typeof go==='function')go('players');else if(typeof rPlayers==='function')rPlayers()}
+function cloudLogout(){
+  {const c0=cloudRead();if(c0.mode==='account'&&c0.childId&&cloudScreenFarm()===c0.childId)cloudReleaseScreen(c0.childId)}   // while still signed in
+  if(typeof hallDrop==='function')hallDrop();try{sessionStorage.removeItem('hmf-screen-farm')}catch(e){}
+  cloudDetachAccount();const c=cloudRead();c.session=null;c.mode='guest';c.childId=null;cloudWrite(c);cloudKidList=null;cloudKidStamp=0;cloudClose();cloudTell('Signed out. This Google account stays saved. The farm on this device is unchanged.');if(typeof go==='function')go('players');else if(typeof rPlayers==='function')rPlayers()}
 let cloudCloseId='',cloudCloseName='',cloudCloseRemote=false;
 function cloudChildLabel(id){
   const ch=(cloudKidList||[]).find(k=>k&&k.id===id);
@@ -337,6 +340,7 @@ async function cloudOpenYes(){
   if(cloudBusy){cloudOpenLog('stopped: a sync is still running');cloudTell('Still syncing. Tap the farm again in a moment.');return}
   const id=cloudOpenId,how=cloudOpenHow;
   cloudOpenLog('opening',id,'from',how==='cache'?'this device':'the saved farm');
+  const was=cloudRead(),prev=was.mode==='account'?was.childId:null,owned=!!prev&&cloudScreenFarm()===prev;   // before the claim changes it
   if(!(await cloudClaimScreen(id))){cloudOpenLog('stopped: left on the other device');return}   // the child chose to leave it there
   cloudBusy=true;
   try{
@@ -345,7 +349,7 @@ async function cloudOpenYes(){
     let fresh=false;
     if(how==='cache'){const data=cloudCacheOf(id);if(!data)throw new Error('cache');const stamp=data.updated||0;DATA=data;cloudLink(data.players[0]&&data.players[0].id,id);cloudCommit('account',id);save();DATA.updated=stamp;try{localStorage.setItem(LS,JSON.stringify(DATA))}catch(e){}}
     else{const state=await cloudFetch(cloudConfig().dataBase+'/api/v1/children/'+encodeURIComponent(id),{auth:true});if(!state||!state.player)throw new Error('empty');DATA=cloudWrap(cloudKeepCode(state.player,state.username));cloudLink(state.player.id,id);cloudCommit('account',id);cloudMarkSynced(id,state.revision||0);fresh=true;save()}
-    cloudOpenLog('opened',id);cloudClose();go('town');
+    cloudOpenLog('opened',id);cloudFarmChanged(prev,owned);cloudClose();go('town');
     if(!fresh)cloudReconcile();
   }catch(e){console.warn('Farm did not open:',id,how,e);cloudTell('That farm did not open. This device was not changed.')}
   finally{cloudBusy=false}
@@ -359,7 +363,8 @@ function cloudAskGuest(){
 function cloudUseGuest(){
   const c=cloudRead();if(c.mode!=='account'||!c.childId){cloudClose();go('players');return}
   const raw=localStorage.getItem('hmf-guest-backup');if(!raw){cloudTell('The guest farm is not on this device.');return}
-  try{localStorage.setItem('hmf-account-cache-'+c.childId,JSON.stringify(DATA));const guest=JSON.parse(raw);if(!guest||!guest.players)throw new Error('guest');DATA=guest;cloudCommit('guest',null);save();cloudClose();go('players')}
+  try{localStorage.setItem('hmf-account-cache-'+c.childId,JSON.stringify(DATA));const guest=JSON.parse(raw);if(!guest||!guest.players)throw new Error('guest');
+    const owned=cloudScreenFarm()===c.childId;DATA=guest;cloudCommit('guest',null);save();cloudFarmChanged(c.childId,owned);cloudClose();go('players')}
   catch(e){cloudTell('The guest farm could not be opened. This device was not changed.')}
 }
 let cloudSyncRemote=null;
@@ -786,6 +791,21 @@ async function cloudScreenGone(){
   const id=cloudRead().childId;
   try{cloudLostFarm(id,await cloudFetch(cloudConfig().dataBase+'/api/v1/children/'+encodeURIComponent(id)+'/screen',{auth:true,timeoutMs:8000}))}
   catch(e){cloudStopScreen()}
+}
+/* This tab moved from one farm to another (or to the guest farm). The old farm's session ends: the server
+   frees it, so another device can open it with no question, and the chat connection, which speaks as one
+   child, closes and opens again as the new one. prev is the farm this tab had; owned: it had taken it. */
+function cloudFarmChanged(prev,owned){
+  const now=cloudIsAccount()?cloudRead().childId:null;
+  if(prev&&prev!==now&&owned)cloudReleaseScreen(prev);
+  if(!now)try{sessionStorage.removeItem('hmf-screen-farm')}catch(e){}
+  if(typeof hallDrop==='function'&&typeof HALL!=='undefined'&&HALL.childId!==now){hallDrop();if(now&&typeof hallConnect==='function')hallConnect()}
+  if(typeof FAM!=='undefined'){FAM.left=null;FAM.up=false;FAM.warned='';if(typeof famBadge==='function')famBadge()}
+}
+function cloudReleaseScreen(id){
+  if(!id||!cloudToken())return;
+  cloudFetch(cloudConfig().dataBase+'/api/v1/children/'+encodeURIComponent(id)+'/screen?screen='+encodeURIComponent(cloudScreenId()),{method:'DELETE',auth:true,timeoutMs:8000})
+    .then(()=>cloudOpenLog('left',id)).catch(e=>cloudOpenLog('leaving',id,'did not reach the server',e.status||'',e.message));
 }
 /* Takes the farm back: the page starts again, claims it, and compares with the saved farm as usual. */
 function cloudScreenHere(){try{sessionStorage.removeItem('hmf-screen-farm');sessionStorage.setItem('hmf-screen-force','1')}catch(e){}location.reload()}

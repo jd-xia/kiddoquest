@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -30,6 +31,7 @@ import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
+@org.springframework.validation.annotation.Validated
 @RequestMapping("/api/v1/children")
 @Tag(name = "Children")
 public class ChildController {
@@ -74,6 +76,14 @@ public class ChildController {
             return forwarded.split(",")[0].trim();
         }
         return http.getRemoteAddr();
+    }
+
+    @DeleteMapping("/{childId}/screen")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "This screen left the farm (switched to another child or closed it). Only the screen that has it can.")
+    public void releaseScreen(@AuthenticationPrincipal Jwt jwt, @PathVariable String childId,
+            @RequestParam @jakarta.validation.constraints.Pattern(regexp = FarmDtos.SCREEN) String screen) {
+        children.releaseScreen(owner(jwt), childId, screen);
     }
 
     @GetMapping("/{childId}/screen")

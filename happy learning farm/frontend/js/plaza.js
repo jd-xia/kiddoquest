@@ -87,7 +87,7 @@ function buildFarmWorld(){
   const mk=buildMarket();mk.position.set(-17,0,5);mk.rotation.y=Math.PI/2;S.add(mk);markHit(mk,{kind:'zone',id:'market'});ownBuilding(mk,'market','Farm Market');
   F.baseObs.push({x0:-18.3,x1:-16.1,z0:2.7,z1:7.3});
   F.zones.push({id:'market',kind:'market',x:-15.2,z:5,r:.9,out:{x:-13.6,z:5},name:'Farm Market'});
-  addNPC({npc:MERCHANT,x:-15,z:8.2,line:'Animals, decor, outfits!',talk:['Mo the Merchant, at your service!','Spend your coins here on animals, decorations, new outfits and new land.','I buy crops you planted and harvested, eggs, wool and milk, and fish you caught. A harvest of 4 sells for about 120% of the seed price. An egg is 2 coins, wool 4, milk 6. Each fish has its own price.','Walk up to my stall to shop. The West Meadow is also for sale up the hill on the left.']});
+  addNPC({npc:MERCHANT,x:-15,z:8.2,line:'Animals, decor, outfits!',talk:['Mo the Merchant, at your service!','Spend your coins here on animals, decorations, new outfits and new land.','I buy crops you planted and harvested, eggs, wool and milk, and fish you caught. A harvest of 4 sells for about 120% of the seed price. An egg is 1 coin, wool 2, milk 3, up to 20 coins of them a day. Each fish has its own price.','Walk up to my stall to shop. The West Meadow is also for sale up the hill on the left.']});
   const barn=buildBarn();barn.position.set(22.5,0,-1);barn.rotation.y=-Math.PI/2;S.add(barn);markHit(barn,{kind:'zone',id:'barn'});ownBuilding(barn,'barn','Barn');
   F.baseObs.push({x0:19.9,x1:25.2,z0:-4.2,z1:2.2});
   F.zones.push({id:'barn',kind:'barn',x:19.3,z:-1,r:.9,out:{x:17.8,z:-1},name:'Barn'});
