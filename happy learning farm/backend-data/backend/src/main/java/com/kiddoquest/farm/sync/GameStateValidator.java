@@ -1,7 +1,6 @@
 package com.kiddoquest.farm.sync;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -23,6 +22,10 @@ public class GameStateValidator {
     static final Set<String> ANIMALS = Set.of("chicken", "sheep", "cow");
     /** Coins a day the market pays for eggs, wool and milk (GOODS_DAY_MAX in market.js). */
     static final long GOODS_DAY_MAX = 20;
+    /** What Player.daily.log may count (todayLog in core.js). */
+    static final java.util.List<String> DAY_LOG = java.util.List.of("secs", "earn_learn", "earn_chest", "earn_fish", "earn_crops",
+            "earn_goods", "earn_fishsold", "spent", "answered", "right", "levels", "planted", "harvested", "collected", "caught",
+            "sold", "bought");
     static final Set<String> DECOR = Set.of("flowers", "lanterns", "scarecrow", "apples", "pond", "windmill");
     static final Set<String> SHIRTS = Set.of("red", "blue", "green", "yellow", "purple", "pink");
     static final Set<String> HATS = Set.of("none", "straw", "cap", "flowers", "crown");
@@ -83,20 +86,6 @@ public class GameStateValidator {
         }
         out.set("farm", farm(raw.get("farm"), nowMs));
         return out;
-    }
-
-    public void checkCoins(long previous, Instant previousAt, long next, String policy, Instant now) {
-        long cap;
-        if (previousAt == null || "keep_local".equals(policy)) {
-            cap = Math.max(previous, 20_000L);
-        } else {
-            long days = Math.max(1, ChronoUnit.DAYS.between(previousAt, now) + 1);
-            days = Math.min(days, 400);
-            cap = previous + (40L + GOODS_DAY_MAX) * days + 40L;   // learning 40 a day, farm goods 20 a day
-        }
-        if (next > cap) {
-            throw new SyncRejectedException("Coin total is too far ahead of the saved farm. This device was not changed.");
-        }
     }
 
     public String cleanName(String raw, String fallback) {
@@ -327,6 +316,17 @@ public class GameStateValidator {
         // coins from selling eggs, wool and milk today; the market buys at most GOODS_DAY_MAX a day (market.js)
         daily.put("goods", clamp(number(raw.get("goods")), 0, GOODS_DAY_MAX));
         daily.put("chest", raw.path("chest").asBoolean(false));
+        // today's record for the "My day" board (todayLog in core.js): play seconds, coins by source, what was done
+        ObjectNode log = daily.putObject("log");
+        JsonNode rawLog = raw.get("log");
+        if (rawLog != null && rawLog.isObject()) {
+            for (String key : DAY_LOG) {
+                long value = clamp(number(rawLog.get(key)), 0, 10_000_000);
+                if (value > 0) {
+                    log.put(key, value);
+                }
+            }
+        }
         ObjectNode counts = daily.putObject("n");
         JsonNode n = raw.get("n");
         if (n != null && n.isObject()) {

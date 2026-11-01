@@ -659,6 +659,19 @@ body.sheeton .sidebtns,body.sheeton .places{display:none}
 .tasks .b.chestbtn{display:block;width:100%;margin:6px 0 2px;min-height:44px;font-size:16px;background:linear-gradient(180deg,#FFE793,#F7BE3E);color:#3A2300;border:2px solid #A56A3B;animation:paintpulse 1.2s ease-in-out infinite}
 .tasks-end{margin-top:6px;padding:8px 4px 2px;text-align:center;font-weight:700;color:#2F7A36;border-top:1px dashed #E2C9A0}
 .tasks-end b{color:#D2553A;white-space:nowrap}
+/* 📊 My day (plaza.js todayBoard) */
+.daybtn{width:100%;margin-top:6px}
+.daydlg{max-width:560px;max-height:min(88vh,860px);overflow:auto}
+.daydlg h4{margin:14px 0 6px}
+.daytop{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0}
+.daytop>div{text-align:center;padding:10px 6px;border-radius:14px;border:1.5px solid var(--frame);background:rgba(8,12,32,.35)}
+.daytop b{display:block;font-size:26px;color:var(--gold-hi)}
+.daytop small{display:block;font-size:13px;opacity:.85}
+.dayrow{display:flex;align-items:center;gap:10px;padding:6px 4px;border-bottom:1px dashed rgba(255,255,255,.12)}
+.dayrow .de{width:26px;text-align:center}
+.dayrow .dn{flex:1}
+.dayrow .dn small{display:block;font-size:12px;opacity:.75}
+.dayrow b{white-space:nowrap}
 .tasks-head.ready{background:linear-gradient(180deg,#F7BE3E,#C98A1C);animation:paintpulse 1.2s ease-in-out infinite}
 /* character picker (studio.js looksHTML) */
 .card.looks{margin-bottom:14px}

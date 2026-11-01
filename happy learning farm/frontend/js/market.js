@@ -50,17 +50,17 @@ function rMarket(){
   $('#app').innerHTML=topBar('Farm Market','toTown')+npcHTML(MERCHANT,UI.msg||`Welcome! You have ${p.gems} 🪙. I buy crops you grew, eggs, wool and milk, and fish you caught. New land is on the Land tab. A harvest of ${HARVEST_COUNT} sells for about 120% of the seed price. Egg 1, wool 2, milk 3, up to ${GOODS_DAY_MAX} 🪙 a day. Minnow 2, carp 3, bass 5, koi 8, octopus 12.`)+`<div class="btns" style="margin:0 0 14px">${tabs}</div><div class="items">${items}</div>`;
 }
 function buyAnimal(id){const p=cur(),f=farmOf(p),A=ANIMALS.find(a=>a.id===id);if(!A||p.gems<A.cost||farmLevel(f.xp).l<A.lv||f.animals.filter(a=>a.type===id).length>=3)return;
-  p.gems-=A.cost;f.animals.push({type:id,last:Date.now()});save();UI.msg=`Your new ${A.name} ${A.e} is waiting in the animal pen!`;rMarket()}
+  spend(p,A.cost,true);f.animals.push({type:id,last:Date.now()});save();UI.msg=`Your new ${A.name} ${A.e} is waiting in the animal pen!`;rMarket()}
 function buyLandHere(id){const L=LANDS.find(x=>x.id===id);if(!purchaseLand(id))return;UI.msg=`The ${L.name} is yours! Walk up the hill on the left and tap a patch to plant.`;rMarket()}
 function buyPatchHere(){if(purchasePlot()===false)return;UI.msg='A new patch in the home field is ready to plant.';rMarket()}
 function buyDecor(id){const p=cur(),f=farmOf(p),D=DECOR.find(d=>d.id===id);if(!D||p.gems<D.cost||f.decor.includes(id))return;
-  p.gems-=D.cost;f.decor.push(id);save();UI.msg=`The ${D.name} ${D.e} have been added to your farm!`;rMarket()}
+  spend(p,D.cost,true);f.decor.push(id);save();UI.msg=`The ${D.name} ${D.e} have been added to your farm!`;rMarket()}
 function sellCrop(id){
   const p=cur(),f=farmOf(p),S=SEEDS.find(s=>s.id===id),n=S?f.barn[id]||0:0;
   if(!S||n<1)return;
   const pay=cropPay(S,n);
   delete f.barn[id];
-  p.gems+=pay;save();
+  p.gems+=pay;todayLog(p,'earn_crops',pay);todayLog(p,'sold',n);save();
   UI.msg=`Sold ${n} ${S.name.toLowerCase()}${n>1?'s':''} for ${pay} 🪙.`;rMarket();
 }
 function sellGood(id){
@@ -68,7 +68,7 @@ function sellGood(id){
   if(!A||n<1)return;
   const pay=(GOOD_PAY[id]||1)*n,D=dailyOf(p);
   if(have>n)f.barn[id]=have-n;else delete f.barn[id];
-  D.goods=(D.goods||0)+pay;p.gems+=pay;save();
+  D.goods=(D.goods||0)+pay;p.gems+=pay;todayLog(p,'earn_goods',pay);todayLog(p,'sold',n);save();
   UI.msg=`Sold ${n} ${A.pn.toLowerCase()} ${A.pe} for ${pay} 🪙.${have>n?` ${have-n} stay in your barn: I can buy more tomorrow.`:''}`;rMarket();
 }
 function sellFish(id){
@@ -76,12 +76,12 @@ function sellFish(id){
   if(!F||n<1)return;
   const pay=F.worth*n;
   delete fish.catches[id];
-  p.gems+=pay;save();
+  p.gems+=pay;todayLog(p,'earn_fishsold',pay);todayLog(p,'sold',n);save();
   UI.msg=`Sold ${n} ${F.name.toLowerCase()}${n>1?'s':''} for ${pay} 🪙.`;rMarket();
 }
 function wear(key,buy){const p=cur(),f=farmOf(p),[kind,id]=key.split(':');
   const item=kind==='shirt'?SHIRTS.find(s=>s[0]===id):HATS.find(h=>h[0]===id);if(!item)return;const cost=item[3];
-  if(buy){if(f.owned.includes(key)||p.gems<cost)return;p.gems-=cost;f.owned.push(key)}
+  if(buy){if(f.owned.includes(key)||p.gems<cost)return;spend(p,cost,true);f.owned.push(key)}
   if(cost===0&&!f.owned.includes(key))f.owned.push(key);
   if(!f.owned.includes(key))return;f[kind]=id;save();UI.msg='Looking great!';rMarket()}
 

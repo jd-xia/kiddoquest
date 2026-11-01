@@ -1041,7 +1041,7 @@ function record(ok){
   if(ok){stars=UI.hearts;firstClear=r.clears===0;r.clears++;r.stars=Math.max(r.stars,stars);
     if(!day.levels[l.id]){day.levels[l.id]=true;levelBonus=true;if(taskStep('lv:'+l.id))farmOf(p).xp+=TASK_XP}}   // first finish of this level today
   const want=(UI.paid?0:UI.first*COIN_RIGHT)+(levelBonus?COIN_LEVEL:0),gems=earnCoins(p,want);
-  p.time+=secs;
+  p.time+=secs;todayLog(p,'answered',UI.answered);todayLog(p,'right',UI.first);if(ok)todayLog(p,'levels');
   p.sessions.unshift({t:Date.now(),d:D.id,lv:l.id,stars,qs:UI.answered,first:UI.first,secs,ok});
   p.sessions=p.sessions.slice(0,60);
   save();

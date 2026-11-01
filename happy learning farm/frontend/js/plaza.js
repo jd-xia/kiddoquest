@@ -506,11 +506,33 @@ function tasksHTML(){const p=cur(),D=dailyOf(p),T=tasksFor(p),done=T.filter(t=>(
     :done===T.length?'<button class="b chestbtn" data-act="openChest">🎁 Open today\'s chest!</button>'
     :`<div class="tasks-coins">🪙 Today: ${D.coins} / ${COIN_DAY_MAX}</div>`;
   return `<button class="tasks-head ${done===T.length&&!D.chest?'ready':''}" data-act="tasksToggle" aria-label="Today's tasks"><span>📋 Today's Tasks${st?` · 🔥${st}`:''}</span><b>${done}/${T.length}</b></button>
-  <div class="tasks-list">${T.map(t=>{const n=D.n[t.id]||0,ok=n>=t.goal;return `<div class="task ${ok?'ok':''}"><span class="te">${t.e}</span><span class="tn">${t.name}</span><b>${ok?'✓':`${n}/${t.goal}`}</b></div>`}).join('')}${end}</div>`}
+  <div class="tasks-list">${T.map(t=>{const n=D.n[t.id]||0,ok=n>=t.goal;return `<div class="task ${ok?'ok':''}"><span class="te">${t.e}</span><span class="tn">${t.name}</span><b>${ok?'✓':`${n}/${t.goal}`}</b></div>`}).join('')}${end}
+  <button class="b ghost sm daybtn" data-act="todayBoard">📊 My day</button></div>`}
+/* 📊 My day: how long the child played today, the coins earned (and from where) and spent, and what they did.
+   Everything comes from Player.daily.log (todayLog in core.js) and starts again at midnight. */
+function todayBoard(){
+  const p=cur();if(!p)return;const D=dailyOf(p),L=D.log||{},T=tasksFor(p),done=T.filter(t=>(D.n[t.id]||0)>=t.goal).length;
+  const mins=Math.floor((L.secs||0)/60),left=typeof FAM!=='undefined'&&FAM.left!=null?Math.ceil(FAM.left/60):null;
+  const earn=[['📚','Learning',L.earn_learn],['🎁',"Today's chest",L.earn_chest],['🎣','Fishing',L.earn_fish],['🥕','Crops sold',L.earn_crops],
+    ['🥚','Eggs, wool and milk sold',L.earn_goods],['🐟','Fish sold',L.earn_fishsold]].filter(r=>r[2]);
+  const total=earn.reduce((s,r)=>s+r[2],0),spent=L.spent||0;
+  const did=[['✏️','Questions answered',L.answered,L.right?`${L.right} right first try`:''],['🏁','Levels finished',L.levels],['🌱','Seeds planted',L.planted],
+    ['🧺','Crops harvested',L.harvested],['🥚','Collected from animals',L.collected],['🐟','Fish caught',L.caught],['🏪','Things sold',L.sold],['🛍️','Things bought',L.bought]].filter(r=>r[2]);
+  const row=(e,name,n,note)=>`<div class="dayrow"><span class="de">${e}</span><span class="dn">${esc(name)}${note?`<small>${esc(note)}</small>`:''}</span><b>${n}</b></div>`;
+  const el=$('#dlg');if(!el)return;el.className='show';
+  el.innerHTML=`<div class="dlg daydlg"><div style="flex:1"><div class="dlg-name">📊 ${esc(p.name)}'s day</div>
+    <div class="daytop"><div><b>${mins}</b><small>min played${left!=null?` · ${left} left`:''}</small></div>
+      <div><b>+${total}</b><small>coins earned</small></div><div><b>${done}/${T.length}</b><small>tasks done</small></div></div>
+    <h4>🪙 Coins today</h4>${earn.length?earn.map(r=>row(r[0],r[1],'+'+r[2])).join(''):'<p class="muted">No coins yet today. Math School pays the most.</p>'}
+    ${spent?row('🛒','Spent',`−${spent}`):''}${total||spent?row('💰','Today in total',`${total-spent>=0?'+':'−'}${Math.abs(total-spent)}`):''}
+    <p class="muted">You have ${p.gems} 🪙. Learning pays up to ${COIN_DAY_MAX} a day (${D.coins} so far).</p>
+    <h4>✅ What you did</h4>${did.length?did.map(r=>row(r[0],r[1],r[2],r[3])).join(''):'<p class="muted">Nothing yet today. Plant seeds, then visit Math School!</p>'}
+    <div class="dlg-btns"><button class="b sm" data-act="cloudClose">Close</button></div></div></div>`;
+}
 /* All of today's tasks done: the chest gives coins, counts the streak and may hand out a streak gift. */
 function openChest(){
   const p=cur(),D=dailyOf(p);if(D.chest||!allTasksDone(p))return;
-  D.chest=true;const g=earnCoins(p,COIN_CHEST),s=bumpStreak(p),gift=streakGift(p,s.days);save();
+  D.chest=true;const g=earnCoins(p,COIN_CHEST,'chest'),s=bumpStreak(p),gift=streakGift(p,s.days);save();
   if(F&&F.decor)for(const id in F.decor)F.decor[id].visible=farmOf(p).decor.includes(id);
   updateHud();if(F)F.obs=F.baseObs.concat(decorObstacles(farmOf(p)));
   const lines=[`🎁 You opened today's chest${g?`: +${g} 🪙`:''}!`,`🔥 That's ${s.days} day${s.days>1?'s':''} in a row!${s.days<3?' Keep going: day 3 brings a surprise.':s.days<7?' Day 7 brings a big prize!':''}`];
@@ -741,7 +763,7 @@ function addXP(n){const f=farmOf(cur()),b=farmLevel(f.xp).l;f.xp+=n;const a=farm
 function tapAnimal(idx){
   const an=F.animals[idx];if(!an)return;const left=an.A.mins*60000-(Date.now()-an.a.last);
   if(left>0){toast(`${an.A.e} ${an.A.name}: ${an.A.pe} ready in ${fmtLeft(left)}`);return}
-  const f=farmOf(cur());an.a.last=Date.now();f.barn[an.A.prod]=(f.barn[an.A.prod]||0)+1;addXP(an.A.xp);save();
+  const f=farmOf(cur());an.a.last=Date.now();f.barn[an.A.prod]=(f.barn[an.A.prod]||0)+1;todayLog(cur(),'collected');addXP(an.A.xp);save();
   const p=an.g.position;addFx(F,`+1 ${an.A.pe}  +${an.A.xp} XP`,p.x,2,p.z);updateHud();
 }
 function openSheet(kind,arg){F.sheet={kind,arg};F.sheetKey='';refreshSheet(true);document.body.classList.add('sheeton')}
@@ -781,11 +803,11 @@ function sheetBarn(){
 }
 function plant(i,id){const p=cur(),f=farmOf(p),S=SEEDS.find(s=>s.id===id);
   if(!S||p.gems<S.cost||farmLevel(f.xp).l<S.lv||f.plots[i]||!plotOpen(f,i))return;
-  p.gems-=S.cost;f.plots[i]={crop:id,planted:Date.now(),watered:false};taskDone(taskStep('plant'));save();syncPlots(false);updateHud();
+  spend(p,S.cost);todayLog(p,'planted');f.plots[i]={crop:id,planted:Date.now(),watered:false};taskDone(taskStep('plant'));save();syncPlots(false);updateHud();
   const {x,z}=plotPos(i);addFx(F,`🌱 −${S.cost} 🪙`,x,1.6,z);refreshSheet(true)}
 function water(i){const f=farmOf(cur()),pl=f.plots[i];if(!pl||pl.watered)return;pl.watered=true;save();syncPlots(false);const {x,z}=plotPos(i);addFx(F,'💧💧💧',x,1.6,z);refreshSheet(true)}
 function harvest(i){const f=farmOf(cur()),pl=f.plots[i],info=plotInfo(pl);if(!info||info.stage<3)return;
-  f.barn[pl.crop]=(f.barn[pl.crop]||0)+4;f.plots[i]=null;addXP(info.S.xp);taskDone(taskStep('harvest'));save();syncPlots(false);updateHud();
+  f.barn[pl.crop]=(f.barn[pl.crop]||0)+4;todayLog(cur(),'harvested');f.plots[i]=null;addXP(info.S.xp);taskDone(taskStep('harvest'));save();syncPlots(false);updateHud();
   const {x,z}=plotPos(i);addFx(F,`+4 ${info.S.e}  +${info.S.xp} XP`,x,1.8,z);refreshSheet(true)}
 function buyPlot(){if(purchasePlot()===false)return;syncPlots(false);updateHud();closeSheet();toast('New patch ready to plant!')}
 function buyLand(id){const L=LANDS.find(x=>x.id===id);if(!purchaseLand(id))return;syncPlots(true);syncLand();updateHud();closeSheet();toast(`${L.name} is yours! Tap a patch to plant.`)}
@@ -797,7 +819,7 @@ Object.assign(ACT,{
   paint:()=>setPaint(!PAINT),
   eyeView:()=>{CAM.eye=!CAM.eye;if(CAM.eye){CAM.back=null;CAM.zoom=Math.min(CAM.zoom,1.2);CAM.yaw=F.player.rotation.y}   // swing round to the front of the player
     const b=$('[data-act="eyeView"]');if(b){b.classList.toggle('on',CAM.eye);b.setAttribute('aria-pressed',CAM.eye)}toast(CAM.eye?'👀 Eye-level view: drag to look around':'🦅 Back to the view from above')},
-  openChest:()=>openChest(),
+  openChest:()=>openChest(),todayBoard:()=>todayBoard(),
   places:()=>{const el=$('#places'),b=$('[data-act="places"]');if(!el)return;const open=el.classList.toggle('open');if(b)b.setAttribute('aria-expanded',open)},
   tasksToggle:()=>{const el=$('#tasks');if(!el)return;el.classList.toggle('closed');try{sessionStorage.setItem('hmf-tasks',el.classList.contains('closed')?'0':'1')}catch(e){}},
   overview:()=>{   // toggle the whole-farm view; on a tall screen, turn so the farm's long side runs down the screen

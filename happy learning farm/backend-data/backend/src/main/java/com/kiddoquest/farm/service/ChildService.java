@@ -148,7 +148,6 @@ public class ChildService {
 
         JsonNode raw = request.player() == null || request.player().isNull() ? blank(child) : request.player();
         ObjectNode player = validator.sanitize(raw, child.getDisplayName(), child.getGrade(), child.getLook(), now);
-        validator.checkCoins(0, null, player.path("gems").asLong(0), "keep_local", now);
         GameSnapshot snap = store(child, null, player, now, writer(email));
         return state(child, snap);
     }

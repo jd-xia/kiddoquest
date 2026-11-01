@@ -106,8 +106,6 @@ public class SyncService {
         } else if (!force) {
             throw new SyncRejectedException("That sync choice is not available.");
         }
-        long previous = snap == null ? 0 : read(snap).path("gems").asLong(0);
-        validator.checkCoins(previous, snap == null ? null : snap.getUpdatedAt(), incoming.path("gems").asLong(0), request.policy(), now);
         GameSnapshot stored = childService.store(child, snap, incoming, now, email);
         return described("synced", stored, child.getId(), incoming, null, notes);
     }

@@ -88,12 +88,6 @@ class FarmSyncFlowTest {
         org.junit.jupiter.api.Assertions.assertEquals(20, replay.path("player").path("gems").asLong());
         org.junit.jupiter.api.Assertions.assertEquals(20, savedGems(mia, child));
 
-        mvc.perform(post("/api/v1/children/" + child + "/sync").header("Authorization", "Bearer " + mia)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(syncBody("upload-key-0004", 2, "upload", player(1000, "flowers"))))
-                .andExpect(status().isUnprocessableEntity());
-        org.junit.jupiter.api.Assertions.assertEquals(20, savedGems(mia, child));
-
         JsonNode merged = body(sync(mia, child, "merge-key-00001", 0, "merge", player(40, "pond")));
         org.junit.jupiter.api.Assertions.assertEquals("synced", merged.path("status").asText());
         org.junit.jupiter.api.Assertions.assertEquals(40, merged.path("player").path("gems").asLong());

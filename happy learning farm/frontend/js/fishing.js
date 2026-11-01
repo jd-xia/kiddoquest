@@ -189,14 +189,14 @@ function castHTML(p,fish){
     <p>${fishBlurb(p)}</p>
     <button class="b" data-act="fishCast" ${fish.bait<1?'disabled':''}>${fish.bait<1?'Need worms':'Cast'}</button></div>`;
 }
-function fishBuild(){const p=cur(),fish=fishOf(p);if(fish.pond||p.gems<POND_COST)return;p.gems-=POND_COST;fish.pond=1;save();UI.msg='The pond is in! Walk back to the farm to see the water. Buy worms, then cast.';UI.tab='shop';rFish()}
-function fishWide(){const p=cur(),fish=fishOf(p);if(fish.pond!==1||p.gems<WIDE_COST)return;p.gems-=WIDE_COST;fish.pond=2;save();UI.msg='The pond is wider. Koi and an octopus can bite now.';rFish()}
-function fishWorms(){const p=cur();if(p.gems<6)return;p.gems-=6;fishOf(p).bait+=3;save();UI.msg='Three worms in the tin.';rFish()}
+function fishBuild(){const p=cur(),fish=fishOf(p);if(fish.pond||p.gems<POND_COST)return;spend(p,POND_COST,true);fish.pond=1;save();UI.msg='The pond is in! Walk back to the farm to see the water. Buy worms, then cast.';UI.tab='shop';rFish()}
+function fishWide(){const p=cur(),fish=fishOf(p);if(fish.pond!==1||p.gems<WIDE_COST)return;spend(p,WIDE_COST,true);fish.pond=2;save();UI.msg='The pond is wider. Koi and an octopus can bite now.';rFish()}
+function fishWorms(){const p=cur();if(p.gems<6)return;spend(p,6,true);fishOf(p).bait+=3;save();UI.msg='Three worms in the tin.';rFish()}
 function fishBuy(id){const p=cur(),fish=fishOf(p);
   const rod=id.startsWith('rod:')?RODS.find(r=>r.id===id.slice(4)):null;
   const item=rod||TACKLE.find(t=>t.id===id);
   if(!item||fish.owned.includes(id)||p.gems<item.cost)return;
-  p.gems-=item.cost;fish.owned.push(id);if(rod)fish.rod=rod.id;save();UI.msg=`${item.name} is yours.`;rFish()}
+  spend(p,item.cost,true);fish.owned.push(id);if(rod)fish.rod=rod.id;save();UI.msg=`${item.name} is yours.`;rFish()}
 function fishEquip(id){const fish=fishOf(cur());if(!fish.owned.includes('rod:'+id))return;fish.rod=id;save();UI.msg='Rod ready.';rFish()}
 const SCHOOL_SPOTS=[[8,58],[26,32],[44,68],[64,38],[80,56]];
 function fishSchoolHTML(){
@@ -364,10 +364,10 @@ function fishLandStep(step){
 function fishLandDone(){
   if(UI.screen!=='fishing'||UI.phase!=='land'||!UI.catch)return;
   const q=UI.landQ,got=UI.catch,fish=fishOf(cur());
-  fish.catches[got.id]=(fish.catches[got.id]||0)+1;
+  fish.catches[got.id]=(fish.catches[got.id]||0)+1;todayLog(cur(),'caught');
   let pay=fish.pond>=2?2:1;
   if((fish.owned||[]).includes('bucket'))pay+=2;
-  const given=earnCoins(cur(),pay);save();
+  const given=earnCoins(cur(),pay,'fish');save();
   UI.paid=given;UI.phase='caught';UI.land=2;UI.fight=null;
   UI.msg=given?`${q.html} = ${q.answer}. The ${got.name} is yours.`:`${q.html} = ${q.answer}. Nice catch. Today's coins are full, so the fish is the prize.`;
   rFish();
