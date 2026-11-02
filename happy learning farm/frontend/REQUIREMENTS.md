@@ -28,12 +28,16 @@
 ### 2.2 离线与隐私
 
 - Three.js 及后期处理插件已放在 `vendor/` 里，不依赖 CDN，可以完全离线运行。页面样式会尝试加载 Google Fonts；离线时退回系统字体。
-- 未登录时，打开游戏、游玩和自动存档都只写本机 `localStorage`，不会访问 `backend-openid` 或 `backend-data`。
-- 家长用 Google 登录并打开一个孩子的农场后，这个农场一直同步：有改动时大约每 15 秒保存一次，页面切到后台时也保存。按下 **Sync** 会立刻保存。本机和服务器的存档不一样时，自动保留较新的那份（本机最后一次改动 vs 服务器最后一次上传），不再询问。
+- **必须登录**：未登录时只显示 Google 登录页，不能进入农场。旧版本里未登录玩过的农场会放进本机 `hmf-guest-backup`，登录后可以「Save … to this account」存到账号里，但不能直接玩（新设备上从没玩过的示例农场不会被当成旧农场）。
+- **登录流程**：登录检查 → 未登录显示登录页 → Google 登录 → 从服务器读取这个账号的孩子列表 → 自动进入「Who is playing?」人物选择页（`cloudAfterSignIn`）→ 点一个孩子，先从服务器读取他的农场 → 进入农场。账号下还没有孩子时，同一页引导创建第一个孩子，创建后直接进入农场。任何页面打开时如果登录已失效（退出或过期），都会回到登录页；本机还没上传的改动保留在本机并带着标记，重新登录、打开这个孩子时先补传。
+- **服务器是唯一的数据源**：每次打开一个孩子的农场，都先从服务器读取最新存档，再进入游戏；本机副本只用来在页面之间切换。
+- 每次改动（种地、买动物、建鱼塘……）约 1 秒后就上传到服务器；切换页面前会等这次上传完成（最多几秒），关闭标签页时再尝试一次。上传带着它基于的版本号（revision）：服务器版本已经变了（例如另一台设备先存了），就以服务器的存档为准，本机改用服务器的那份；不再按"哪份较新"去猜。没传上去的改动会在本机标记（`hmf-dirty-<child>`），下次打开时如果服务器版本没变就先补传。退出登录前也会先把改动存到服务器。按下 **☁️ Save** 会立刻保存并核对服务器版本。
+- **自己的农场在外围**：不论单独玩还是在 Club 里，每个孩子自己的田（12 块）、West Meadow（买下后 6 块）和动物围栏都在农场南边大门外的一块地（lot）里，有"XX's farm""XX's animals"名字牌，每只动物头上显示主人的名字。单独玩时是第 1 块地；在 Club 里是自己 slot 的那块地，所以每个人的屏幕上每块地的位置都一样。农场中间是大家共用的广场（水池、花和指路牌），建筑、NPC、鱼塘不变。点外面的田或动物时，角色会自己穿过南门、沿着两排地之间的小路，从田的前口走进去（`routeTo`）。
+- **Club（共享农场）**：一个孩子可以创建一个 Club（名字 3–20 个字，全站唯一），其他孩子按名字搜索并加入，一个 Club 最多 4 人。加入后，南门外的小路上每个成员一块地（按加入顺序的 slot），有自己的田、动物围栏、名字牌；在线成员的角色实时走动（位置通过聊天 socket 发送，按"在谁的地里 + 地里的位置"），不在线的站在自己地门口（💤）。点别人的田或动物只会提示"这是谁的"，只有主人能种、收、喂、卖——服务器只允许孩子自己的账号保存自己的农场。点别人的角色可以直接聊天。
 - 一个农场同一时间只在一个屏幕上玩。在另一台设备（或另一个标签页）打开同一个农场时，如果原来那台 2 分钟内还在用，会显示登录的账号、设备（如 Chrome on Windows）和最后活动时间，并要求确认"Sign out there and play here"。原来的屏幕随即停止，不再保存。
 - **主账号（家长）**：一个 Google 账号下可把一个农场设为主账号（⭐ Main）。主账号不限时，打开它要输入 4 位家长 PIN。家长在 👪 Parent settings 里给每个孩子设置每天的分钟数，也可以当天加时间。孩子界面顶部一直显示剩余时间；剩 5 分钟时提醒，时间到了农场停下，第二天或家长加时间后才能继续。时间由服务器记录，刷新或换设备都不会清零。
 - 孩子导入的图片只存在本机浏览器的 IndexedDB（库名 `hmf-art`）里，不会上传；换电脑或清除浏览器数据后需要重新导入。
-- 没有网、或者后端没启动时，核心玩法照常进行。登录和同步的配置见 `backend-openID/README.md` 与 `common/cloud-config.js`。
+- 已经打开的农场在断网时还能继续玩，改动留在本机并标记为未上传，网络恢复后自动补传；但没有网时不能登录或打开农场。登录和同步的配置见 `backend-openID/README.md` 与 `common/cloud-config.js`。
 - 旧的单文件版本（claude.ai 链接）和本地版的存档互不相通。
 
 ## 3. 目录结构
@@ -41,7 +45,15 @@
 ```
 happy-math-farm/
 ├── index.html            广场：选择玩家 + 3D 农场（入口页）
-├── school-tricks.html    Brain Boost 学校（岛屿选择 + 关卡岛 + 战斗）
+├── school-tricks.html    Brain Boost 岛屿界面：岛 = 孩子 Profile 里的主题，石台 = 关卡，关卡在全屏框里打开
+├── brain-boost-admin.html 家长（Main Account）为每个孩子配置 Brain Boost：模块库 / 孩子工作区 / 配置与预览
+├── brain-boost.html      旧地址，自动跳到 school-tricks.html
+├── brain-boost/
+│   ├── profiles/         P1–P6 年级模板（p1.json … p6.json）；孩子自己的 Profile（草稿和已发布）存在服务器
+│   ├── topics/           模块库
+│   │   ├── index.json    所有主题的文件夹名
+│   │   └── <topic>/      topic.json（名字、颜色、岛的地标、关卡列表、规则、题库关卡的题目）+ 每关一个文件夹 <level>/index.html
+│   └── kit/              level-kit.js（关卡页和主程序之间的消息）、level-kit.css、quiz.js（题库关卡）、quiz/（家长自己的题库关卡）、legacy.js（把原来的关卡当独立页面跑）
 ├── market.html           农场市场（动物 / 装饰 / 服装）
 ├── barn.html             谷仓（收获仓库 + 农场等级）
 ├── board.html            进度看板（家长用）
@@ -51,12 +63,14 @@ happy-math-farm/
 │   ├── style.css         全局样式与设计变量
 │   ├── curriculum.js     题目生成器 + 学校与关卡定义（DUNGEONS）
 │   ├── core.js           存档、玩家、页面路由、对话框、农场数据表、通用按钮动作
+│   ├── brainprofile.js   Brain Boost：模块库、年级模板、孩子 Profile 的解析、进度、在全屏框里玩关卡、金币、成绩上传
 │   ├── avatar3d.js       Q 版 3D 人物（大头小孩）和人物设计的预设
 │   ├── art.js            孩子自己的图片：图片存储（IndexedDB）、ico()、可替换图标目录
 │   └── engine3d.js       3D 渲染器、后期处理、材质、通用模型（树、角色、标签）
 ├── js/
 │   ├── plaza.js          广场页逻辑（农场世界、种地、动物、走路）
-│   ├── school.js         所有学校页共用：关卡岛、战斗、答题、结算
+│   ├── bbadmin.js        家长的 Brain Boost 配置页（拖拉式三栏编辑、草稿、发布、预览）
+│   ├── school.js         岛屿界面和关卡岛（岛和石台来自孩子的 Profile）；原来的战斗关卡由 brain-boost/kit/legacy.js 在关卡页里运行
 │   ├── market.js         市场页
 │   ├── barn.js           谷仓页
 │   ├── board.js          进度看板页
@@ -109,8 +123,40 @@ happy-math-farm/
 | MKT-05 | 帽子里新增免费的 🚫 No hat（不戴帽子）；免费的帽子不用买直接戴。人物设计器的 Extras 里也能选帽子或不戴 | ✅ |
 | PLZ-16 | 农场和关卡岛铺满整个窗口（电脑、iPad、iPhone），顶部栏和底部按钮浮在 3D 画面上，并避开刘海和底部横条 | ✅ |
 
+### 4.2a Brain Boost（school-tricks.html + common/brainprofile.js + brain-boost/）
+
+走进农场上的 Brain Boost 学校、或在 Places 里选 Brain Boost，都会打开**岛屿界面**（保留原来的海、岛、地标、小船、关卡岛和石台）。现在岛和石台都来自这个孩子的 Brain Boost Profile。
+
+| 编号 | 需求 | 状态 |
+|---|---|---|
+| BB-01 | 每个孩子有自己的 Brain Boost Profile：开哪些主题、顺序、每个主题里放哪些关卡模块和顺序，以及家长自己的名字、说明、难度、规则和题目。Profile 存在服务器（`bb_profile`：已发布 `profile_json` 和草稿 `draft_json`）。没有已发布 Profile 的孩子玩自己年级的模板 `brain-boost/profiles/<grade>.json` | ✅ |
+| BB-02 | 岛屿界面：每个打开的主题是一座岛（`topic.json` 的 `island` 选地标：tricks、patterns、fractions、compare、models、age；其他主题是一块带图标的路牌）。孩子只看到 Profile 里打开的主题和关卡；没有任何主题时提示家长去设置 | ✅ |
+| BB-03 | 关卡岛：石台 = 主题里打开的关卡，按 Profile 的顺序；前 `openLevels` 关（默认 1）一开始就能玩，之后要先通过上一关。点石台后，关卡页在全屏框里打开（`bbpPlay`），结束后显示结果（下一关、再玩一次、关卡岛、岛屿） | ✅ |
+| BB-04 | 每一关是一个独立的 HTML 文件（`brain-boost/topics/<topic>/<level>/index.html`）。关卡页和主程序用消息说话（`brain-boost/kit/level-kit.js`）：`bb:ready` → `bb:start`（孩子、主题、关卡、`rules`、题库关卡的 `questions`、预览时 `preview:true`）→ `bb:finish` 或 `bb:quit`。关卡页自己不保存任何东西 | ✅ |
+| BB-05 | 关卡结束后：金币放进农场（一次答对 +2，今天第一次通过这关 +5，每天最多 40），和其他农场改动一样存到服务器；成绩发到服务器（`bb_attempt` 每次一条，`bb_progress` 保留每关最好成绩）。每次结果带 `attemptId`，重发只算一次；发不出去的结果留在本机 `hmf-bb-queue-<child>`，下次自动补发 | ✅ |
+| BB-06 | 进度属于**关卡模块**（`topic/level`，家长自己的题库关卡是 `custom/<id>`），不属于它在 Profile 里的位置：移动、改名、拿掉再放回来，星星和成绩都还在。发布配置不会改动任何成绩 | ✅ |
+| BB-07 | 孩子之间数据完全隔离：Profile 和成绩都按孩子保存，只有孩子所在账号能读写；关闭孩子时一起删除 | ✅ |
+| BB-08 | 年级 P1–P6（新加坡小学），每个年级一份模板。模块库：Calculation Tricks（原来的 8 关，P1、P3 各 4 关，由 `kit/legacy.js` 跑原来的 3D 战斗）、Logical Thinking（What Comes Next?、Odd One Out）、Math Challenge（Beat the Clock + P1–P6 Revision 题库关卡，每关 8 题）、Problem Solving（P1–P6 应用题题库关卡，每关 5 题）。模板会把低年级复习和本年级内容放在一起 | ✅ |
+| BB-09 | 原来 Calculation Tricks 的星星（`Player.lv`）继续算数；这些关卡的结果也照旧写进 `Player.lv`、今日任务和进度看板 | ✅ |
+
+### 4.2b 家长配置 brain-boost-admin.html（js/bbadmin.js）
+
+从 👪 Parent settings →「🧠 Brain Boost for each child」或岛屿界面的「👪 Grown-ups」进入，要输入家长 PIN。
+
+| 编号 | 需求 | 状态 |
+|---|---|---|
+| BBA-01 | 顶部选孩子（显示年级）。工作副本 = 这个孩子的草稿，没有草稿就用已发布的 Profile，都没有就用年级模板。切换孩子时如果有没保存的改动，会问「先存草稿再切换 / 不保存直接切换 / 留在这里」 | ✅ |
+| BBA-02 | 三栏：左边**模块库**（按 P1–P6 筛选关卡；「从 P1…P6 模板开始」；每个主题模块和它的关卡模块，标出年级、✎ 题库关卡、已经加入的标 ✓ added），中间**孩子工作区**（主题卡片和关卡行，开关、▲▼、✕ 拿掉、＋ 新主题、＋ 自己的题库关卡），右边**配置与预览**。窄屏时三栏叠成一列 | ✅ |
+| BBA-03 | 拖拉：把主题或关卡从模块库拖进工作区，拖 ⠿ 调整主题和关卡顺序，拖到另一个主题里就是移动；题目也能拖着排序。鼠标拖哪里都行，触屏拖 ⠿。每个按钮都有不用拖的做法（＋、▲▼） | ✅ |
+| BBA-04 | 一个关卡模块在一个孩子的 Profile 里只出现一次：加到别处就是搬过去，设置和星星跟着走。主题加进来时自动带上适合孩子年级的关卡 | ✅ |
+| BBA-05 | 主题可改名字、说明、图标、颜色、开关；关卡可改名字、说明、难度、红心数、每局题数、限时秒数（有计时的关卡）、选项顺序 | ✅ |
+| BBA-06 | 题库关卡：新增、修改、删除、排序题目，改题目、选项（每行一个，2–6 个；不写选项就是让孩子自己输入答案）、正确答案、提示、难度。第一次改动时给这个孩子复制一份模块的题目；「Use the module's questions again」恢复。家长也可以建全新的题库关卡 | ✅ |
+| BBA-07 | ▶ Preview：在右边用现在的设置玩一遍这个关卡，以孩子的名字和年级，什么都不保存 | ✅ |
+| BBA-08 | 💾 Save draft 存到服务器但孩子看不到；🚀 Publish… 先列出孩子会看到的岛和关卡、提醒星星和成绩会保留，确认后孩子下次打开就看到；Discard draft 丢掉草稿。保存前先检查（题目和答案不能空、答案必须是选项之一），服务器也会再检查一次并要家长 PIN | ✅ |
+
 ### 4.2 学校 school-tricks.html（js/school.js + curriculum.js）
 
+> 岛屿界面和关卡岛照旧，内容来自孩子的 Brain Boost Profile（见 4.2a）。下面是原来的战斗关卡，现在每关作为 `brain-boost/topics/calculation-tricks/level-0N/index.html` 打开。
 | 编号 | 需求 | 状态 |
 |---|---|---|
 | SCH-13 | Brain Boost 先进入"岛屿选择"：海上 6 座岛，每座岛是一个数学专题；已开放的岛是绿色并显示星数，未开放的显示"Coming soon"；电脑/平板 3 列，竖屏手机 2 列 | ✅ |
@@ -195,7 +241,18 @@ happy-math-farm/
 
 ## 6. 扩展指南
 
+### 6.0 给 Brain Boost 加主题或关卡（不用改主程序）
+
+1. **新关卡**：在主题文件夹里加一个文件夹，例如 `brain-boost/topics/logical-thinking/level-03/index.html`。页面加载 `../../../kit/level-kit.js`，用 `BBLevel.ready(info=>…)` 开始（`info.level.rules` 是 topic.json 里这关的规则，`info.child.grade` 是年级），结束时调用 `BBLevel.finish({cleared, stars, correct, total, answered})`，中途离开调用 `BBLevel.quit({answered, correct, total})`。可以参考 `logical-thinking/level-01`。直接打开这个页面也能玩（不保存），方便单独测试。
+2. 在这个主题的 `topic.json` 的 `levels` 里加一行：`{"id":"level-03","html":"level-03/index.html","name":…,"description":…,"difficulty":1-5,"grade":"p3","rules":{…}}`（`grade` 只用来在模块库里筛选）。
+3. **题库关卡**（不用写代码）：`levels` 里加 `"kind":"quiz"` 和 `"questions":[{"text","options":[…],"answer","hint","difficulty"}]`，再复制任意一个题库关卡的 `index.html`（例如 `math-challenge/p3-revision/index.html`）到新文件夹。家长可以在配置页里给每个孩子改这些题目。
+4. **新主题**：新建 `brain-boost/topics/<id>/topic.json`（id 用小写字母、数字和 `-`；`island` 选地标），把 id 加进 `brain-boost/topics/index.json`。
+5. 在 Parent settings → 🧠 Brain Boost for each child 里把新主题或关卡拖给需要的孩子并发布；想让某个年级默认就有，就把它写进 `brain-boost/profiles/<grade>.json`（`{"id":主题,"levels":[{"from":"主题/关卡"}]}`）。已经发布过自己 Profile 的孩子不会自动多出新关卡。
+5. 主题和关卡的 id 也是服务器上成绩的键，上线后不要改名。
+
 ### 6.1 给一座岛（专题）加关卡（例如 Fractions）
+
+> 这是原来学校（`curriculum.js` 里的 `DUNGEONS`）的做法。新的内容请按 §6.0 加进 Brain Boost。
 
 1. 在 `common/curriculum.js` 里写题目生成函数，函数返回 `{type, html, answer, steps, say}` 格式的对象（参考 `qRound`）。
 2. 在 `DUNGEONS` 里找到这个专题（例如 `fractions`），在 `grades` 里给对应年级加上 `{intro, levels}`（参考 `tricks` 的 `p3`）。最多 10 关；最后一关写 `boss:true` 就会放在城堡前。Boss 关用 `set:函数` 一次生成整套题。还没想好的关卡写成 `{id, name:'Coming soon', soon:true}` 占位，以后把它换成真正的关卡即可。

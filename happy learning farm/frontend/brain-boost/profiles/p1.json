@@ -1,0 +1,10 @@
+{
+  "about": "The Brain Boost template for Primary 1. A child without their own profile plays this. In Parent settings → Brain Boost a grown-up starts from it and changes anything; that child's own profile is then kept on the farm server.",
+  "grade": "p1",
+  "topics": [
+    {"id": "calculation-tricks", "enabled": true, "levels": [{"from": "calculation-tricks/level-01"}, {"from": "calculation-tricks/level-02"}, {"from": "calculation-tricks/level-03"}, {"from": "calculation-tricks/level-04"}]},
+    {"id": "logical-thinking", "enabled": true, "levels": [{"from": "logical-thinking/level-01"}, {"from": "logical-thinking/level-02"}]},
+    {"id": "math-challenge", "enabled": true, "levels": [{"from": "math-challenge/p1-revision"}]},
+    {"id": "problem-solving", "enabled": true, "levels": [{"from": "problem-solving/p1-stories"}]}
+  ]
+}

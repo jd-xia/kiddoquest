@@ -70,6 +70,8 @@ public class GameStateMerger {
             }
             mergeStringArray(farm, localFarm, "owned");
             mergeStringArray(farm, localFarm, "decor");
+            mergeStringArray(farm, localFarm, "lands");
+            mergeFish(farm, localFarm.get("fish"));
             mergeBarn(farm, localFarm, notes);
             farm.set("animals", mergeAnimals(farm.get("animals"), localFarm.get("animals"), notes));
             farm.set("plots", mergePlots(farm.get("plots"), localFarm.get("plots"), notes));
@@ -200,6 +202,27 @@ public class GameStateMerger {
         }
     }
 
+    /** Keeps the bigger pond, every rod and tackle from both sides, and the larger worm and fish counts. */
+    private void mergeFish(ObjectNode farm, JsonNode localFish) {
+        if (localFish == null || !localFish.isObject()) {
+            return;
+        }
+        JsonNode serverFish = farm.get("fish");
+        if (serverFish == null || !serverFish.isObject()) {
+            farm.set("fish", localFish.deepCopy());
+            return;
+        }
+        ObjectNode fish = (ObjectNode) serverFish.deepCopy();
+        fish.put("pond", Math.max(fish.path("pond").asInt(0), localFish.path("pond").asInt(0)));
+        fish.put("bait", Math.max(fish.path("bait").asLong(0), localFish.path("bait").asLong(0)));
+        mergeStringArray(fish, localFish, "owned");
+        if (localFish.hasNonNull("rod")) {
+            fish.put("rod", localFish.path("rod").asText("twig"));
+        }
+        fish.set("catches", maxObject(fish.get("catches"), localFish.get("catches")));
+        farm.set("fish", fish);
+    }
+
     private void mergeBarn(ObjectNode farm, JsonNode localFarm, List<String> notes) {
         ObjectNode barn = object(farm.get("barn"));
         JsonNode extra = localFarm.get("barn");
@@ -261,7 +284,7 @@ public class GameStateMerger {
     private ArrayNode mergePlots(JsonNode server, JsonNode local, List<String> notes) {
         ArrayNode left = array(local);
         ArrayNode right = array(server);
-        int size = Math.min(12, Math.max(left.size(), right.size()));
+        int size = Math.min(GameStateValidator.MAX_PLOTS, Math.max(left.size(), right.size()));
         ArrayNode plots = mapper.createArrayNode();
         for (int i = 0; i < size; i++) {
             JsonNode a = i < left.size() ? left.get(i) : null;

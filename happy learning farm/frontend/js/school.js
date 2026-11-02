@@ -3,6 +3,26 @@
    The page sets <body data-school="<id>"> to pick its entry in SCHOOLS (common/curriculum.js). */
 const SCHOOL_ID=document.body.dataset.school||'tricks';
 let SEA=null;   // the island picker stage (MAP is the level island, BAT the battle)
+/* Brain Boost: the islands are the child's own topics and the stones their levels, from the child's published
+   Brain Boost Profile (common/brainprofile.js). A level plays in a frame over the island (bbpPlay). Pages
+   without brainprofile.js (the level pages themselves) keep the topics in DUNGEONS. */
+const ISLES={topics:null,err:''};
+async function islesLoad(){
+  const id=cloudRead().childId;
+  try{ISLES.topics=bbpResolve(await bbpPlayed(id,gradeOf(cur())));ISLES.err=BBP.catErr||BBP.stateErr||''}
+  catch(e){ISLES.topics=[];ISLES.err='Brain Boost did not load. Check the network and try again.'}
+  bbpFlush();
+}
+function isleTopic(T){
+  const say=T.description?(/[.!?]$/.test(T.description)?T.description:T.description+'.')+' ':'';
+  return {id:T.id,name:T.name,sign:T.name,color:T.color,npc:{name:T.npc,e:T.icon},island:T.island,open:T.levels.length>0,grade:gradeOf(cur()),
+    intro:[say+'Tap a glowing stone to play a level.','Clear a level to open the next one. Each answer right first time earns a coin 🪙.'],
+    levels:T.levels.map(L=>({id:L.from,name:L.name})),bb:T};
+}
+const brainOn=()=>typeof bbpResolve==='function';
+const topicView=id=>{const T=brainOn()&&(ISLES.topics||[]).find(t=>t.id===id);return T?isleTopic(T):dun(id)};
+const lvStars=(p,D,i)=>D.bb?bbpStars(cloudRead().childId,D.bb.levels[i],p):((p.lv[D.levels[i].id]||{}).stars||0);
+const lvOpen=(p,D,i)=>D.bb?bbpOpen(cloudRead().childId,D.bb,i,p):unlocked(p,D,i);
 /* ===================== shared sea ===================== */
 function jitter(geo,a){const p=geo.attributes.position;for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
   let h=Math.sin(x*12.9898+y*78.233+z*37.719)*43758.5453;const r1=h-Math.floor(h);h=Math.sin(x*93.98+y*17.23+z*51.7)*24634.6345;const r2=h-Math.floor(h);
@@ -63,7 +83,7 @@ function bannerSprite(title,sub,color,h){
 }
 /* Each topic island has its own landmark. Locked topics show it in grey, wrapped in scaffolding.
    Returns a group; anim(t) in userData makes it move. */
-function landmark(id,color,locked){
+function landmark(id,color,locked,icon){
   const g=new THREE.Group(),c=locked?'#A8A2B4':color,lite=locked?'#D9D5E0':'#FFF6E3',gold=locked?'#C8C3D0':'#F7C548',movers=[];
   const M=(geo,col,x,y,z,o)=>{const m=mesh(geo,col,x,y,z,o);g.add(m);return m};
   if(id==='tricks'){   // a magic tower with + − × ÷ circling it
@@ -104,6 +124,9 @@ function landmark(id,color,locked){
     const hands=[[.42,.05],[.3,.07]].map(([l,w])=>{const pv=new THREE.Group();pv.position.set(0,2.45,.95);g.add(pv);pv.add(mesh(BOX(w,l,.03),'#2E1A5C',0,l/2,0));return pv});
     M(rbox(.6,1,.12,.05),'#4A3020',0,.55,.88);
     movers.push(t=>{hands[0].rotation.z=-t*1.2;hands[1].rotation.z=-t*.1});
+  }else{   // any other topic: a signpost with the topic's own icon
+    M(CYL(.16,.2,3.2,10),'#8B5A2B',0,1.6,0,{flat:true});M(rbox(2.4,1,.16,.06),c,0,3.1,0,{r:.6});
+    const sign=emojiSprite(icon||'⭐',1.3);sign.position.set(0,4.4,0);g.add(sign);movers.push(t=>{sign.position.y=4.4+Math.sin(t*2)*.15});
   }
   if(locked){   // scaffolding around a landmark still being built
     for(const [x,z] of[[-1.6,-1.6],[1.6,-1.6],[-1.6,1.6],[1.6,1.6]])M(CYL(.06,.06,4.4,6),'#9AA3AD',x,2.2,z,{m:.6,r:.4});
@@ -118,7 +141,7 @@ function orbit(st,dt,target,D){st.camT.lerp(target,Math.min(1,dt*2.5));
   st.camera.position.set(st.camT.x+Math.sin(st.yaw)*D,st.camT.y+D*.72,st.camT.z+Math.cos(st.yaw)*D);st.camera.lookAt(st.camT)}
 
 /* ===================== ISLAND PICKER (one island per topic) ===================== */
-function topicStars(p,T){return T.levels.reduce((a,l)=>a+((p.lv[l.id]||{}).stars||0),0)}
+function topicStars(p,T){return T.bb?bbpTopicStars(cloudRead().childId,T.bb,p):T.levels.reduce((a,l)=>a+((p.lv[l.id]||{}).stars||0),0)}
 function buildSea(S){
   if(!engine())return null;
   const p=cur(),tall=innerWidth/innerHeight<.8,cols=tall?2:3,n=S.topics.length,rows=Math.ceil(n/cols),gapX=tall?15:16,gapZ=tall?18:16;
@@ -129,12 +152,12 @@ function buildSea(S){
     const r=Math.floor(i/cols),c=i%cols,inRow=Math.min(cols,n-r*cols),x=(c-(inRow-1)/2)*gapX,z=(r-(rows-1)/2)*gapZ;
     const g=new THREE.Group();g.position.set(x,0,z);SEA.scene.add(g);
     islandBase(g,5.2,T.open?'#6FBF55':'#8FAE7C',SEA.foams);
-    const lm=landmark(T.id,T.color,!T.open);lm.position.set(.5,0,-1);lm.scale.setScalar(1.4);g.add(lm);
+    const lm=landmark(T.island||T.id,T.color,!T.open,T.npc&&T.npc.e);lm.position.set(.5,0,-1);lm.scale.setScalar(1.4);g.add(lm);
     const pt=[[-3.5,-1.4],[3.6,1.2],[-2.6,2.9]];pt.forEach(([a,b],k)=>g.add(T.open?(k===2?roundTree(a,b,.55):palm(a,b,.8)):pine(a,b,.6)));
     if(T.open)for(let f=0;f<14;f++){const a=f*2.4,rr=2.2+(f%4)*.7;g.add(mesh(SPH(.09,6,5),['#FF7AA8','#FFD43B','#FFFFFF','#B98CFF'][f%4],Math.cos(a)*rr,.12,Math.sin(a)*rr+.8))}
     else{const cl=cloud(2.2,5.6,-1.6,.5);g.add(cl)}
     const keeper=buildNpc(T.npc);keeper.position.set(-1.9,0,1.6);keeper.userData.stand=0;g.add(keeper);
-    const ban=bannerSprite(`${i+1}. ${T.name}`,T.open?`★ ${topicStars(p,T)} / ${playable(T).length*3}`:'🚧 Coming soon',T.open?T.color:'#6B6F86',2.3);ban.position.y=8.4;g.add(ban);
+    const ban=bannerSprite(`${i+1}. ${T.name}`,T.open?`★ ${topicStars(p,T)} / ${playable(T).length*3}`:(T.bb?'🚧 No levels yet':'🚧 Coming soon'),T.open?T.color:'#6B6F86',2.3);ban.position.y=8.4;g.add(ban);
     g.userData.act={kind:'topic',id:T.id};SEA.hits.push(g);
     SEA.islands.push({g,lm,keeper,T,x,z});
   });
@@ -167,11 +190,17 @@ function seaHover(e){const id=seaPick(e),I=SEA.islands.find(I=>I.T.id===id)||nul
   if(I)placeMark(SEA.selMark,I.x,-1.25,I.z);else SEA.selMark.visible=false;
   return I?{cursor:I.T.open?'select':'locked',label:I.T.open?`${I.T.name} · ${playable(I.T).length} levels`:`${I.T.name} · coming soon`}:{cursor:'move'}}
 function rSchool(){
-  const p=cur(),S=schoolView(UI.sid||SCHOOL_ID);
+  const p=cur();let S=schoolView(UI.sid||SCHOOL_ID);
+  if(brainOn()){
+    if(!ISLES.topics){document.body.classList.remove('fullworld');$('#app').innerHTML=topBar(S.sign,'toTown')+'<div class="boot"><span class="coin">🏝️</span><p>Loading your islands…</p></div>';
+      islesLoad().then(()=>{if(UI.screen==='school')render()});return}
+    S=Object.assign({},S,{topics:ISLES.topics.map(isleTopic)});S.open=S.topics.length>0;
+    if(!S.open){document.body.classList.remove('fullworld');$('#app').innerHTML=topBar(S.sign,'toTown')+npcHTML(S.npc,ISLES.err||`No islands are turned on for ${esc(p.name)} yet. A grown-up can choose topics in 👪 Parent settings → Brain Boost.`)+'<div class="btns"><button class="b" data-act="toTown">Back to the farm</button><button class="b ghost" data-act="bbGrownups">👪 Grown-ups</button></div>';return}
+  }
   if(!S.open){document.body.classList.remove('fullworld');$('#app').innerHTML=topBar(S.sign,'toTown')+npcHTML(S.npc,`The ${gradeName(gradeOf(p))} islands of ${S.name} are still being built. Come back soon!`)+'<div class="btns"><button class="b" data-act="toTown">Back to the farm</button></div>';return}
   const list=S.topics.map((T,i)=>`<button class="lvchip ${T.open?(topicStars(p,T)?'done':'open'):'locked'}" data-act="openTopic" data-id="${T.id}"><b>${T.open?i+1:'🚧'}</b><span>${T.name}</span><small>${T.open?`★ ${topicStars(p,T)}/${playable(T).length*3}`:'Soon'}</small></button>`).join('');
   $('#app').innerHTML=topBar(S.sign,'toTown')+`<div class="world mapworld" id="world"><div class="wtop"><div class="flv">${ico(npcKey(S.npc),S.npc.e)} Pick an island to explore</div>${camCtl()}</div><div class="toast" id="toast" aria-live="polite"></div></div>
-  <div class="dock"><div class="lvlist">${list}</div><div class="btns"><button class="b ghost sm" data-act="schoolTalk">${ico(npcKey(S.npc),S.npc.e)} Hear the welcome again</button></div></div>`;
+  <div class="dock"><div class="lvlist">${list}</div><div class="btns"><button class="b ghost sm" data-act="schoolTalk">${ico(npcKey(S.npc),S.npc.e)} Hear the welcome again</button>${brainOn()?'<button class="b ghost sm" data-act="bbGrownups">👪 Grown-ups</button>':''}</div></div>`;
   buildSea(S);   // rebuilt on every visit so the star counts are fresh
   if(!SEA||!mountStage(SEA,$('#world')))$('#world').insertAdjacentHTML('afterbegin','<div class="nogl">Pick an island from the list below.</div>');
   if(!p.seen['school:'+S.id]){p.seen['school:'+S.id]=1;save();dialog(S.npc,S.intro)}
@@ -231,7 +260,7 @@ function mapSync(D){
   MAP.hero=buildHero(farmOf(p),false);MAP.scene.add(MAP.hero);
   let next=-1;
   MAP.plats.forEach((P,i)=>{
-    const l=D.levels[i],r=p.lv[l.id]||{},open=unlocked(p,D,i),st=r.stars||0,boss=!!l.boss;
+    const l=D.levels[i],open=lvOpen(p,D,i),st=lvStars(p,D,i),boss=!!l.boss;
     P.open=open;P.top.material=mat(!open?'#8E8A98':st?(boss?'#FF6B9A':'#FFC93C'):(boss?'#E5484D':D.color),{r:.4,e:open&&!st?D.color:undefined,ei:.25});
     P.lock.visible=!open;
     P.labels.forEach(s=>{P.g.remove(s);s.material.map.dispose();s.material.dispose()});P.labels=[];
@@ -248,14 +277,16 @@ function mapSync(D){
 function platAt(e){const a=actOf(rayFrom(e,MAP.camera).intersectObjects(MAP.hits,true));return a&&a.kind==='plat'?a.i:-1}
 function mapTap(e){if(MAP.jump)return;const i=platAt(e);if(i>=0)mapGo(i)}
 function mapHover(e){const i=platAt(e);MAP.hot=i;if(i<0){MAP.selMark.visible=false;return{cursor:'move'}}
-  const l=dun(MAP.did).levels[i],P=MAP.plats[i];placeMark(MAP.selMark,P.x,P.h+.1,P.z,P.R*1.3);return{cursor:P.open?'select':'locked',label:l.soon?`${i+1}. Coming soon 🚧`:`${i+1}. ${l.name}${P.open?'':' 🔒'}`}}
+  const l=topicView(MAP.did).levels[i],P=MAP.plats[i];placeMark(MAP.selMark,P.x,P.h+.1,P.z,P.R*1.3);return{cursor:P.open?'select':'locked',label:l.soon?`${i+1}. Coming soon 🚧`:`${i+1}. ${l.name}${P.open?'':' 🔒'}`}}
 function mapGo(i){
   const P=MAP.plats[i];if(!P)return;
   if(P.soon){toast(`Level ${i+1} is coming soon!`);return}
   if(!P.open){toast(`Clear level ${i} first to open this one!`);return}
   if(MAP.jump)return;
   const path=[];if(i>MAP.heroAt)for(let k=MAP.heroAt+1;k<=i;k++)path.push(k);else if(i<MAP.heroAt)for(let k=MAP.heroAt-1;k>=i;k--)path.push(k);
-  const done=()=>{UI.mapAt=i;startLevel(i)};
+  const D=topicView(MAP.did);
+  const done=D&&D.bb?()=>{UI.mapAt=i;bbpPlay(D.bb,i,{onClose:(back,at)=>{if(back==='islands')go('school',{sid:SCHOOL_ID});else{UI={screen:'dungeon',did:D.id,mapAt:at};render()}}})}
+    :()=>{UI.mapAt=i;startLevel(i)};
   if(!path.length){done();return}
   MAP.jump={path,k:0,t:0,from:MAP.hero.position.clone(),done};
 }
@@ -275,9 +306,11 @@ function mapUpdate(dt){
   orbit(MAP,dt,new THREE.Vector3(h.position.x*.55,h.position.y*.6+.6,h.position.z*.55),(MAP.camera.aspect<.8?33:28)*MAP.zm);
 }
 function rDungeon(){
-  const p=cur(),D=dun(UI.did);
+  if(brainOn()&&!ISLES.topics){$('#app').innerHTML='<div class="boot"><span class="coin">🏝️</span><p>Loading your island…</p></div>';islesLoad().then(()=>{if(UI.screen==='dungeon')render()});return}
+  const p=cur(),D=topicView(UI.did);
+  if(!D){go('school',{sid:SCHOOL_ID});return}   // a topic taken out of this child's profile
   if(!D.open){document.body.classList.remove('fullworld');$('#app').innerHTML=topBar(D.sign,'toSchool')+npcHTML(D.npc,`The ${gradeName(D.grade)} levels of ${D.name} are still being built. Come back soon!`)+'<div class="btns"><button class="b" data-act="toSchool">Back to the islands</button></div>';return}
-  const list=D.levels.map((l,i)=>{const r=p.lv[l.id]||{},open=unlocked(p,D,i),st=r.stars||0;return l.soon?`<button class="lvchip locked soon" data-act="mapGo" data-i="${i}" aria-disabled="true"><b>🚧</b><span>${i+1}. Coming soon</span></button>`:`<button class="lvchip ${st?'done':open?'open':'locked'}" data-act="mapGo" data-i="${i}" ${open?'':'aria-disabled="true"'}><b>${open?(l.boss?'👑':i+1):'🔒'}</b><span>${l.name}</span><small>${'★'.repeat(st)}${'☆'.repeat(3-st)}</small></button>`}).join('');
+  const list=D.levels.map((l,i)=>{const open=lvOpen(p,D,i),st=lvStars(p,D,i);return l.soon?`<button class="lvchip locked soon" data-act="mapGo" data-i="${i}" aria-disabled="true"><b>🚧</b><span>${i+1}. Coming soon</span></button>`:`<button class="lvchip ${st?'done':open?'open':'locked'}" data-act="mapGo" data-i="${i}" ${open?'':'aria-disabled="true"'}><b>${open?(l.boss?'👑':i+1):'🔒'}</b><span>${l.name}</span><small>${'★'.repeat(st)}${'☆'.repeat(3-st)}</small></button>`}).join('');
   $('#app').innerHTML=topBar(D.sign,'toSchool')+`<div class="world mapworld" id="world"><div class="wtop"><div class="flv">${ico(npcKey(D.npc),D.npc.e)} Tap a glowing stone to battle</div>${camCtl()}</div><div class="toast" id="toast" aria-live="polite"></div></div>
   <div class="dock"><div class="lvlist">${list}</div><div class="btns"><button class="b ghost sm" data-act="keeperTalk">${ico(npcKey(D.npc),D.npc.e)} Hear the welcome again</button></div></div>`;
   if(!MAP||MAP.did!==D.id)buildMap(D);
@@ -1126,10 +1159,11 @@ function rResult(){
 
 Object.assign(ACT,{
   mapGo:d=>{if(MAP&&G.stage===MAP)mapGo(+d.i);else startLevel(+d.i)},
-  keeperTalk:()=>{const D=dun(UI.did);dialog(D.npc,D.intro)},
+  keeperTalk:()=>{const D=topicView(UI.did);dialog(D.npc,D.intro)},
+  bbGrownups:()=>navTo('brain-boost-admin.html?child='+encodeURIComponent(cloudRead().childId||''),{screen:'admin'}),
   schoolTalk:()=>{const S=schoolById(UI.sid||SCHOOL_ID);dialog(S.npc,S.intro)},
   toSchool:()=>go('school',{sid:SCHOOL_ID}),
-  openTopic:d=>{const T=dun(d.id);if(!T)return;if(!T.open){toast(`${T.name} is coming soon!`);return}go('dungeon',{did:T.id})},
+  openTopic:d=>{const T=topicView(d.id);if(!T)return;if(!T.open){toast(T.bb?`${T.name} has no levels yet.`:`${T.name} is coming soon!`);return}go('dungeon',{did:T.id})},
   toDungeon:()=>go('dungeon',{did:UI.did,mapAt:UI.li}),
   startLevel:d=>{const i=+d.i;if(UI.screen!=='dungeon')UI={screen:'dungeon',did:UI.did,mapAt:i};startLevel(i);if(UI.screen==='dungeon')render()},
   quitLevel:()=>quitLevel(),

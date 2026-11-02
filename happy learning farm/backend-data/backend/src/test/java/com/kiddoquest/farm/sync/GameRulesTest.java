@@ -7,6 +7,7 @@ import java.time.Instant;
 
 import org.junit.jupiter.api.Test;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
@@ -28,6 +29,31 @@ class GameRulesTest {
         assertEquals(3, out.path("daily").path("log").path("planted").asLong());
         assertTrue(out.path("daily").path("log").path("right").isMissingNode());
         assertTrue(out.path("daily").path("log").path("hack").isMissingNode());
+    }
+
+    @Test
+    void keepsThePondTheMeadowAndTheStarterFlag() throws Exception {
+        ObjectNode raw = (ObjectNode) mapper.readTree("""
+                {"name":"Mia","gems":5,"starter":1,"farm":{"lands":["meadow","moon"],
+                  "plots":[null,null,null,null,null,null,null,null,null,null,null,null,null,{"crop":"corn","planted":1,"watered":false}],
+                  "fish":{"pond":2,"owned":["rod:gold","net","rod:laser"],"rod":"gold","bait":4,"catches":{"koi":2,"shark":9}}}}
+                """);
+        ObjectNode out = validator.sanitize(raw, "Mia", "p1", "girl", now);
+        JsonNode fish = out.path("farm").path("fish");
+        assertEquals(1, out.path("starter").asInt());
+        assertEquals("[\"meadow\"]", out.path("farm").path("lands").toString());
+        assertEquals("corn", out.path("farm").path("plots").get(13).path("crop").asText());
+        assertEquals(2, fish.path("pond").asInt());
+        assertEquals("[\"rod:twig\",\"rod:gold\",\"net\"]", fish.path("owned").toString());
+        assertEquals("gold", fish.path("rod").asText());
+        assertEquals(4, fish.path("bait").asInt());
+        assertEquals(2, fish.path("catches").path("koi").asInt());
+        assertTrue(fish.path("catches").path("shark").isMissingNode());
+
+        ObjectNode older = validator.sanitize(mapper.readTree("{\"name\":\"Mia\",\"farm\":{}}"), "Mia", "p1", "girl", now);
+        JsonNode merged = merger.merge(out, older).node().path("farm");
+        assertEquals(2, merged.path("fish").path("pond").asInt());
+        assertEquals("[\"meadow\"]", merged.path("lands").toString());
     }
 
     @Test

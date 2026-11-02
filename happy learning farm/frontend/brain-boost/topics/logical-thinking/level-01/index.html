@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>What Comes Next? · Brain Boost</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../kit/level-kit.css?v=2">
+<style>
+.seq{display:flex;flex-wrap:wrap;justify-content:center;gap:8px}
+.seq b{min-width:58px;padding:10px 8px;border-radius:14px;background:var(--bg);border:2px solid var(--line)}
+.seq b.ask{border-style:dashed;color:var(--accent)}
+</style>
+</head>
+<body>
+<!-- Logical Thinking · Level 1: find the rule in a row of numbers and pick what comes next.
+     rules: questions (6), hearts (3). A wrong pick costs a heart and shows the rule. -->
+<main class="lv" id="lv"><p>Loading…</p></main>
+<script src="../../../kit/level-kit.js?v=1"></script>
+<script>
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+/* One row: five numbers that follow a rule, then a sixth to find. Bigger steps and two-step rules for P3. */
+function makeRow(grade,k){
+  const big=grade!=='p1',kinds=big?['add','sub','times','alt','grow']:['add','add','sub','skip'];
+  const kind=kinds[k%kinds.length];let row=[],rule='';
+  if(kind==='add'||kind==='skip'){const s=kind==='skip'?pick([2,5,10]):rnd(2,big?12:5),a=rnd(1,big?40:10);row=[0,1,2,3,4,5].map(i=>a+i*s);rule=`Each number is ${s} more than the one before.`}
+  else if(kind==='sub'){const s=rnd(2,big?9:3),a=s*6+rnd(big?20:1,big?60:9);row=[0,1,2,3,4,5].map(i=>a-i*s);rule=`Each number is ${s} less than the one before.`}
+  else if(kind==='times'){const a=rnd(1,3);row=[0,1,2,3,4,5].map(i=>a*Math.pow(2,i));rule='Each number is double the one before.'}
+  else if(kind==='alt'){const p=rnd(3,6),q=rnd(1,p-1),a=rnd(1,20);row=[a];for(let i=1;i<6;i++)row.push(row[i-1]+(i%2?p:-q));rule=`Add ${p}, take away ${q}, again and again.`}
+  else{const a=rnd(1,10);row=[a];for(let i=1;i<6;i++)row.push(row[i-1]+i);rule='Add 1, then 2, then 3… the jump grows by one each time.'}
+  const answer=row[5],wrong=new Set();
+  for(const d of shuffle([1,-1,2,-2,3,-3,5,10]))if(wrong.size<3&&answer+d>=0)wrong.add(answer+d);
+  return {shown:row.slice(0,5),answer,rule,choices:shuffle([answer,...wrong])};
+}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+let S=null;
+function draw(){
+  const q=S.qs[S.i],coach=S.say||'What comes next? Look at how each number changes.';
+  document.getElementById('lv').innerHTML=`
+  <div class="lv-top"><button class="lv-x" id="quit" aria-label="Leave level">✕</button><div class="lv-name">What Comes Next?</div>
+   <div class="lv-prog" aria-label="Question ${S.i+1} of ${S.qs.length}">${S.qs.map((_,k)=>`<i class="${k<S.i?'ok':k===S.i?'on':''}"></i>`).join('')}</div>
+   <div class="lv-hearts" aria-label="${S.hearts} hearts left">${'❤️'.repeat(S.hearts)}${'🖤'.repeat(S.max-S.hearts)}</div></div>
+  <div class="lv-coach ${S.mood||''}"><span class="face" aria-hidden="true">🦓</span><div>${coach}</div></div>
+  <div class="lv-q"><div class="seq">${q.shown.map(n=>`<b>${n}</b>`).join('')}<b class="ask">?</b></div></div>
+  <div class="lv-choices">${q.choices.map(c=>`<button class="lv-choice ${q.tried.includes(c)?'wrong':''} ${S.done&&c===q.answer?'right':''}" data-c="${c}" ${q.tried.includes(c)||S.done?'disabled':''}>${c}</button>`).join('')}</div>
+  ${S.done?`<button class="lv-btn" id="next">${S.i<S.qs.length-1?'Next ▸':'Finish ▸'}</button>`:''}`;
+  document.getElementById('quit').onclick=()=>BBLevel.quit({answered:S.answered,correct:S.correct,total:S.qs.length});
+  document.querySelectorAll('.lv-choice').forEach(b=>b.onclick=()=>choose(Number(b.dataset.c)));
+  const n=document.getElementById('next');if(n){n.onclick=next;n.focus()}
+}
+function choose(c){
+  const q=S.qs[S.i];if(S.done)return;
+  if(!q.answered){q.answered=true;S.answered++}
+  if(c===q.answer){if(!q.tried.length)S.correct++;S.done=true;S.mood='good';S.say=`Yes! ${q.answer}. ${q.rule}`;draw();return}
+  q.tried.push(c);S.hearts--;S.mood='bad';
+  if(S.hearts<=0){end(false);return}
+  S.say=`Not ${c}. Here is the rule: ${q.rule} Try again!`;draw();
+  document.querySelector('.lv-q').classList.add('shake');
+}
+function next(){if(S.i<S.qs.length-1){S.i++;S.done=false;S.mood='';S.say='';draw()}else end(true)}
+function end(ok){
+  const stars=ok?BBLevel.stars(S.hearts,S.max):0;
+  BBLevel.finish({cleared:ok,stars,correct:S.correct,total:S.qs.length,answered:S.answered});
+  document.getElementById('lv').innerHTML=`<div class="lv-done"><h2>${ok?'Rule finder!':'Out of hearts'}</h2>
+   ${ok?`<div class="lv-stars" aria-label="${stars} stars">${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}</div>`:''}
+   <p>${S.correct} of ${S.qs.length} right first time.</p>${BBLevel.alone?'<p>Open this level from Brain Boost to save it.</p>':'<p>Saving…</p>'}</div>`;
+}
+BBLevel.ready(info=>{
+  const r=(info.level&&info.level.rules)||{},grade=(info.child&&info.child.grade)||'p3',n=Math.max(3,Math.min(12,r.questions||6)),max=Math.max(1,Math.min(5,r.hearts||3));
+  S={qs:Array.from({length:n},(_,k)=>Object.assign(makeRow(grade,k),{tried:[]})),i:0,hearts:max,max,correct:0,answered:0,done:false};
+  draw();
+});
+</script>
+</body>
+</html>

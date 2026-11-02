@@ -6,12 +6,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.kiddoquest.farm.club.ClubEvents.FarmSaved;
 import com.kiddoquest.farm.domain.ChildProfile;
 import com.kiddoquest.farm.domain.GameSnapshot;
 import com.kiddoquest.farm.domain.SyncReceipt;
@@ -38,9 +40,11 @@ public class SyncService {
     private final ChildService childService;
     private final ObjectMapper mapper;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
     public SyncService(ChildProfileRepository children, GameSnapshotRepository snapshots, SyncReceiptRepository receipts,
-            GameStateValidator validator, GameStateMerger merger, ChildService childService, ObjectMapper mapper, Clock clock) {
+            GameStateValidator validator, GameStateMerger merger, ChildService childService, ObjectMapper mapper, Clock clock,
+            ApplicationEventPublisher events) {
         this.children = children;
         this.snapshots = snapshots;
         this.receipts = receipts;
@@ -49,6 +53,7 @@ public class SyncService {
         this.childService = childService;
         this.mapper = mapper;
         this.clock = clock;
+        this.events = events;
     }
 
     @Transactional
@@ -107,6 +112,7 @@ public class SyncService {
             throw new SyncRejectedException("That sync choice is not available.");
         }
         GameSnapshot stored = childService.store(child, snap, incoming, now, email);
+        events.publishEvent(new FarmSaved(child.getId(), child.getUsername()));   // club mates redraw this child's fields
         return described("synced", stored, child.getId(), incoming, null, notes);
     }
 

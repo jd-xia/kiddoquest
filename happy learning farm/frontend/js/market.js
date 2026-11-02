@@ -32,7 +32,7 @@ function rMarket(){
   if(tab==='land'){
     const next=f.unlocked<HOME_PLOTS?`<div class="item"><div class="e">🟫</div><div class="nm">Next field patch</div><p class="muted" style="font-size:14px">One more square in the home field.<br>${f.unlocked} of ${HOME_PLOTS} open</p><div class="acts"><button class="b sm" data-act="buyPlot" ${p.gems<plotCost(f)?'disabled':''}>Buy ${plotCost(f)} 🪙</button></div></div>`:'<div class="item"><div class="e">🟫</div><div class="nm">Home field</div><p class="muted" style="font-size:14px">All ${HOME_PLOTS} patches are open.</p></div>';
     items=next+LANDS.map(L=>{const own=hasLand(f,L.id);
-      return `<div class="item ${own?'using':''}"><div class="e">${L.e}</div><div class="nm">${L.name}</div><p class="muted" style="font-size:14px">${L.blurb}<br>${L.n} new patches</p><div class="acts">${own?'<button class="b sm ghost" disabled>Yours</button>':`<button class="b sm" data-act="buyLand" data-id="${L.id}" ${p.gems<L.cost?'disabled':''}>Buy ${L.cost} 🪙</button>`}</div></div>`}).join('');
+      return `<div class="item ${own?'using':''}"><div class="e">${L.e}</div><div class="nm">${L.name}</div><p class="muted" style="font-size:14px">A fenced field next to the animal pen on your own farm.<br>${L.n} new patches</p><div class="acts">${own?'<button class="b sm ghost" disabled>Yours</button>':`<button class="b sm" data-act="buyLand" data-id="${L.id}" ${p.gems<L.cost?'disabled':''}>Buy ${L.cost} 🪙</button>`}</div></div>`}).join('');
   }
   if(tab==='animals')items=ANIMALS.map(A=>{const n=f.animals.filter(a=>a.type===A.id).length,lock=lv<A.lv,full=n>=3,poor=p.gems<A.cost;
     const btn=lock?`<button class="b sm" disabled>Farm level ${A.lv}</button>`:full?'<button class="b sm" disabled>Pen is full</button>':`<button class="b sm" data-act="buyAnimal" data-id="${A.id}" ${poor?'disabled':''}>Buy ${A.cost} 🪙</button>`;
@@ -51,7 +51,7 @@ function rMarket(){
 }
 function buyAnimal(id){const p=cur(),f=farmOf(p),A=ANIMALS.find(a=>a.id===id);if(!A||p.gems<A.cost||farmLevel(f.xp).l<A.lv||f.animals.filter(a=>a.type===id).length>=3)return;
   spend(p,A.cost,true);f.animals.push({type:id,last:Date.now()});save();UI.msg=`Your new ${A.name} ${A.e} is waiting in the animal pen!`;rMarket()}
-function buyLandHere(id){const L=LANDS.find(x=>x.id===id);if(!purchaseLand(id))return;UI.msg=`The ${L.name} is yours! Walk up the hill on the left and tap a patch to plant.`;rMarket()}
+function buyLandHere(id){const L=LANDS.find(x=>x.id===id);if(!purchaseLand(id))return;UI.msg=`The ${L.name} is yours! It is next to the animal pen on your own farm, through the gate at the bottom of the farm. Tap a patch to plant.`;rMarket()}
 function buyPatchHere(){if(purchasePlot()===false)return;UI.msg='A new patch in the home field is ready to plant.';rMarket()}
 function buyDecor(id){const p=cur(),f=farmOf(p),D=DECOR.find(d=>d.id===id);if(!D||p.gems<D.cost||f.decor.includes(id))return;
   spend(p,D.cost,true);f.decor.push(id);save();UI.msg=`The ${D.name} ${D.e} have been added to your farm!`;rMarket()}

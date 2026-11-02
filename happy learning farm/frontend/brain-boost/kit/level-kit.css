@@ -1,0 +1,37 @@
+/* Shared look for Brain Boost level pages. A level may use it or bring its own styles. */
+/* the farm's own night-blue look (common/style.css) */
+:root{--ink:#EEF2FF;--soft:#A3B2DC;--bg:#0C1330;--card:#16214A;--line:#2E3E78;--accent:#8B5CF6;--good:#2FBF71;--bad:#FF5D73;--gold:#F5C24C}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-family:"Fredoka",system-ui,sans-serif;font-size:18px;-webkit-tap-highlight-color:transparent}
+.lv{max-width:720px;margin:0 auto;padding:12px 16px 24px;min-height:100%;display:flex;flex-direction:column;gap:14px}
+.lv-top{display:flex;align-items:center;gap:10px}
+.lv-x{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);background:var(--card);color:var(--ink);font-size:20px;cursor:pointer}
+.lv-name{flex:1;font-weight:700;font-size:20px}
+.lv-prog{display:flex;gap:5px}
+.lv-prog i{width:12px;height:12px;border-radius:50%;background:var(--line)}
+.lv-prog i.ok{background:var(--good)}.lv-prog i.on{background:var(--accent)}
+.lv-hearts{font-size:20px;letter-spacing:2px}
+.lv-coach{display:flex;gap:10px;align-items:flex-start;background:var(--card);border:2px solid var(--line);border-radius:18px;padding:12px 14px}
+.lv-coach .face{font-size:34px;line-height:1}
+.lv-coach.good{border-color:var(--good)}.lv-coach.bad{border-color:var(--bad)}
+.lv-q{background:var(--card);border-radius:22px;border:2px solid var(--line);padding:22px 14px;text-align:center;font-size:30px;font-weight:700;letter-spacing:1px}
+.lv-choices{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.lv-choice{min-height:72px;border-radius:18px;border:3px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:28px;font-weight:700;cursor:pointer}
+.lv-choice:focus-visible,.lv-x:focus-visible,.lv-btn:focus-visible,.lv-pad button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.lv-choice.wrong{border-color:var(--bad);opacity:.55}
+.lv-choice.right{border-color:var(--good);background:color-mix(in srgb,var(--good) 18%,var(--card))}
+.lv-btn{min-height:52px;border-radius:16px;border:0;background:var(--accent);color:#fff;font:inherit;font-weight:700;font-size:20px;padding:0 22px;cursor:pointer}
+.lv-btn.ghost{background:transparent;color:var(--ink);border:2px solid var(--line)}
+.lv-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.lv-pad button{min-height:58px;border-radius:14px;border:2px solid var(--line);background:var(--card);color:var(--ink);font:inherit;font-size:26px;font-weight:700;cursor:pointer}
+.lv-pad .ok{background:var(--good);color:#fff;border-color:var(--good)}
+.lv-show{min-height:60px;border-radius:14px;border:2px dashed var(--line);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700}
+.lv-qtext{font-size:24px;font-weight:600;line-height:1.35;letter-spacing:0;text-align:left}
+.lv-note{margin:0;color:var(--soft);font-size:15px;text-align:center}
+.lv-done{text-align:center;background:var(--card);border-radius:22px;border:2px solid var(--line);padding:24px}
+.lv-stars{font-size:44px;letter-spacing:6px}
+.shake{animation:lvshake .35s}
+@keyframes lvshake{25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+@media (max-width:420px){.lv-q{font-size:24px}.lv-choice{font-size:22px;min-height:64px}}
+@media (prefers-reduced-motion:reduce){.shake{animation:none}}

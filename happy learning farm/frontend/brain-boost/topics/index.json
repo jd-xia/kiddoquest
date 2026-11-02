@@ -1,0 +1,4 @@
+{
+  "about": "The Brain Boost module library. A topic is a folder here with a topic.json and one folder per level. Add the folder name to this list to put the topic in the library; then add it to a child in Parent settings → Brain Boost. topic.json \"island\" picks the island's landmark: tricks, patterns, fractions, compare, models or age (any other topic gets a signpost with its icon).",
+  "topics": ["calculation-tricks", "logical-thinking", "math-challenge", "problem-solving"]
+}

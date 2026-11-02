@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.event.TransactionalEventListener;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -16,6 +17,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kiddoquest.farm.chat.ChatService.Sent;
 import com.kiddoquest.farm.chat.ChatService.Speaker;
+import com.kiddoquest.farm.club.ClubEvents.ClubChanged;
+import com.kiddoquest.farm.club.ClubEvents.FarmSaved;
+import com.kiddoquest.farm.club.ClubService;
 import com.kiddoquest.farm.web.FarmDtos.ChatLine;
 import com.kiddoquest.farm.web.FarmExceptions.NotFoundException;
 import com.kiddoquest.farm.web.FarmExceptions.SyncRejectedException;
@@ -24,11 +28,15 @@ import com.kiddoquest.farm.web.FarmExceptions.SyncRejectedException;
 public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
 
     private final ChatService chat;
+    private final ClubService clubs;
     private final ObjectMapper mapper;
     private final Map<String, Set<WebSocketSession>> byUser = new ConcurrentHashMap<>();
+    /** The club of each child on line (player code → club id). Moves go only to the same club. */
+    private final Map<String, String> clubOfUser = new ConcurrentHashMap<>();
 
-    public ChatSocket(ChatService chat, ObjectMapper mapper) {
+    public ChatSocket(ChatService chat, ClubService clubs, ObjectMapper mapper) {
         this.chat = chat;
+        this.clubs = clubs;
         this.mapper = mapper;
     }
 
@@ -66,6 +74,10 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
                 join(session, body.path("childId").asText(""));
                 return;
             }
+            if ("move".equals(type)) {
+                move(session, body);
+                return;
+            }
             if ("send".equals(type)) {
                 String voice = body.path("voice").asText("");
                 if (!voice.isBlank()) {
@@ -94,6 +106,9 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
         Speaker speaker = chat.bind(owner, childId);
         session.getAttributes().put("childId", speaker.childId());
         session.getAttributes().put("username", speaker.username());
+        session.getAttributes().put("name", speaker.name());
+        session.getAttributes().put("look", speaker.look() == null ? "" : speaker.look());
+        rememberClub(speaker.username());
         byUser.computeIfAbsent(speaker.username(), key -> ConcurrentHashMap.newKeySet()).add(session);
         send(session, Map.of("type", "joined", "username", speaker.username(), "name", speaker.name()));
         presence(speaker.username(), true);
@@ -123,6 +138,90 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
 
     public void broadcast(Sent sent) {
         fan(sent);
+    }
+
+    /**
+     * Where a child walks on the shared club farm. area is the player code whose fields the child stands in (x and
+     * z are then measured from that farm's own field), or empty for the paths and buildings everyone shares.
+     */
+    private void move(WebSocketSession session, JsonNode body) {
+        String username = (String) session.getAttributes().get("username");
+        String club = username == null ? null : clubOfUser.get(username);
+        if (club == null) {
+            return;
+        }
+        long now = System.currentTimeMillis();
+        if (session.getAttributes().get("movedAt") instanceof Long at && now - at < 60) {
+            return;   // at most about 16 moves a second from one screen
+        }
+        session.getAttributes().put("movedAt", now);
+        String area = body.path("area").asText("");
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("type", "club-move");
+        payload.put("username", username);
+        payload.put("name", session.getAttributes().get("name"));
+        payload.put("look", session.getAttributes().get("look"));
+        payload.put("x", coordinate(body.path("x")));
+        payload.put("z", coordinate(body.path("z")));
+        payload.put("ry", coordinate(body.path("ry")));
+        payload.put("area", area.matches("P\\d{7}") ? area : "");
+        payload.put("walk", body.path("walk").asBoolean(false));
+        toClub(club, username, payload);
+    }
+
+    private static double coordinate(JsonNode node) {
+        double value = node.isNumber() ? node.asDouble() : 0;
+        if (!Double.isFinite(value)) {
+            return 0;
+        }
+        return Math.round(Math.max(-500, Math.min(500, value)) * 100) / 100.0;
+    }
+
+    private void rememberClub(String username) {
+        String club = clubs.clubOf(username);
+        if (club == null) {
+            clubOfUser.remove(username);
+        } else {
+            clubOfUser.put(username, club);
+        }
+    }
+
+    /** Sends to every child on line in that club except one (the sender). */
+    private void toClub(String club, String except, Map<String, Object> payload) {
+        for (String other : Set.copyOf(byUser.keySet())) {
+            if (other.equals(except) || !club.equals(clubOfUser.get(other))) {
+                continue;
+            }
+            Set<WebSocketSession> sessions = byUser.get(other);
+            if (sessions != null) {
+                for (WebSocketSession session : Set.copyOf(sessions)) {
+                    send(session, payload);
+                }
+            }
+        }
+    }
+
+    @TransactionalEventListener(fallbackExecution = true)
+    public void clubChanged(ClubChanged event) {
+        Map<String, Object> payload = Map.of("type", "club", "clubId", event.clubId());
+        for (String username : event.usernames()) {
+            Set<WebSocketSession> sessions = byUser.get(username);
+            if (sessions == null) {
+                continue;
+            }
+            rememberClub(username);
+            for (WebSocketSession session : Set.copyOf(sessions)) {
+                send(session, payload);
+            }
+        }
+    }
+
+    @TransactionalEventListener(fallbackExecution = true)
+    public void farmSaved(FarmSaved event) {
+        String club = event.username() == null ? null : clubOfUser.get(event.username());
+        if (club != null) {
+            toClub(club, event.username(), Map.of("type", "club-farm", "username", event.username()));
+        }
     }
 
     private void fan(Sent sent) {
@@ -173,6 +272,9 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
         }
         session.getAttributes().remove("username");
         session.getAttributes().remove("childId");
+        if (!online(username)) {
+            clubOfUser.remove(username);
+        }
         if (tell && !online(username)) {
             presence(username, false);
         }

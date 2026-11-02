@@ -59,6 +59,14 @@ public class ApiExceptionHandler {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                     .body(new ApiError("rejected", "This account already has a child with that name."));
         }
+        if (text.contains("uk_farm_club_name_key")) {
+            return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
+                    .body(new ApiError("rejected", "That club name is taken. Try another name."));
+        }
+        if (text.contains("uk_farm_club_member_slot")) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ApiError("interrupted", "Someone joined that club at the same moment. Try again."));
+        }
         if (text.contains("voice_data") || text.contains("Data too long")) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)
                     .body(new ApiError("rejected", "That voice message could not be saved. Update the farm server, then try again."));

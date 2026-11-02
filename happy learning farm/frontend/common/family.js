@@ -124,7 +124,7 @@ function famDraw(f){
   el.innerHTML=`<div class="dlg famdlg"><div style="flex:1"><div class="dlg-name">👪 Parent settings</div>
     <p class="muted">The main account has no time limit. Each child plays up to their minutes a day; a warning shows 5 minutes before the end. A new day starts at midnight.</p>
     ${rows}<p class="syncwarn" id="famerr" aria-live="polite" style="display:none"></p>
-    <div class="dlg-btns"><button class="b ghost sm" data-act="famPinChangeAsk">Change PIN</button><button class="b sm" data-act="famDone">Done</button></div></div></div>`;
+    <div class="dlg-btns"><button class="b ghost sm" data-act="famBrain">🧠 Brain Boost for each child</button><button class="b ghost sm" data-act="famPinChangeAsk">Change PIN</button><button class="b sm" data-act="famDone">Done</button></div></div></div>`;
   el.querySelectorAll('.famsel').forEach(s=>s.addEventListener('change',()=>famWrite(s.dataset.kid,{dailyMinutes:Number(s.value)})));
 }
 async function famWrite(id,fields){
@@ -173,6 +173,7 @@ Object.assign(ACT,{
   famOpen:()=>famOpen(),famPinNew:()=>famPinNew(),famUnlockSettings:()=>famUnlock(famOpen),famCancel:()=>famCancel(),
   famAdd:d=>{const n=famN($(`.famn[data-kid="${d.id}"]`));if(n)famWrite(d.id,{addMinutes:n*Number(d.sign||1)})},famMain:d=>famWrite(d.id,{main:true}),famDone:()=>famDone(),
   famPinChangeAsk:()=>famPinBox('Change PIN','Choose a new 4-digit parent PIN.','famPinChange','<input id="fampin2" class="pininput" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="again">'),
+  famBrain:()=>{FAM.pin=null;cloudClose();navTo('brain-boost-admin.html',{screen:'admin'})},   // the Brain Boost page asks for the PIN itself
   famPinChange:()=>famPinChange(),famAddAsk:()=>famAddAsk(),famAddNow:()=>famAddNow(),famGateOk:()=>famGateOk()
 });
 /* First count right after the page starts, so a child whose time is up sees it at once. */

@@ -75,7 +75,7 @@ function save(){
 const cur=()=>DATA.players.find(p=>p.id===DATA.current);
 const dun=(id,p)=>{const D=DUNGEONS.find(d=>d.id===id);return D&&schoolFor(D,gradeOf(p||cur()))};   // topic as the (current) player's grade sees it
 /* A school building as the (current) player sees it: open when at least one of its topics has levels for their grade. */
-const schoolView=(id,p)=>{const S=schoolById(id);if(!S)return null;const topics=S.topics.map(t=>dun(t,p));return Object.assign({},S,{topics,open:S.open&&topics.some(t=>t.open)})};
+const schoolView=(id,p)=>{const S=schoolById(id);if(!S)return null;const topics=S.topics.map(t=>dun(t,p));return Object.assign({},S,{topics,open:S.open&&(id==='tricks'||topics.some(t=>t.open))})};   // Brain Boost is open for every grade: its islands come from each child's profile
 const totalStars=p=>Object.values(p.lv).reduce((a,r)=>a+(r.stars||0),0);
 const unlocked=(p,D,i)=>!D.levels[i].soon&&(i<3||((p.lv[D.levels[i-1].id]||{}).stars>0));   // first three levels are open from the start; later ones need the previous level's stars. 'soon' levels stay locked.
 const playable=D=>D.levels.filter(l=>!l.soon);
@@ -89,7 +89,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
    Each screen lives on one page. go() renders locally when this page owns the screen,
    otherwise it hands the screen + extras to the next page through sessionStorage. */
 const PAGE_FILE=document.body.dataset.page||'index.html';
-const PAGES={players:'index.html',town:'index.html',market:'market.html',shop:'market.html',barn:'barn.html',progress:'board.html',studio:'studio.html',fishing:'fishing.html'};
+const PAGES={players:'index.html',town:'index.html',market:'market.html',shop:'market.html',barn:'barn.html',progress:'board.html',studio:'studio.html',fishing:'fishing.html',brainboost:'school-tricks.html'};
 function pageFor(screen,extra){   // school screens live on school-<school id>.html; a topic (did) belongs to one school
   if(['school','dungeon','level','result'].includes(screen)){const e=extra||{},T=DUNGEONS.find(d=>d.id===(e.did||UI.did));return 'school-'+(e.sid||(T&&T.school)||UI.sid||'tricks')+'.html'}
   return PAGES[screen]||'index.html'}

@@ -1,0 +1,20 @@
+{
+  "id": "calculation-tricks",
+  "name": "Calculation Tricks",
+  "description": "Shortcuts that make big sums tiny",
+  "color": "#7A4DE0",
+  "icon": "🦉",
+  "npc": "Professor Hoot",
+  "island": "tricks",
+  "openLevels": 3,
+  "levels": [
+    {"id": "level-01", "html": "level-01/index.html", "name": "Best Friend Pairs", "description": "Numbers that make a round ten (10, 20, 30, 40)", "difficulty": 1, "grade": "p1", "legacy": "c1-1", "rules": {"questions": 5, "hearts": 3}},
+    {"id": "level-02", "html": "level-02/index.html", "name": "Hat and Cloak", "description": "Make numbers just under 100 round, then fix them", "difficulty": 2, "grade": "p1", "legacy": "c1-2", "rules": {"questions": 5, "hearts": 3}},
+    {"id": "level-03", "html": "level-03/index.html", "name": "Same Basket", "description": "4 × 6 + 4 × 4 = 4 × 10", "difficulty": 2, "grade": "p1", "legacy": "c1-3", "rules": {"questions": 5, "hearts": 3}},
+    {"id": "level-04", "html": "level-04/index.html", "name": "Break It Up", "description": "4 × 28 = 4 × 20 + 4 × 8", "difficulty": 3, "grade": "p1", "legacy": "c1-4", "rules": {"questions": 5, "hearts": 3}},
+    {"id": "level-05", "html": "level-05/index.html", "name": "Best Friend Pairs+", "description": "Best friends that make 100 and 1000, with minus signs too", "difficulty": 3, "grade": "p3", "legacy": "c3-1", "rules": {"questions": 5, "hearts": 3}},
+    {"id": "level-06", "html": "level-06/index.html", "name": "Hat and Cloak+", "description": "98, 998, 99998: hats on, then cloaks off", "difficulty": 3, "grade": "p3", "legacy": "c3-2", "rules": {"questions": 5, "hearts": 3}},
+    {"id": "level-07", "html": "level-07/index.html", "name": "Same Basket+", "description": "4 × 250 + 4 × 750 = 4 × 1000", "difficulty": 4, "grade": "p3", "legacy": "c3-3", "rules": {"questions": 5, "hearts": 3}},
+    {"id": "level-08", "html": "level-08/index.html", "name": "Break It Up+", "description": "4 × 225 = 4 × 200 + 4 × 25", "difficulty": 4, "grade": "p3", "legacy": "c3-4", "rules": {"questions": 5, "hearts": 3}}
+  ]
+}

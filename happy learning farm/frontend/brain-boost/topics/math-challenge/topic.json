@@ -1,0 +1,79 @@
+{
+  "id": "math-challenge",
+  "name": "Math Challenge",
+  "description": "Revision for every year, P1 to P6",
+  "color": "#E07A1F",
+  "icon": "🦊",
+  "npc": "Felix the Fox",
+  "island": "compare",
+  "openLevels": 1,
+  "levels": [
+    {"id": "level-01", "html": "level-01/index.html", "name": "Beat the Clock", "description": "10 quick sums in 90 seconds", "difficulty": 2, "rules": {"questions": 10, "seconds": 90}},
+    {"id": "p1-revision", "html": "p1-revision/index.html", "kind": "quiz", "grade": "p1", "name": "P1 Revision", "description": "Numbers to 100, adding and taking away", "difficulty": 1, "rules": {"hearts": 3},
+     "questions": [
+      {"text": "What is 8 + 7?", "options": ["14", "15", "16", "13"], "answer": "15", "hint": "8 + 2 = 10, then add 5 more.", "difficulty": 1},
+      {"text": "What is 20 − 6?", "options": ["14", "16", "12", "26"], "answer": "14", "hint": "Count back 6 from 20.", "difficulty": 1},
+      {"text": "Which number is the biggest?", "options": ["58", "85", "49", "80"], "answer": "85", "hint": "Look at the tens first.", "difficulty": 1},
+      {"text": "What comes next? 10, 20, 30, …", "options": ["31", "35", "40", "50"], "answer": "40", "hint": "Each number is 10 more.", "difficulty": 1},
+      {"text": "3 groups of 5 apples. How many apples?", "options": ["8", "15", "10", "35"], "answer": "15", "hint": "5 + 5 + 5", "difficulty": 2},
+      {"text": "How many tens are in 70?", "options": ["7", "70", "10", "17"], "answer": "7", "difficulty": 1},
+      {"text": "A pencil costs 30¢. A ruler costs 45¢. How much for both?", "options": ["65¢", "75¢", "15¢", "70¢"], "answer": "75¢", "hint": "30 + 45", "difficulty": 2},
+      {"text": "What is 46 + 23?", "options": ["69", "63", "79", "96"], "answer": "69", "hint": "Add the tens, then the ones.", "difficulty": 2}
+     ]},
+    {"id": "p2-revision", "html": "p2-revision/index.html", "kind": "quiz", "grade": "p2", "name": "P2 Revision", "description": "Numbers to 1000, times tables 2, 3, 4, 5, 10", "difficulty": 2, "rules": {"hearts": 3},
+     "questions": [
+      {"text": "What is 4 × 5?", "options": ["9", "20", "25", "16"], "answer": "20", "hint": "4 fives: 5, 10, 15, 20", "difficulty": 1},
+      {"text": "What is 245 + 132?", "options": ["377", "367", "387", "113"], "answer": "377", "difficulty": 2},
+      {"text": "What is 500 − 175?", "options": ["325", "375", "425", "335"], "answer": "325", "hint": "500 − 100 = 400, then take away 75.", "difficulty": 2},
+      {"text": "24 sweets are shared equally by 3 children. How many does each get?", "options": ["6", "7", "8", "21"], "answer": "8", "hint": "3 × ? = 24", "difficulty": 2},
+      {"text": "Which is the same as half of 18?", "options": ["6", "8", "9", "36"], "answer": "9", "difficulty": 1},
+      {"text": "What is the value of the digit 7 in 472?", "options": ["7", "70", "700", "47"], "answer": "70", "hint": "7 is in the tens place.", "difficulty": 2},
+      {"text": "A ribbon is 1 m long. Mum cuts off 35 cm. How long is it now?", "options": ["65 cm", "75 cm", "35 cm", "135 cm"], "answer": "65 cm", "hint": "1 m = 100 cm", "difficulty": 3},
+      {"text": "What is 3 × 10?", "options": ["13", "30", "300", "31"], "answer": "30", "difficulty": 1}
+     ]},
+    {"id": "p3-revision", "html": "p3-revision/index.html", "kind": "quiz", "grade": "p3", "name": "P3 Revision", "description": "Times tables 6 to 9, fractions, money and time", "difficulty": 3, "rules": {"hearts": 3},
+     "questions": [
+      {"text": "What is 7 × 8?", "options": ["54", "56", "63", "48"], "answer": "56", "difficulty": 2},
+      {"text": "What is 1/2 + 1/4?", "options": ["2/6", "3/4", "1/6", "2/4"], "answer": "3/4", "hint": "1/2 is the same as 2/4.", "difficulty": 3},
+      {"text": "Which fraction is equal to 2/3?", "options": ["4/6", "3/2", "2/6", "4/3"], "answer": "4/6", "difficulty": 3},
+      {"text": "What is 3456 + 1278?", "options": ["4734", "4634", "4724", "5734"], "answer": "4734", "difficulty": 2},
+      {"text": "72 ÷ 9 = ?", "options": ["6", "7", "8", "9"], "answer": "8", "difficulty": 2},
+      {"text": "A film starts at 2.45 p.m. and lasts 1 h 30 min. When does it end?", "options": ["3.15 p.m.", "4.15 p.m.", "4.45 p.m.", "3.45 p.m."], "answer": "4.15 p.m.", "hint": "Add 1 hour, then 30 minutes.", "difficulty": 3},
+      {"text": "A book costs $12.50. Ali pays $20. What is his change?", "options": ["$7.50", "$8.50", "$7.00", "$32.50"], "answer": "$7.50", "difficulty": 3},
+      {"text": "A square has sides of 6 cm. What is its perimeter?", "options": ["12 cm", "24 cm", "36 cm", "18 cm"], "answer": "24 cm", "hint": "Add all 4 sides.", "difficulty": 3}
+     ]},
+    {"id": "p4-revision", "html": "p4-revision/index.html", "kind": "quiz", "grade": "p4", "name": "P4 Revision", "description": "Factors, decimals, mixed numbers, area", "difficulty": 3, "rules": {"hearts": 3},
+     "questions": [
+      {"text": "Which is a factor of 36?", "options": ["5", "7", "9", "11"], "answer": "9", "difficulty": 2},
+      {"text": "What is the 4th multiple of 6?", "options": ["18", "24", "30", "10"], "answer": "24", "difficulty": 2},
+      {"text": "Write 2 3/4 as an improper fraction.", "options": ["11/4", "9/4", "5/4", "23/4"], "answer": "11/4", "hint": "2 wholes = 8 quarters.", "difficulty": 3},
+      {"text": "What is 3.6 + 2.75?", "options": ["6.35", "5.35", "6.25", "6.45"], "answer": "6.35", "hint": "Line up the decimal points.", "difficulty": 3},
+      {"text": "A rectangle is 8 cm long and 5 cm wide. What is its area?", "options": ["13 cm²", "26 cm²", "40 cm²", "45 cm²"], "answer": "40 cm²", "difficulty": 3},
+      {"text": "Round 46 283 to the nearest thousand.", "options": ["46 000", "47 000", "46 300", "50 000"], "answer": "46 000", "difficulty": 3},
+      {"text": "What is 3/5 of 40?", "options": ["8", "24", "15", "30"], "answer": "24", "hint": "1/5 of 40 is 8.", "difficulty": 3},
+      {"text": "How many degrees are in a right angle?", "options": ["45°", "90°", "180°", "360°"], "answer": "90°", "difficulty": 1}
+     ]},
+    {"id": "p5-revision", "html": "p5-revision/index.html", "kind": "quiz", "grade": "p5", "name": "P5 Revision", "description": "Fractions, ratio, percentage, volume", "difficulty": 4, "rules": {"hearts": 3},
+     "questions": [
+      {"text": "What is 2/3 × 3/4?", "options": ["1/2", "5/7", "6/7", "5/12"], "answer": "1/2", "hint": "Multiply the tops and the bottoms, then simplify.", "difficulty": 3},
+      {"text": "What is 25% of 80?", "options": ["20", "25", "40", "8"], "answer": "20", "hint": "25% is one quarter.", "difficulty": 3},
+      {"text": "The ratio of boys to girls is 3 : 5. There are 24 children. How many are girls?", "options": ["9", "12", "15", "16"], "answer": "15", "hint": "8 units = 24, so 1 unit = 3.", "difficulty": 4},
+      {"text": "A box is 5 cm by 4 cm by 3 cm. What is its volume?", "options": ["12 cm³", "47 cm³", "60 cm³", "20 cm³"], "answer": "60 cm³", "difficulty": 3},
+      {"text": "A triangle has base 10 cm and height 6 cm. What is its area?", "options": ["60 cm²", "30 cm²", "16 cm²", "36 cm²"], "answer": "30 cm²", "hint": "½ × base × height", "difficulty": 3},
+      {"text": "What is 4.8 × 6?", "options": ["28.8", "24.8", "28.4", "48.6"], "answer": "28.8", "difficulty": 3},
+      {"text": "Write 0.35 as a percentage.", "options": ["3.5%", "35%", "0.35%", "350%"], "answer": "35%", "difficulty": 2},
+      {"text": "What is 3 1/2 − 1 3/4?", "options": ["1 3/4", "2 1/4", "1 1/4", "2 3/4"], "answer": "1 3/4", "difficulty": 4}
+     ]},
+    {"id": "p6-revision", "html": "p6-revision/index.html", "kind": "quiz", "grade": "p6", "name": "P6 Revision", "description": "Algebra, circles, speed, average", "difficulty": 4, "rules": {"hearts": 3},
+     "questions": [
+      {"text": "If y = 4, what is 3y + 5?", "options": ["12", "17", "35", "22"], "answer": "17", "difficulty": 3},
+      {"text": "What is 3/4 ÷ 3?", "options": ["1/4", "9/4", "1/12", "3/12"], "answer": "1/4", "difficulty": 4},
+      {"text": "A circle has a radius of 7 cm. Taking π = 22/7, what is its circumference?", "options": ["22 cm", "44 cm", "154 cm", "49 cm"], "answer": "44 cm", "hint": "Circumference = 2 × π × r", "difficulty": 4},
+      {"text": "A car travels 180 km in 3 hours. What is its average speed?", "options": ["60 km/h", "54 km/h", "540 km/h", "90 km/h"], "answer": "60 km/h", "difficulty": 3},
+      {"text": "The average of 4 numbers is 15. What is their total?", "options": ["19", "60", "45", "3.75"], "answer": "60", "difficulty": 3},
+      {"text": "A $40 shirt is sold at 15% off. What is the sale price?", "options": ["$6", "$34", "$25", "$46"], "answer": "$34", "hint": "15% of $40 is $6.", "difficulty": 4},
+      {"text": "Simplify 5a + 3 − 2a + 4.", "options": ["3a + 7", "7a + 7", "3a + 1", "10a"], "answer": "3a + 7", "difficulty": 4},
+      {"text": "The ratio A : B is 2 : 3 and B : C is 3 : 4. What is A : C?", "options": ["2 : 4", "1 : 2", "3 : 4", "2 : 3"], "answer": "1 : 2", "hint": "B is 3 in both, so A : B : C = 2 : 3 : 4.", "difficulty": 5}
+     ]}
+  ]
+}
