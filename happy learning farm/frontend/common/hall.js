@@ -206,7 +206,8 @@ function hallConnect(){
       if(!msg)return;
       if(msg.type==='joined'){HALL.ready=true;if(HALL.open)hallPaintChat()}
       else if(msg.type==='chat')hallIncoming(msg);
-      else if(msg.type==='presence'){const row=(HALL.rows||[]).find(r=>r.username===msg.username);if(row)row.online=!!msg.online;if(HALL.open)hallPaintList()}
+      else if(msg.type==='presence'){const row=(HALL.rows||[]).find(r=>r.username===msg.username);if(row)row.online=!!msg.online;if(HALL.open)hallPaintList();if(typeof clubPresence==='function')clubPresence(msg)}
+      else if(String(msg.type).indexOf('club')===0){if(typeof clubSocket==='function')clubSocket(msg)}   // club.js: moves and changes on the shared farm
       else if(msg.type==='error'){HALL.voiceWaiting=false;const fine=$('#hallFine');if(fine&&HALL.open)fine.textContent=msg.message||'Chat did not send.';else if(typeof toast==='function')toast(msg.message||'Chat did not send.')}
     };
     ws.onclose=()=>{
@@ -218,6 +219,8 @@ function hallConnect(){
     };
   }).catch(()=>{HALL.opening=false;setTimeout(()=>hallConnect(),HALL_WAIT);HALL_WAIT=Math.min(15000,HALL_WAIT*2)});
 }
+/* Sends one message on the chat socket if it is open and joined (club.js sends moves this way). */
+function hallSendRaw(o){if(!HALL.ws||HALL.ws.readyState!==1||!HALL.ready)return false;try{HALL.ws.send(JSON.stringify(o));return true}catch(e){return false}}
 function hallSend(){
   if(HALL.voiceRec){hallVoiceFinish(true);return}
   const input=$('#hallText');if(!input||!HALL.thread)return;

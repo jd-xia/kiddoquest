@@ -75,7 +75,7 @@ function save(){
 const cur=()=>DATA.players.find(p=>p.id===DATA.current);
 const dun=(id,p)=>{const D=DUNGEONS.find(d=>d.id===id);return D&&schoolFor(D,gradeOf(p||cur()))};   // topic as the (current) player's grade sees it
 /* A school building as the (current) player sees it: open when at least one of its topics has levels for their grade. */
-const schoolView=(id,p)=>{const S=schoolById(id);if(!S)return null;const topics=S.topics.map(t=>dun(t,p));return Object.assign({},S,{topics,open:S.open&&topics.some(t=>t.open)})};
+const schoolView=(id,p)=>{const S=schoolById(id);if(!S)return null;const topics=S.topics.map(t=>dun(t,p));return Object.assign({},S,{topics,open:S.open&&(id==='tricks'||topics.some(t=>t.open))})};   // Brain Boost is open for every grade: its islands come from each child's profile
 const totalStars=p=>Object.values(p.lv).reduce((a,r)=>a+(r.stars||0),0);
 const unlocked=(p,D,i)=>!D.levels[i].soon&&(i<3||((p.lv[D.levels[i-1].id]||{}).stars>0));   // first three levels are open from the start; later ones need the previous level's stars. 'soon' levels stay locked.
 const playable=D=>D.levels.filter(l=>!l.soon);
@@ -89,7 +89,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
    Each screen lives on one page. go() renders locally when this page owns the screen,
    otherwise it hands the screen + extras to the next page through sessionStorage. */
 const PAGE_FILE=document.body.dataset.page||'index.html';
-const PAGES={players:'index.html',town:'index.html',market:'market.html',shop:'market.html',barn:'barn.html',progress:'board.html',studio:'studio.html',fishing:'fishing.html'};
+const PAGES={players:'index.html',town:'index.html',market:'market.html',shop:'market.html',barn:'barn.html',progress:'board.html',studio:'studio.html',fishing:'fishing.html',brainboost:'school-tricks.html'};
 function pageFor(screen,extra){   // school screens live on school-<school id>.html; a topic (did) belongs to one school
   if(['school','dungeon','level','result'].includes(screen)){const e=extra||{},T=DUNGEONS.find(d=>d.id===(e.did||UI.did));return 'school-'+(e.sid||(T&&T.school)||UI.sid||'tricks')+'.html'}
   return PAGES[screen]||'index.html'}
@@ -163,7 +163,16 @@ const today=(d)=>(d||new Date()).toLocaleDateString('en-CA');
 function dailyOf(p){if(!p.daily||p.daily.d!==today())p.daily={d:today(),n:{},coins:0,levels:{},chest:false};
   const D=p.daily;D.n=D.n||{};D.coins=D.coins||0;D.levels=D.levels||{};return D}
 const coinsLeft=p=>Math.max(0,COIN_DAY_MAX-dailyOf(p).coins);
-function earnCoins(p,n){const g=Math.min(n,coinsLeft(p));p.gems+=g;dailyOf(p).coins+=g;return g}   // -> coins actually given
+function earnCoins(p,n,src){const g=Math.min(n,coinsLeft(p));p.gems+=g;dailyOf(p).coins+=g;if(g)todayLog(p,'earn_'+(src||'learn'),g);return g}   // -> coins actually given
+/* Today's record for the 📊 Today board (Player.daily.log, reset at midnight with the rest of daily):
+   secs played; coins earned by where they came from (earn_learn, earn_fish, earn_chest, earn_crops,
+   earn_goods, earn_fishsold); spent; and what was done (right, levels, planted, harvested, collected,
+   caught, sold, bought). */
+function todayLog(p,kind,n){if(!p)return;const D=dailyOf(p),L=D.log||(D.log={});L[kind]=(L[kind]||0)+(n==null?1:n)}
+function spend(p,n,what){p.gems-=n;todayLog(p,'spent',n);if(what)todayLog(p,'bought')}
+/* Play time: counted every 15 seconds while a farm is on screen and the page is in front. */
+let PLAY_TICKS=0;
+setInterval(()=>{if(document.hidden||typeof cur!=='function')return;const p=cur();if(!p)return;todayLog(p,'secs',15);if(++PLAY_TICKS%4===0)save()},15000);   // kept once a minute
 /* Today's Tasks follow the routine: plant first, play the two practice levels while crops grow, then harvest. */
 function tasksFor(p){const lv=(DAILY_LEVELS[gradeOf(p)]||[]).map(id=>levelById(id)).filter(Boolean);
   return [{id:'plant',e:'🌱',name:'Plant seeds',goal:3},
@@ -213,8 +222,8 @@ const plotPos=i=>{
   const k=i-HOME_PLOTS;
   return {x:-21.6+(k%3)*2.55,z:12.8+Math.floor(k/3)*2.55};
 };
-function purchasePlot(){const p=cur(),f=farmOf(p),c=plotCost(f);if(p.gems<c||f.unlocked>=HOME_PLOTS)return false;p.gems-=c;f.unlocked++;save();return c}
-function purchaseLand(id){const p=cur(),f=farmOf(p),L=LANDS.find(x=>x.id===id);if(!L||hasLand(f,id)||p.gems<L.cost)return false;p.gems-=L.cost;f.lands=f.lands||[];f.lands.push(id);save();return true}
+function purchasePlot(){const p=cur(),f=farmOf(p),c=plotCost(f);if(p.gems<c||f.unlocked>=HOME_PLOTS)return false;spend(p,c,true);f.unlocked++;save();return c}
+function purchaseLand(id){const p=cur(),f=farmOf(p),L=LANDS.find(x=>x.id===id);if(!L||hasLand(f,id)||p.gems<L.cost)return false;spend(p,L.cost,true);f.lands=f.lands||[];f.lands.push(id);save();return true}
 let toastTimer=null;
 function toast(t,ms){const el=$('#toast');if(!el)return;el.textContent=t;el.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>el.classList.remove('show'),ms||2400)}
 function notice(t){

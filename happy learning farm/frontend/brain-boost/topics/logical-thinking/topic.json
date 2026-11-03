@@ -1,0 +1,14 @@
+{
+  "id": "logical-thinking",
+  "name": "Logical Thinking",
+  "description": "Spot the rule, find what does not belong",
+  "color": "#0B8F80",
+  "icon": "🦓",
+  "npc": "Zara the Zebra",
+  "island": "patterns",
+  "openLevels": 1,
+  "levels": [
+    {"id": "level-01", "html": "level-01/index.html", "name": "What Comes Next?", "description": "Find the rule in a row of numbers", "difficulty": 1, "rules": {"questions": 6, "hearts": 3}},
+    {"id": "level-02", "html": "level-02/index.html", "name": "Odd One Out", "description": "Three belong together. Which one does not?", "difficulty": 2, "rules": {"questions": 6, "hearts": 3}}
+  ]
+}

@@ -209,9 +209,9 @@ function qBreakP3(i){
    so the same island opens a different 副本 for a P1 player and a P3 player.
    A topic with no levels for the player's grade shows as "coming soon".
    Level ids must be unique across all grades (they are the keys in Player.lv). */
-const GRADES=[
-  {id:'p1',name:'P1',label:'Primary 1'},
-  {id:'p3',name:'P3',label:'Primary 3'}
+const GRADES=[   // Singapore primary school; Brain Boost has a template for each (brain-boost/profiles)
+  {id:'p1',name:'P1',label:'Primary 1'},{id:'p2',name:'P2',label:'Primary 2'},{id:'p3',name:'P3',label:'Primary 3'},
+  {id:'p4',name:'P4',label:'Primary 4'},{id:'p5',name:'P5',label:'Primary 5'},{id:'p6',name:'P6',label:'Primary 6'}
 ];
 const DEFAULT_GRADE='p3';   // players saved before grades existed played the P3 content
 
@@ -302,7 +302,7 @@ const DUNGEONS=[
 ];
 const schoolById=id=>SCHOOLS.find(s=>s.id===id);
 /* The daily 10-minute practice: two levels, 5 questions each. Today's Tasks ask for these. */
-const DAILY_LEVELS={p1:['c1-1','c1-2'],p3:['c3-1','c3-2']};
+const DAILY_LEVELS={p1:['c1-1','c1-2'],p2:['c1-1','c1-2'],p3:['c3-1','c3-2'],p4:['c3-1','c3-2'],p5:['c3-1','c3-2'],p6:['c3-1','c3-2']};
 const gradeOf=p=>p&&GRADES.some(g=>g.id===p.grade)?p.grade:DEFAULT_GRADE;
 const gradeName=id=>(GRADES.find(g=>g.id===id)||{}).name||id;
 /* A school as one grade sees it: base info + that grade's intro/levels.

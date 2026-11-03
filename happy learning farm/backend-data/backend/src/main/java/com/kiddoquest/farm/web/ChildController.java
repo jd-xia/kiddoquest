@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -19,14 +20,18 @@ import com.kiddoquest.farm.web.FarmDtos.ChildPatch;
 import com.kiddoquest.farm.web.FarmDtos.ChildState;
 import com.kiddoquest.farm.web.FarmDtos.ChildSummary;
 import com.kiddoquest.farm.web.FarmDtos.ChildWrite;
+import com.kiddoquest.farm.web.FarmDtos.ScreenClaim;
+import com.kiddoquest.farm.web.FarmDtos.ScreenState;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 
 import java.util.List;
 
 @RestController
+@org.springframework.validation.annotation.Validated
 @RequestMapping("/api/v1/children")
 @Tag(name = "Children")
 public class ChildController {
@@ -55,6 +60,36 @@ public class ChildController {
     @Operation(summary = "Load one child farm the account is allowed to open")
     public ChildState get(@AuthenticationPrincipal Jwt jwt, @PathVariable String childId) {
         return children.get(owner(jwt), childId);
+    }
+
+    @PostMapping("/{childId}/screen")
+    @Operation(summary = "Open this farm on this screen. The screen that had it before stops.")
+    public ScreenState claimScreen(@AuthenticationPrincipal Jwt jwt, @PathVariable String childId, @Valid @RequestBody ScreenClaim request,
+            HttpServletRequest http) {
+        return children.claimScreen(owner(jwt), email(jwt), childId, request.screen(), request.device(), clientIp(http));
+    }
+
+    /** nginx (and the gateway before it) add X-Forwarded-For; its first address is the device itself. */
+    static String clientIp(HttpServletRequest http) {
+        String forwarded = http.getHeader("X-Forwarded-For");
+        if (forwarded != null && !forwarded.isBlank()) {
+            return forwarded.split(",")[0].trim();
+        }
+        return http.getRemoteAddr();
+    }
+
+    @DeleteMapping("/{childId}/screen")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "This screen left the farm (switched to another child or closed it). Only the screen that has it can.")
+    public void releaseScreen(@AuthenticationPrincipal Jwt jwt, @PathVariable String childId,
+            @RequestParam @jakarta.validation.constraints.Pattern(regexp = FarmDtos.SCREEN) String screen) {
+        children.releaseScreen(owner(jwt), childId, screen);
+    }
+
+    @GetMapping("/{childId}/screen")
+    @Operation(summary = "Which screen opened this farm last")
+    public ScreenState screen(@AuthenticationPrincipal Jwt jwt, @PathVariable String childId) {
+        return children.screen(owner(jwt), childId);
     }
 
     @PatchMapping("/{childId}")

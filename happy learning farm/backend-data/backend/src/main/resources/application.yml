@@ -3,7 +3,8 @@ server:
   forward-headers-strategy: framework
   tomcat:
     max-http-form-post-size: 8MB
-    max-swallow-size: 8MB
+    # a shared 3D model is up to 10 MB, about 14 MB as base64 JSON
+    max-swallow-size: 16MB
 
 spring:
   application:

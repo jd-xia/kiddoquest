@@ -1,0 +1,60 @@
+{
+  "id": "problem-solving",
+  "name": "Problem Solving",
+  "description": "Word problems, one step at a time",
+  "color": "#2F7FD6",
+  "icon": "🦫",
+  "npc": "Benny the Beaver",
+  "island": "models",
+  "openLevels": 1,
+  "levels": [
+    {"id": "p1-stories", "html": "p1-stories/index.html", "kind": "quiz", "grade": "p1", "name": "P1 Story Sums", "description": "Short stories about adding and taking away", "difficulty": 1, "rules": {"hearts": 3},
+     "questions": [
+      {"text": "Mia has 9 stickers. She gets 6 more. How many stickers does she have now?", "options": ["13", "15", "16", "3"], "answer": "15", "difficulty": 1},
+      {"text": "There are 17 birds on a tree. 8 fly away. How many are left?", "options": ["9", "11", "25", "8"], "answer": "9", "difficulty": 1},
+      {"text": "Ben has 4 bags with 2 oranges in each bag. How many oranges?", "options": ["6", "8", "2", "10"], "answer": "8", "difficulty": 2},
+      {"text": "A toy costs $8. Lily has $5. How much more does she need?", "options": ["$3", "$13", "$2", "$5"], "answer": "$3", "difficulty": 2},
+      {"text": "Tom is 7 years old. His sister is 3 years older. How old is his sister?", "options": ["4", "10", "11", "9"], "answer": "10", "difficulty": 1}
+     ]},
+    {"id": "p2-stories", "html": "p2-stories/index.html", "kind": "quiz", "grade": "p2", "name": "P2 Word Problems", "description": "Two steps, money and measures", "difficulty": 2, "rules": {"hearts": 3},
+     "questions": [
+      {"text": "A baker made 145 buns in the morning and 128 in the afternoon. How many buns did he make?", "options": ["273", "263", "17", "283"], "answer": "273", "difficulty": 2},
+      {"text": "5 children each have 6 marbles. How many marbles are there in all?", "options": ["11", "30", "25", "35"], "answer": "30", "difficulty": 1},
+      {"text": "Sam had $50. He bought a book for $18 and a pen for $7. How much is left?", "options": ["$25", "$32", "$43", "$75"], "answer": "$25", "hint": "Take away both prices.", "difficulty": 3},
+      {"text": "40 cupcakes are packed into boxes of 4. How many boxes are needed?", "options": ["10", "36", "44", "8"], "answer": "10", "difficulty": 2},
+      {"text": "A jug holds 2 litres of water. Dad pours out 750 ml. How much is left?", "options": ["1250 ml", "1750 ml", "750 ml", "1350 ml"], "answer": "1250 ml", "hint": "2 litres = 2000 ml", "difficulty": 3}
+     ]},
+    {"id": "p3-stories", "html": "p3-stories/index.html", "kind": "quiz", "grade": "p3", "name": "P3 Bar Models", "description": "Draw a bar model to see the answer", "difficulty": 3, "rules": {"hearts": 3},
+     "questions": [
+      {"text": "Ali has 3 times as many cards as Ben. Ben has 24 cards. How many cards do they have altogether?", "options": ["72", "96", "48", "27"], "answer": "96", "hint": "Ben is 1 unit, Ali is 3 units: 4 units in all.", "difficulty": 3},
+      {"text": "A shop sold 1250 apples on Monday and 380 fewer on Tuesday. How many apples were sold on Tuesday?", "options": ["870", "1630", "970", "880"], "answer": "870", "difficulty": 2},
+      {"text": "8 pencils cost $6. How much do 4 pencils cost?", "options": ["$2", "$3", "$12", "$4"], "answer": "$3", "difficulty": 3},
+      {"text": "Mum cut a cake into 8 equal pieces. The family ate 5 pieces. What fraction is left?", "options": ["5/8", "3/8", "3/5", "1/8"], "answer": "3/8", "difficulty": 2},
+      {"text": "A school bus leaves at 7.20 a.m. and arrives 45 minutes later. When does it arrive?", "options": ["7.55 a.m.", "8.05 a.m.", "8.15 a.m.", "7.65 a.m."], "answer": "8.05 a.m.", "difficulty": 3}
+     ]},
+    {"id": "p4-stories", "html": "p4-stories/index.html", "kind": "quiz", "grade": "p4", "name": "P4 Word Problems", "description": "Fractions, decimals and area in stories", "difficulty": 3, "rules": {"hearts": 3},
+     "questions": [
+      {"text": "Jane spent 2/5 of her $30 on a book. How much did the book cost?", "options": ["$6", "$12", "$15", "$18"], "answer": "$12", "difficulty": 3},
+      {"text": "A garden is 12 m long and 9 m wide. What is its area?", "options": ["21 m²", "42 m²", "108 m²", "96 m²"], "answer": "108 m²", "difficulty": 3},
+      {"text": "3 bottles hold 1.5 litres each. How much do they hold altogether?", "options": ["4.5 litres", "3.5 litres", "4.0 litres", "15 litres"], "answer": "4.5 litres", "difficulty": 3},
+      {"text": "Raju is 1.42 m tall. His brother is 0.18 m shorter. How tall is his brother?", "options": ["1.24 m", "1.60 m", "1.34 m", "1.26 m"], "answer": "1.24 m", "difficulty": 3},
+      {"text": "Tickets cost $9 each. A class paid $315 for tickets. How many tickets did they buy?", "options": ["25", "35", "45", "306"], "answer": "35", "difficulty": 4}
+     ]},
+    {"id": "p5-stories", "html": "p5-stories/index.html", "kind": "quiz", "grade": "p5", "name": "P5 Word Problems", "description": "Ratio, percentage and volume in stories", "difficulty": 4, "rules": {"hearts": 3},
+     "questions": [
+      {"text": "Ann and Bala share $84 in the ratio 3 : 4. How much does Bala get?", "options": ["$36", "$48", "$12", "$42"], "answer": "$48", "difficulty": 4},
+      {"text": "A tank 50 cm by 30 cm by 20 cm is filled with water. How many litres is that? (1 litre = 1000 cm³)", "options": ["30 litres", "3 litres", "300 litres", "100 litres"], "answer": "30 litres", "difficulty": 4},
+      {"text": "40% of the 250 pupils walk to school. How many pupils walk?", "options": ["40", "100", "150", "160"], "answer": "100", "difficulty": 3},
+      {"text": "A rope 7 1/2 m long is cut into 3 equal pieces. How long is each piece?", "options": ["2 1/2 m", "2 1/4 m", "3 1/2 m", "22 1/2 m"], "answer": "2 1/2 m", "difficulty": 4},
+      {"text": "Mrs Tan bought 6 kg of rice at $2.35 per kg. How much did she pay?", "options": ["$14.10", "$12.10", "$14.35", "$8.35"], "answer": "$14.10", "difficulty": 3}
+     ]},
+    {"id": "p6-stories", "html": "p6-stories/index.html", "kind": "quiz", "grade": "p6", "name": "P6 Challenge Problems", "description": "PSLE-style thinking, step by step", "difficulty": 5, "rules": {"hearts": 3},
+     "questions": [
+      {"text": "A train travels at 80 km/h for 2 1/2 hours. How far does it travel?", "options": ["160 km", "200 km", "180 km", "32 km"], "answer": "200 km", "difficulty": 3},
+      {"text": "The average mass of 5 boys is 42 kg. One boy of 50 kg leaves. What is the new average?", "options": ["40 kg", "42 kg", "38 kg", "41 kg"], "answer": "40 kg", "hint": "Total 210 kg, minus 50 kg, shared by 4.", "difficulty": 5},
+      {"text": "John had some money. He spent 1/3 of it, then 1/4 of the rest, and had $30 left. How much did he have at first?", "options": ["$60", "$72", "$90", "$120"], "answer": "$60", "hint": "After spending 1/3, 2/3 is left; 3/4 of that is half of the money.", "difficulty": 5},
+      {"text": "A semicircle has a diameter of 14 cm. Taking π = 22/7, what is its area?", "options": ["77 cm²", "154 cm²", "44 cm²", "308 cm²"], "answer": "77 cm²", "difficulty": 4},
+      {"text": "The price of a bag went up from $50 to $60. What is the percentage increase?", "options": ["10%", "20%", "16 2/3%", "60%"], "answer": "20%", "difficulty": 4}
+     ]}
+  ]
+}

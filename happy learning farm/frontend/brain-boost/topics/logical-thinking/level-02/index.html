@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Odd One Out · Brain Boost</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../../kit/level-kit.css?v=2">
+</head>
+<body>
+<!-- Logical Thinking · Level 2: three things belong together, one does not. Pick the odd one out.
+     rules: questions (6), hearts (3). P1 sees pictures and small numbers; P3 sees number properties. -->
+<main class="lv" id="lv"><p>Loading…</p></main>
+<script src="../../../kit/level-kit.js?v=1"></script>
+<script>
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const GROUPS=[
+  ['fruit',['🍎','🍌','🍇','🍓','🍐','🍊']],['animals',['🐶','🐱','🐰','🐻','🐼','🦊']],
+  ['vehicles',['🚗','🚌','🚲','🚂','✈️','🚀']],['weather',['☀️','🌧️','⛄','🌈','⚡','🌪️']]];
+/* A set of four: three share a rule, the odd one breaks it. why says the rule. */
+function picture(){
+  const [a,b]=shuffle(GROUPS),three=shuffle(a[1]).slice(0,3),odd=pick(b[1]);
+  return {items:shuffle([...three,odd]),odd,why:`The others are all ${a[0]}. ${odd} is not.`};
+}
+function evenOdd(big){
+  const even=Math.random()<.5,mk=()=>{let n;do{n=rnd(2,big?98:20)}while((n%2===0)!==even);return n};
+  const set=new Set();while(set.size<3)set.add(mk());let odd;do{odd=rnd(2,big?98:20)}while((odd%2===0)===even);
+  return {items:shuffle([...set,odd]),odd,why:`The others are ${even?'even':'odd'} numbers. ${odd} is ${even?'odd':'even'}.`};
+}
+function multiples(){
+  const m=pick([3,4,5,10]),set=new Set();while(set.size<3)set.add(m*rnd(2,12));let odd;do{odd=rnd(10,99)}while(odd%m===0);
+  return {items:shuffle([...set,odd]),odd,why:`The others are all in the ${m} times table. ${odd} is not.`};
+}
+function digits(){
+  const set=new Set();while(set.size<3)set.add(rnd(100,999));const odd=rnd(10,99);
+  return {items:shuffle([...set,odd]),odd,why:`The others have three digits. ${odd} has two.`};
+}
+function makeSet(grade,k){
+  const makers=grade==='p1'?[picture,()=>evenOdd(false),picture,()=>evenOdd(false)]:[()=>evenOdd(true),multiples,digits,picture,multiples];
+  return makers[k%makers.length]();
+}
+let S=null;
+function draw(){
+  const q=S.qs[S.i];
+  document.getElementById('lv').innerHTML=`
+  <div class="lv-top"><button class="lv-x" id="quit" aria-label="Leave level">✕</button><div class="lv-name">Odd One Out</div>
+   <div class="lv-prog" aria-label="Question ${S.i+1} of ${S.qs.length}">${S.qs.map((_,k)=>`<i class="${k<S.i?'ok':k===S.i?'on':''}"></i>`).join('')}</div>
+   <div class="lv-hearts" aria-label="${S.hearts} hearts left">${'❤️'.repeat(S.hearts)}${'🖤'.repeat(S.max-S.hearts)}</div></div>
+  <div class="lv-coach ${S.mood||''}"><span class="face" aria-hidden="true">🦓</span><div>${S.say||'Three of these belong together. Tap the one that does not.'}</div></div>
+  <div class="lv-choices">${q.items.map((c,k)=>`<button class="lv-choice ${q.tried.includes(k)?'wrong':''} ${S.done&&c===q.odd?'right':''}" data-k="${k}" ${q.tried.includes(k)||S.done?'disabled':''}>${c}</button>`).join('')}</div>
+  ${S.done?`<button class="lv-btn" id="next">${S.i<S.qs.length-1?'Next ▸':'Finish ▸'}</button>`:''}`;
+  document.getElementById('quit').onclick=()=>BBLevel.quit({answered:S.answered,correct:S.correct,total:S.qs.length});
+  document.querySelectorAll('.lv-choice').forEach(b=>b.onclick=()=>choose(Number(b.dataset.k)));
+  const n=document.getElementById('next');if(n){n.onclick=next;n.focus()}
+}
+function choose(k){
+  const q=S.qs[S.i];if(S.done)return;
+  if(!q.answered){q.answered=true;S.answered++}
+  if(q.items[k]===q.odd){if(!q.tried.length)S.correct++;S.done=true;S.mood='good';S.say=`Well spotted! ${q.why}`;draw();return}
+  q.tried.push(k);S.hearts--;S.mood='bad';
+  if(S.hearts<=0){end(false);return}
+  S.say=`${q.items[k]} belongs with the others. Look for what three of them share.`;draw();
+}
+function next(){if(S.i<S.qs.length-1){S.i++;S.done=false;S.mood='';S.say='';draw()}else end(true)}
+function end(ok){
+  const stars=ok?BBLevel.stars(S.hearts,S.max):0;
+  BBLevel.finish({cleared:ok,stars,correct:S.correct,total:S.qs.length,answered:S.answered});
+  document.getElementById('lv').innerHTML=`<div class="lv-done"><h2>${ok?'Sharp eyes!':'Out of hearts'}</h2>
+   ${ok?`<div class="lv-stars" aria-label="${stars} stars">${'⭐'.repeat(stars)}${'☆'.repeat(3-stars)}</div>`:''}
+   <p>${S.correct} of ${S.qs.length} right first time.</p>${BBLevel.alone?'<p>Open this level from Brain Boost to save it.</p>':'<p>Saving…</p>'}</div>`;
+}
+BBLevel.ready(info=>{
+  const r=(info.level&&info.level.rules)||{},grade=(info.child&&info.child.grade)||'p3',n=Math.max(3,Math.min(12,r.questions||6)),max=Math.max(1,Math.min(5,r.hearts||3));
+  S={qs:Array.from({length:n},(_,k)=>Object.assign(makeSet(grade,k),{tried:[]})),i:0,hearts:max,max,correct:0,answered:0,done:false};
+  draw();
+});
+</script>
+</body>
+</html>

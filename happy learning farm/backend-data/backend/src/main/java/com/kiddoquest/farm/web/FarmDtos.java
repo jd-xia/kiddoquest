@@ -32,7 +32,7 @@ public final class FarmDtos {
     }
 
     public record ChildSummary(String id, String username, String email, String displayName, String grade, String look,
-            long revision, Instant updatedAt) {
+            long revision, Instant updatedAt, boolean main) {
     }
 
     public record ChildState(String id, String username, String email, String displayName, String grade, String look,
@@ -43,7 +43,55 @@ public final class FarmDtos {
             @NotBlank @Pattern(regexp = "[A-Za-z0-9_.:-]{8,80}") String idempotencyKey,
             @NotNull @Min(0) @Max(1_000_000_000) Long baseRevision,
             @NotBlank @Pattern(regexp = "upload|keep_local|keep_server|merge") String policy,
-            @NotNull JsonNode player) {
+            @NotNull JsonNode player,
+            @Pattern(regexp = SCREEN) String screen) {
+    }
+
+    /** One browser tab. Pages without it (older pages) still sync, but cannot stop other screens. */
+    static final String SCREEN = "[A-Za-z0-9_-]{8,40}";
+
+    public record ScreenClaim(@NotBlank @Pattern(regexp = SCREEN) String screen, @Size(max = 80) String device) {
+    }
+
+    /** seen: the last sync or play-time count from that screen, so the page can say whether it is in use. */
+    public record ScreenState(String screen, Instant at, String device, String email, Instant seen, String ip) {
+    }
+
+    /** The family's own date, so a day of play time starts at the family's midnight. */
+    static final String DAY = "\\d{4}-\\d{2}-\\d{2}";
+    static final String PIN = "\\d{4}";
+
+    /** One heartbeat while a farm is on screen: seconds played since the last one (at most 60 count). */
+    public record PlayBeat(@NotBlank @Pattern(regexp = DAY) String day, @NotNull @Min(0) @Max(600) Integer seconds,
+            @Pattern(regexp = SCREEN) String screen) {
+    }
+
+    /** limitMinutes null: no limit (the main farm, or no limit set). leftSeconds is then null too. */
+    public record PlayTime(String day, boolean main, Integer limitMinutes, int bonusMinutes, int usedSeconds,
+            Integer leftSeconds) {
+    }
+
+    public record KidTime(String id, String username, String displayName, String look, boolean main, Integer dailyMinutes,
+            int bonusMinutes, int usedSeconds) {
+    }
+
+    public record Family(boolean pinSet, List<KidTime> kids) {
+    }
+
+    /** Sets the PIN the first time; changing it needs the old one. */
+    public record PinSet(@Pattern(regexp = PIN) String oldPin, @NotBlank @Pattern(regexp = PIN) String pin) {
+    }
+
+    public record PinCheck(@NotBlank @Pattern(regexp = PIN) String pin) {
+    }
+
+    /** Parent changes for one child. dailyMinutes 0 means no limit; null leaves it as it is. */
+    public record KidTimeWrite(
+            @NotBlank @Pattern(regexp = PIN) String pin,
+            @NotBlank @Pattern(regexp = DAY) String day,
+            Boolean main,
+            @Min(0) @Max(600) Integer dailyMinutes,
+            @Min(-600) @Max(600) Integer addMinutes) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
@@ -67,5 +115,19 @@ public final class FarmDtos {
             @NotBlank String to,
             @NotBlank String voice,
             @Size(max = 80) String mime) {
+    }
+
+    /** picture is a data URL; model is the base64 of a .glb or .gltf, or empty for a picture only. */
+    public record GalleryShare(
+            @NotBlank String as,
+            @NotBlank @Size(max = 48) String key,
+            @NotBlank String picture,
+            @Size(max = 12) String style,
+            String model,
+            @Size(max = 200) String modelName) {
+    }
+
+    public record GalleryItem(String id, String key, String from, String name, String picture, String style,
+            boolean model, long modelBytes, String modelName, Instant at, boolean mine) {
     }
 }

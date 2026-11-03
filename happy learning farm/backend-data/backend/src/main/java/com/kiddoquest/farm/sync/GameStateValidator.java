@@ -1,7 +1,6 @@
 package com.kiddoquest.farm.sync;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -21,7 +20,20 @@ public class GameStateValidator {
     static final Set<String> SEEDS = Set.of("carrot", "tomato", "sunflower", "strawberry", "corn", "pumpkin");
     static final Set<String> BARN = Set.of("carrot", "tomato", "sunflower", "strawberry", "corn", "pumpkin", "egg", "wool", "milk");
     static final Set<String> ANIMALS = Set.of("chicken", "sheep", "cow");
+    /** Coins a day the market pays for eggs, wool and milk (GOODS_DAY_MAX in market.js). */
+    static final long GOODS_DAY_MAX = 20;
+    /** What Player.daily.log may count (todayLog in core.js). */
+    static final java.util.List<String> DAY_LOG = java.util.List.of("secs", "earn_learn", "earn_chest", "earn_fish", "earn_crops",
+            "earn_goods", "earn_fishsold", "spent", "answered", "right", "levels", "planted", "harvested", "collected", "caught",
+            "sold", "bought");
     static final Set<String> DECOR = Set.of("flowers", "lanterns", "scarecrow", "apples", "pond", "windmill");
+    /** Land bought past the home field (LANDS in core.js); each adds plots after the 12 home ones. */
+    static final Set<String> LANDS = Set.of("meadow");
+    static final int MAX_PLOTS = 18;
+    /** Fishing (fishOf in core.js, RODS and TACKLE in fishing.js). */
+    static final Set<String> RODS = Set.of("twig", "bamboo", "river", "gold");
+    static final Set<String> TACKLE = Set.of("bobber", "net", "bucket", "lantern");
+    static final Set<String> FISH = Set.of("minnow", "carp", "bass", "koi", "octopus");
     static final Set<String> SHIRTS = Set.of("red", "blue", "green", "yellow", "purple", "pink");
     static final Set<String> HATS = Set.of("none", "straw", "cap", "flowers", "crown");
     private static final Pattern KEY = Pattern.compile("[A-Za-z0-9_.:-]{1,40}");
@@ -61,6 +73,9 @@ public class GameStateValidator {
         out.set("lv", levels(raw.get("lv"), nowMs));
         out.set("sessions", sessions(raw.get("sessions"), nowMs));
         out.put("time", clamp(number(raw.get("time")), 0, 315_360_000));
+        if (raw.path("starter").asBoolean(false) || number(raw.get("starter")) > 0) {
+            out.put("starter", 1);   // the starting coins were given once; without this a pulled farm gets them again
+        }
         if (raw.has("daily")) {
             ObjectNode daily = daily(raw.get("daily"));
             if (daily != null) {
@@ -83,20 +98,6 @@ public class GameStateValidator {
         return out;
     }
 
-    public void checkCoins(long previous, Instant previousAt, long next, String policy, Instant now) {
-        long cap;
-        if (previousAt == null || "keep_local".equals(policy)) {
-            cap = Math.max(previous, 20_000L);
-        } else {
-            long days = Math.max(1, ChronoUnit.DAYS.between(previousAt, now) + 1);
-            days = Math.min(days, 400);
-            cap = previous + 40L * days + 40L;
-        }
-        if (next > cap) {
-            throw new SyncRejectedException("Coin total is too far ahead of the saved farm. This device was not changed.");
-        }
-    }
-
     public String cleanName(String raw, String fallback) {
         String trimmed = raw == null ? "" : raw.replaceAll("\\p{Cntrl}", "").trim();
         if (trimmed.length() > 16) {
@@ -111,11 +112,12 @@ public class GameStateValidator {
         return trimmed.length() > 16 ? trimmed.substring(0, 16).trim() : trimmed;
     }
 
+    /** Singapore primary school years, Primary 1 to Primary 6: p1 … p6. */
     public String cleanGrade(String grade, String fallback) {
-        if ("p1".equals(grade) || "p3".equals(grade)) {
+        if (grade != null && grade.matches("p[1-6]")) {
             return grade;
         }
-        if ("p1".equals(fallback) || "p3".equals(fallback)) {
+        if (fallback != null && fallback.matches("p[1-6]")) {
             return fallback;
         }
         return "p3";
@@ -147,7 +149,58 @@ public class GameStateValidator {
         farm.set("animals", animals(in.get("animals"), nowMs));
         farm.set("barn", barn(in.get("barn")));
         farm.set("plots", plots(in.get("plots"), nowMs));
+        farm.set("lands", lands(in.get("lands")));
+        if (in.has("fish") && in.get("fish").isObject()) {
+            farm.set("fish", fish(in.get("fish")));
+        }
         return farm;
+    }
+
+    private ArrayNode lands(JsonNode raw) {
+        ArrayNode lands = mapper.createArrayNode();
+        if (raw == null || !raw.isArray()) {
+            return lands;
+        }
+        Set<String> seen = new LinkedHashSet<>();
+        for (JsonNode item : raw) {
+            String id = item.asText("");
+            if (LANDS.contains(id) && seen.add(id)) {
+                lands.add(id);
+            }
+        }
+        return lands;
+    }
+
+    /** The pond (0 none, 1 built, 2 widened), rods and tackle owned, worms, and fish kept to sell. */
+    private ObjectNode fish(JsonNode raw) {
+        ObjectNode fish = mapper.createObjectNode();
+        fish.put("pond", clamp(number(raw.get("pond")), 0, 2));
+        Set<String> owned = new LinkedHashSet<>();
+        owned.add("rod:twig");
+        JsonNode items = raw.get("owned");
+        if (items != null && items.isArray()) {
+            for (JsonNode item : items) {
+                String id = item.asText("");
+                if ((id.startsWith("rod:") && RODS.contains(id.substring(4))) || TACKLE.contains(id)) {
+                    owned.add(id);
+                }
+            }
+        }
+        ArrayNode list = fish.putArray("owned");
+        owned.forEach(list::add);
+        String rod = raw.path("rod").asText("twig");
+        fish.put("rod", owned.contains("rod:" + rod) ? rod : "twig");
+        fish.put("bait", clamp(number(raw.get("bait")), 0, 999));
+        ObjectNode catches = fish.putObject("catches");
+        JsonNode got = raw.get("catches");
+        if (got != null && got.isObject()) {
+            got.fields().forEachRemaining(entry -> {
+                if (FISH.contains(entry.getKey())) {
+                    catches.put(entry.getKey(), clamp(number(entry.getValue()), 0, 9999));
+                }
+            });
+        }
+        return fish;
     }
 
     private ArrayNode plots(JsonNode raw, long nowMs) {
@@ -156,7 +209,7 @@ public class GameStateValidator {
             return plots;
         }
         long min = nowMs - 7L * 24 * 60 * 60 * 1000;
-        int limit = Math.min(12, raw.size());
+        int limit = Math.min(MAX_PLOTS, raw.size());
         for (int i = 0; i < limit; i++) {
             JsonNode plot = raw.get(i);
             if (plot == null || !plot.isObject() || !SEEDS.contains(plot.path("crop").asText(""))) {
@@ -322,7 +375,20 @@ public class GameStateValidator {
         ObjectNode daily = mapper.createObjectNode();
         daily.put("d", raw.path("d").asText());
         daily.put("coins", clamp(number(raw.get("coins")), 0, 40));
+        // coins from selling eggs, wool and milk today; the market buys at most GOODS_DAY_MAX a day (market.js)
+        daily.put("goods", clamp(number(raw.get("goods")), 0, GOODS_DAY_MAX));
         daily.put("chest", raw.path("chest").asBoolean(false));
+        // today's record for the "My day" board (todayLog in core.js): play seconds, coins by source, what was done
+        ObjectNode log = daily.putObject("log");
+        JsonNode rawLog = raw.get("log");
+        if (rawLog != null && rawLog.isObject()) {
+            for (String key : DAY_LOG) {
+                long value = clamp(number(rawLog.get(key)), 0, 10_000_000);
+                if (value > 0) {
+                    log.put(key, value);
+                }
+            }
+        }
         ObjectNode counts = daily.putObject("n");
         JsonNode n = raw.get("n");
         if (n != null && n.isObject()) {

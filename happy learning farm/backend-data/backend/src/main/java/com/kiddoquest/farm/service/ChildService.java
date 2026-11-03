@@ -11,8 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.kiddoquest.farm.brain.BrainBoostService;
 import com.kiddoquest.farm.domain.ChildProfile;
 import com.kiddoquest.farm.domain.GameSnapshot;
+import com.kiddoquest.farm.gallery.GalleryService;
 import com.kiddoquest.farm.repo.ChildProfileRepository;
 import com.kiddoquest.farm.repo.FarmMessageRepository;
 import com.kiddoquest.farm.repo.GameSnapshotRepository;
@@ -24,7 +26,9 @@ import com.kiddoquest.farm.web.FarmDtos.ChildPatch;
 import com.kiddoquest.farm.web.FarmDtos.ChildState;
 import com.kiddoquest.farm.web.FarmDtos.ChildSummary;
 import com.kiddoquest.farm.web.FarmDtos.ChildWrite;
+import com.kiddoquest.farm.web.FarmDtos.ScreenState;
 import com.kiddoquest.farm.web.FarmExceptions.NotFoundException;
+import com.kiddoquest.farm.web.FarmExceptions.ScreenTakenException;
 import com.kiddoquest.farm.web.FarmExceptions.SyncRejectedException;
 
 @Service
@@ -36,16 +40,21 @@ public class ChildService {
     private final GameSnapshotRepository snapshots;
     private final SyncReceiptRepository receipts;
     private final FarmMessageRepository messages;
+    private final GalleryService gallery;
+    private final BrainBoostService brain;
     private final GameStateValidator validator;
     private final ObjectMapper mapper;
     private final Clock clock;
 
     public ChildService(ChildProfileRepository children, GameSnapshotRepository snapshots, SyncReceiptRepository receipts,
-            FarmMessageRepository messages, GameStateValidator validator, ObjectMapper mapper, Clock clock) {
+            FarmMessageRepository messages, GalleryService gallery, BrainBoostService brain, GameStateValidator validator,
+            ObjectMapper mapper, Clock clock) {
         this.children = children;
         this.snapshots = snapshots;
         this.receipts = receipts;
         this.messages = messages;
+        this.gallery = gallery;
+        this.brain = brain;
         this.validator = validator;
         this.mapper = mapper;
         this.clock = clock;
@@ -56,7 +65,8 @@ public class ChildService {
         return children.findByOwnerUserIdOrderByCreatedAtAsc(ownerId).stream().map(child -> {
             GameSnapshot snap = snapshots.findById(child.getId()).orElse(null);
             return new ChildSummary(child.getId(), child.getUsername(), child.getEmail(), child.getDisplayName(),
-                    child.getGrade(), child.getLook(), snap == null ? 0 : snap.getRevision(), child.getUpdatedAt());
+                    child.getGrade(), child.getLook(), snap == null ? 0 : snap.getRevision(), child.getUpdatedAt(),
+                    child.isMain());
         }).toList();
     }
 
@@ -64,6 +74,60 @@ public class ChildService {
     public ChildState get(String ownerId, String childId) {
         ChildProfile child = require(ownerId, childId);
         return state(child, snapshots.findById(child.getId()).orElse(null));
+    }
+
+    /** The newest screen to open a farm takes it over; the older screen sees that and stops. */
+    @Transactional
+    public ScreenState claimScreen(String ownerId, String email, String childId, String screen, String device, String ip) {
+        ChildProfile child = children.lockByIdAndOwner(checked(childId), ownerId).orElseThrow(NotFoundException::new);
+        Instant now = clock.instant();
+        child.setScreenId(screen);
+        child.setScreenAt(now);
+        child.setScreenSeen(now);
+        child.setScreenDevice(device == null || device.isBlank() ? null : device.trim());
+        child.setScreenEmail(cleanEmail(email));
+        child.setScreenIp(ip == null || ip.isBlank() ? null : ip.trim().substring(0, Math.min(64, ip.trim().length())));
+        children.save(child);
+        return screenState(child);
+    }
+
+    /** The screen moved to another farm or closed it: the farm is free again, nobody is asked about it. */
+    @Transactional
+    public void releaseScreen(String ownerId, String childId, String screen) {
+        ChildProfile child = children.lockByIdAndOwner(checked(childId), ownerId).orElseThrow(NotFoundException::new);
+        if (screen != null && screen.equals(child.getScreenId())) {
+            child.setScreenId(null);
+            child.setScreenSeen(null);
+            children.save(child);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public ScreenState screen(String ownerId, String childId) {
+        return screenState(require(ownerId, childId));
+    }
+
+    static ScreenState screenState(ChildProfile child) {
+        return new ScreenState(child.getScreenId(), child.getScreenAt(), child.getScreenDevice(), child.getScreenEmail(),
+                child.getScreenSeen(), child.getScreenIp());
+    }
+
+    /** A screen that is not the one that opened the farm last may not save. The one that did is still in use. */
+    static void requireScreen(ChildProfile child, String screen, Instant now) {
+        if (screen == null || child.getScreenId() == null) {
+            return;
+        }
+        if (!child.getScreenId().equals(screen)) {
+            throw new ScreenTakenException();
+        }
+        child.setScreenSeen(now);
+    }
+
+    private static String checked(String childId) {
+        if (!ChildIds.valid(childId)) {
+            throw new NotFoundException();
+        }
+        return childId;
     }
 
     @Transactional
@@ -87,7 +151,6 @@ public class ChildService {
 
         JsonNode raw = request.player() == null || request.player().isNull() ? blank(child) : request.player();
         ObjectNode player = validator.sanitize(raw, child.getDisplayName(), child.getGrade(), child.getLook(), now);
-        validator.checkCoins(0, null, player.path("gems").asLong(0), "keep_local", now);
         GameSnapshot snap = store(child, null, player, now, writer(email));
         return state(child, snap);
     }
@@ -139,6 +202,8 @@ public class ChildService {
         ChildProfile child = children.lockByIdAndOwner(childId, ownerId).orElseThrow(NotFoundException::new);
         receipts.deleteByChildId(child.getId());
         snapshots.deleteById(child.getId());
+        gallery.clearChild(child.getId());
+        brain.clearChild(child.getId());
         String username = child.getUsername();
         if (username != null && username.matches("P\\d{7}")) {
             messages.clearUser(username, "%" + username + "%");

@@ -1,5 +1,6 @@
 package com.kiddoquest.farm.chat;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
@@ -93,7 +94,11 @@ class ChatSocketTest {
                 "{\"type\":\"send\",\"to\":\"P0000002\",\"voice\":\"" + voice + "\",\"mime\":\"audio/webm\"}"));
         String heard = waitFor(rightIn, "\"kind\":\"voice\"");
         assertTrue(heard.contains("audio/webm"));
-        assertTrue(heard.contains(voice.substring(0, 40)));
+        // The socket only announces the clip; the page fetches the audio from chat history.
+        assertFalse(heard.contains(voice.substring(0, 40)));
+        assertTrue(messages.findAll().stream()
+                .anyMatch(m -> "voice".equals(m.getKind()) && voice.equals(m.getVoiceData())
+                        && heard.contains("\"id\":\"" + m.getId() + "\"")));
     }
 
     private WebSocketSession open(String ticket, List<String> inbox) throws Exception {
