@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Daddy Story Time: Harbin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="../js/cloud-config.js"></script>
+<script src="../js/cloud-save.js"></script>
+<style>
+:root{
+  --bg:#EEF4FB; --surface:#FFFFFF; --ink:#22304F; --ink2:#5A6785; --brand:#2B3A67; --accent:#E8833A; --pink:#C2347A; --line:#D5E0EF; --chip:#E6EEF9; --mark:#FCE3CF; --sun:#F2C230; --green:#5E8C3A; --blue:#2F6FA8;
+  color-scheme:light; box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#141B2E; --surface:#1F2840; --ink:#EEF2FA; --ink2:#B6C0D8; --brand:#BFD0F5; --line:#33405F; --chip:#2A3552; --mark:#5A3A22; color-scheme:dark; } }
+:root[data-theme="dark"]{ --bg:#141B2E; --surface:#1F2840; --ink:#EEF2FA; --ink2:#B6C0D8; --brand:#BFD0F5; --line:#33405F; --chip:#2A3552; --mark:#5A3A22; color-scheme:dark; }
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0}
+body{background:var(--bg); color:var(--ink); font-family:Andika,"Trebuchet MS",system-ui,sans-serif; font-size:1.1rem; line-height:1.5}
+header{max-width:1120px; margin:0 auto; padding:14px 20px 4px; display:flex; align-items:center; gap:12px}
+.hgroup{flex:1} .series{font-family:Fredoka,Arial,sans-serif; font-weight:600; color:var(--ink2); font-size:.9rem}
+h1{font-family:Fredoka,Arial,sans-serif; font-weight:700; color:var(--brand); font-size:clamp(1.3rem,3.4vw,1.8rem); margin:0; line-height:1.1}
+.chip{font-family:Fredoka,Arial,sans-serif; font-weight:700; background:var(--surface); border:2px solid var(--line); border-radius:999px; padding:4px 14px; white-space:nowrap}
+#stars{font-size:1.2rem}
+#stars .s{color:var(--sun); -webkit-text-stroke:1px #C79A12}
+#stars.pop{animation:pop .5s} @keyframes pop{40%{transform:scale(1.3)}}
+#clock{font-size:.95rem; color:var(--ink2)}
+.icon{background:var(--surface); border:2px solid var(--line); border-radius:50%; width:44px; height:44px; font-size:1.1rem; cursor:pointer; color:var(--ink)}
+.icon[aria-pressed="true"]{opacity:.45}
+#book{max-width:1120px; margin:0 auto; padding:8px 20px; display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,1fr); gap:22px; align-items:start}
+#stage{position:relative; aspect-ratio:1080/880; border-radius:28px; overflow:hidden; background:#DCEBFA; user-select:none}
+#stage.ski{touch-action:none; cursor:pointer}
+.art,.art svg{display:block; width:100%; height:100%}
+.fall{animation:fall 16s linear infinite} @keyframes fall{to{transform:translateY(880px)}}
+.slot{cursor:pointer; animation:pulse 1.2s ease-in-out infinite} .slot.wait{animation:none; opacity:.3}
+@keyframes pulse{50%{opacity:.35}}
+#panel{background:var(--surface); border:2px solid var(--line); border-radius:24px; padding:20px 22px}
+#panel h2{font-family:Fredoka,Arial,sans-serif; font-weight:700; font-size:1.9rem; line-height:1.15; margin:0 0 10px; color:var(--brand)}
+#panel h3{font-family:Fredoka,Arial,sans-serif; font-weight:600; font-size:1.15rem; margin:20px 0 4px; color:var(--brand)}
+.cn{font-family:"Microsoft YaHei","PingFang SC",sans-serif; font-weight:400; color:var(--ink2); font-size:.62em; white-space:nowrap}
+.txt{max-width:48ch; margin:0}
+.ask{margin:12px 0 0; color:var(--ink2); font-size:.98rem}
+mark{background:var(--mark); color:inherit; border-radius:6px; padding:0 4px; font-weight:700}
+.act{display:flex; flex-wrap:wrap; gap:10px; margin-top:18px; align-items:center}
+.btn{font-family:Fredoka,Arial,sans-serif; font-weight:600; font-size:1.08rem; border:0; border-radius:16px; padding:12px 18px; cursor:pointer; color:#fff; background:var(--green); box-shadow:0 4px 0 rgba(0,0,0,.18)}
+.btn:active{transform:translateY(3px); box-shadow:0 1px 0 rgba(0,0,0,.18)}
+.btn.c0{background:var(--green)} .btn.c1{background:var(--blue)} .btn.c2{background:var(--accent)}
+.act > .btn.c0,.act > .btn.c1,.act > .btn.c2{flex:1 1 100%; text-align:left}
+.btn.big{background:var(--accent); font-size:1.2rem} .btn.alt{background:#7A5AC8} .btn.pink{background:var(--pink)}
+.btn.ghost{background:transparent; color:var(--ink); border:2px solid var(--line); box-shadow:none}
+.btn:disabled{opacity:.45; cursor:default}
+.btn.wrong{background:#B9473F !important; opacity:.6}
+.btn.right{outline:4px solid var(--sun); opacity:1 !important}
+.btn.hold{flex:1 1 40%; font-size:1.6rem; background:var(--blue); touch-action:none; user-select:none}
+button:focus-visible,input:focus-visible,label:focus-within{outline:4px solid var(--sun); outline-offset:3px}
+.pill{background:var(--accent); color:#fff; font-family:Fredoka,Arial,sans-serif; font-weight:600; border-radius:999px; padding:8px 16px}
+.count{font-family:Fredoka,Arial,sans-serif; font-weight:700; color:var(--accent)}
+.res{flex:1 1 100%; background:var(--mark); border-radius:16px; padding:12px 16px; animation:rise .35s}
+@keyframes rise{from{opacity:0; transform:translateY(8px)}}
+.res p{margin:4px 0 0}
+.earn{font-size:1.8rem; color:var(--sun); -webkit-text-stroke:1px #C79A12; letter-spacing:3px}
+.earn i{font-style:normal; color:transparent; -webkit-text-stroke:1px var(--ink2); opacity:.5}
+.row .earn{font-size:1.05rem; letter-spacing:1px; white-space:nowrap}
+.btn.row{background:var(--bg); color:var(--ink); border:2px solid var(--line); box-shadow:none; font-family:inherit; font-weight:400; font-size:1rem; padding:9px 14px; display:flex; justify-content:space-between; gap:10px; align-items:center; width:100%}
+.score,.trip{display:flex; flex-direction:column; gap:6px; flex:1 1 100%}
+.trip label{display:flex; gap:10px; align-items:center; background:var(--bg); border:2px solid var(--line); border-radius:14px; padding:8px 12px; cursor:pointer; font-size:1rem}
+.trip label:has(input:checked){background:var(--mark); border-color:var(--accent)}
+.trip input{width:22px; height:22px; accent-color:var(--accent); flex-shrink:0}
+.small{font-size:.9rem; color:var(--ink2); margin:0}
+.date{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:16px; font-family:Fredoka,Arial,sans-serif; font-weight:600}
+.date input{font:inherit; font-weight:400; padding:6px 10px; border-radius:12px; border:2px solid var(--line); background:var(--bg); color:var(--ink)}
+#sleeps{color:var(--accent)}
+nav{max-width:1120px; margin:0 auto; padding:12px 20px 24px; display:flex; align-items:center; gap:12px}
+nav .btn{background:var(--brand); color:var(--surface)}
+#next{margin-left:auto; background:var(--accent); color:#fff; font-size:1.2rem}
+#dots{display:flex; gap:5px; flex-wrap:wrap; justify-content:center; flex:1}
+#dots span{width:9px; height:9px; border-radius:50%; background:var(--line)}
+#dots span.g{border-radius:2px; transform:rotate(45deg); background:#F2C23070} #dots span.d{background:var(--sun)}
+#dots span.on{background:var(--accent); transform:scale(1.4)}
+#bubble{position:absolute; top:4%; right:4%; max-width:58%; background:#fff; color:#2B2340; font-family:Fredoka,Arial,sans-serif; font-weight:600; font-size:clamp(.95rem,2.2vw,1.2rem); padding:10px 16px; border-radius:20px 20px 4px 20px; box-shadow:0 4px 0 #0001; opacity:0; transform:scale(.8); transition:.2s; pointer-events:none}
+#bubble.on{opacity:1; transform:none}
+.grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(112px,1fr)); gap:10px; flex:1 1 100%}
+.item{border:3px solid transparent; background:var(--chip); color:var(--ink); border-radius:18px; padding:10px 6px; cursor:pointer; font-family:Fredoka,Arial,sans-serif; font-weight:600; font-size:.95rem; display:flex; flex-direction:column; align-items:center; gap:4px; text-align:center}
+.item .e{font-size:1.9rem; line-height:1}
+.item[aria-pressed="true"]{border-color:var(--green); background:var(--surface)}
+.item.wrong{border-color:#B9473F; opacity:.5; cursor:default}
+.item:disabled{cursor:default}
+.cert{position:absolute; left:6%; right:6%; bottom:4%; background:#fff; color:#22304F; border-radius:20px; padding:10px 16px; display:flex; gap:12px; align-items:center; border:4px solid var(--sun); animation:rise .6s}
+.cert .medal{width:clamp(40px,8vw,60px); flex-shrink:0}
+.cert small{display:block; color:#5A6785} .cert strong{display:block; font-family:Fredoka,Arial,sans-serif; font-size:clamp(1.2rem,3vw,1.7rem); color:#C2347A}
+@media (max-width:760px){
+  #book{grid-template-columns:1fr; gap:14px; padding:6px 12px} #panel{padding:16px} #panel h2{font-size:1.55rem}
+  header{padding:10px 12px 2px; flex-wrap:wrap} #clock{order:5} nav{padding:10px 12px 20px; flex-wrap:wrap} #dots{order:-1; flex:1 1 100%; margin-bottom:6px} #next{flex:1}
+  .grid{grid-template-columns:repeat(3,1fr)}
+}
+@media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
+</style>
+</head>
+<body>
+<header>
+  <div class="hgroup"><div class="series">Daddy Story Time</div><h1>Our Snowy Harbin Adventure</h1></div>
+  <div id="clock" class="chip" aria-live="polite"></div>
+  <div id="stars" class="chip" aria-live="polite"><span class="s">★</span> <span id="starN">0</span></div>
+  <button id="mute" class="icon" aria-pressed="false" aria-label="Sound on or off">🔊</button>
+</header>
+<main id="book">
+  <div id="stage"></div>
+  <section id="panel" aria-live="polite"></section>
+</main>
+<nav>
+  <button id="back" class="btn">◀ Back</button>
+  <button id="read" class="btn">🗣 Read to me</button>
+  <div id="dots" aria-hidden="true"></div>
+  <button id="next" class="btn">Next</button>
+</nav>
+<script>
+// Cartoon scenes for the Harbin trip story: Harbin city, Ice and Snow World, Yabuli, Snow Town
+
+const $ = (q) => document.querySelector(q);
+const R = (seed) => () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+
+// ===== art helpers =====
+function frame(inner, bg) {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 880" role="img"><defs><clipPath id="c"><rect width="1080" height="880" rx="60"/></clipPath>
+<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="24"/></filter>
+<linearGradient id="night" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0E1638"/><stop offset="1" stop-color="#3A4784"/></linearGradient>
+<linearGradient id="day" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC8EE"/><stop offset="1" stop-color="#E6F2FB"/></linearGradient></defs>
+<g clip-path="url(#c)"><rect width="1080" height="880" fill="${bg || "url(#day)"}"/>${inner}</g></svg>`;
+}
+const txt = (x, y, t, sz, c, more = "") => `<text x="${x}" y="${y}" text-anchor="middle" font-family="Fredoka, Arial" font-weight="700" font-size="${sz}" fill="${c}" ${more}>${t}</text>`;
+const emo = (x, y, e, sz) => `<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="central" font-size="${sz}">${e}</text>`;
+function flakes(n, seed) { const r = R(seed); let s = ""; for (let i = 0; i < n; i++) s += `<circle cx="${(r() * 1080) | 0}" cy="${(r() * 880) | 0}" r="${(3 + r() * 6).toFixed(1)}" fill="#fff" opacity="${(0.5 + r() * 0.5).toFixed(2)}"/>`; return s; }
+const snowfall = (n = 50, seed = 7) => { const f = flakes(n, seed); return `<g class="fall"><g transform="translate(0,-880)">${f}</g><g>${f}</g></g>`; };
+function skyStars(seed) { const r = R(seed); let s = ""; for (let i = 0; i < 40; i++) s += `<circle cx="${(r() * 1080) | 0}" cy="${(r() * 420) | 0}" r="${(1.5 + r() * 2.5).toFixed(1)}" fill="#FFF8D6" opacity="${(0.4 + r() * 0.6).toFixed(2)}"/>`; return s; }
+const moon = (x, y) => `<circle cx="${x}" cy="${y}" r="90" fill="#FFF4C8" opacity=".35" filter="url(#glow)"/><circle cx="${x}" cy="${y}" r="52" fill="#FFF4C8"/><circle cx="${x + 16}" cy="${y - 10}" r="9" fill="#EADFA8"/><circle cx="${x - 14}" cy="${y + 16}" r="6" fill="#EADFA8"/>`;
+const sunDisc = (x, y) => `<circle cx="${x}" cy="${y}" r="60" fill="#FFE7A0"/>`;
+const snowGround = (y) => `<path d="M0 ${y} Q270 ${y - 40} 540 ${y} T1080 ${y} V880 H0 Z" fill="#F7FBFF"/><path d="M60 ${y + 60} Q300 ${y + 30} 600 ${y + 70} T1040 ${y + 60}" stroke="#DCE8F5" stroke-width="10" fill="none" stroke-linecap="round"/>`;
+const pine = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s})"><rect x="-14" y="-40" width="28" height="40" fill="#6B4A2E"/><path d="M0 -270 L70 -160 H40 L100 -40 H-100 L-40 -160 H-70 Z" fill="#2F6B4F"/><path d="M0 -270 L32 -220 Q0 -205 -32 -220 Z M-58 -160 Q0 -140 58 -160 L42 -176 Q0 -162 -42 -176 Z M-100 -40 Q0 -20 100 -40 L80 -64 Q0 -46 -80 -64 Z" fill="#fff"/></g>`;
+const tag = (x, y, name, c) => `<g transform="translate(${x},${y})"><rect x="${-name.length * 13 - 18}" y="-26" width="${name.length * 26 + 36}" height="46" rx="23" fill="#fff" stroke="${c}" stroke-width="5"/><text y="9" text-anchor="middle" font-family="Fredoka, Arial" font-weight="700" font-size="28" fill="${c}">${name}</text></g>`;
+const badge = (x, y, t) => `<g transform="translate(${x},${y})"><rect x="-120" y="-46" width="240" height="92" rx="46" fill="#fff" stroke="#2F6FA8" stroke-width="6"/>${txt(0, 18, t, 50, "#2F6FA8")}</g>`;
+
+// A person bundled up in winter clothes; feet at (x, y), about 470 units tall at s = 1
+function bundle(x, y, s, o = {}) {
+  const c = o.coat, m = o.hat;
+  const arm = (d) => { const a = o.arms || "down"; let ex = d * 104, ey = -150;
+    if (a === "up" || (a === "wave" && d === 1)) { ex = d * 140; ey = -430; }
+    else if (a === "out") { ex = d * 175; ey = -250; }
+    return `<path d="M${d * 70} -280 L${ex} ${ey}" stroke="${c}" stroke-width="46" stroke-linecap="round"/><circle cx="${ex}" cy="${ey}" r="25" fill="${m}"/>`; };
+  const eyes = o.sleep ? `<path d="M-34 -358 q12 10 24 0 M10 -358 q12 10 24 0" stroke="#2B2340" stroke-width="6" fill="none" stroke-linecap="round"/>`
+    : `<circle cx="-22" cy="-358" r="8" fill="#2B2340"/><circle cx="22" cy="-358" r="8" fill="#2B2340"/><circle cx="-19" cy="-361" r="2.5" fill="#fff"/><circle cx="25" cy="-361" r="2.5" fill="#fff"/>`;
+  const mouth = o.laugh ? `<path d="M-22 -334 Q0 -306 22 -334 Z" fill="#8A2E3A"/>` : o.oh ? `<ellipse cx="0" cy="-328" rx="10" ry="12" fill="#8A2E3A"/>`
+    : `<path d="M-18 -334 Q0 -320 18 -334" stroke="#8A2E3A" stroke-width="6" fill="none" stroke-linecap="round"/>`;
+  const brows = o.dad ? `<path d="M-38 -378 h28 M10 -378 h28" stroke="${o.frost ? "#fff" : "#3A2A20"}" stroke-width="9" stroke-linecap="round"/>`
+    : o.frost ? `<path d="M-34 -376 h22 M12 -376 h22" stroke="#fff" stroke-width="6" stroke-linecap="round"/>` : "";
+  const hair = o.girl ? `<circle cx="-66" cy="-330" r="20" fill="#3A2A20"/><circle cx="66" cy="-330" r="20" fill="#3A2A20"/>` : "";
+  const hat = o.nohat ? `<path d="M-62 -372 Q-62 -430 0 -430 Q62 -430 62 -372 Q30 -400 0 -398 Q-30 -400 -62 -372 Z" fill="#3A2A20"/>`
+    : `<path d="M-66 -384 Q-66 -454 0 -456 Q66 -454 66 -384 Z" fill="${m}"/><rect x="-70" y="-404" width="140" height="26" rx="13" fill="#fff"/><circle cy="-462" r="21" fill="#fff"/>`;
+  const breath = o.breath ? `<g fill="#fff" opacity=".9"><circle cx="72" cy="-330" r="16"/><circle cx="106" cy="-344" r="22"/><circle cx="148" cy="-358" r="28"/></g>` : "";
+  const skis = o.ski ? `<rect x="-62" y="-30" width="26" height="110" rx="12" fill="#D23A3A"/><rect x="36" y="-30" width="26" height="110" rx="12" fill="#D23A3A"/>` : "";
+  return `<g transform="translate(${x},${y}) scale(${s})">${skis}
+<rect x="-58" y="-130" width="50" height="110" rx="16" fill="#3A3F55"/><rect x="8" y="-130" width="50" height="110" rx="16" fill="#3A3F55"/>
+<rect x="-74" y="-34" width="70" height="36" rx="16" fill="#6B4A2E"/><rect x="4" y="-34" width="70" height="36" rx="16" fill="#6B4A2E"/>
+${arm(-1)}${arm(1)}<rect x="-92" y="-318" width="184" height="215" rx="72" fill="${c}"/>
+<path d="M-88 -245 H88 M-90 -175 H90" stroke="#fff" stroke-opacity=".22" stroke-width="7"/><path d="M0 -296 V-108" stroke="#000" stroke-opacity=".15" stroke-width="5"/>
+${hair}<circle cy="-366" r="62" fill="#F5C9A8"/><circle cx="-38" cy="-336" r="11" fill="#F29A9A" opacity=".6"/><circle cx="38" cy="-336" r="11" fill="#F29A9A" opacity=".6"/>
+${eyes}${brows}${mouth}${hat}<rect x="-64" y="-308" width="128" height="30" rx="15" fill="${o.scarf}"/><rect x="22" y="-292" width="28" height="74" rx="11" fill="${o.scarf}"/>${breath}</g>`;
+}
+const daddy = (x, y, s, o = {}) => bundle(x, y, s, Object.assign({ coat: "#2B3A67", hat: "#E8833A", scarf: "#F2C230", dad: true }, o));
+const michelle = (x, y, s, o = {}) => bundle(x, y, s, Object.assign({ coat: "#B48CE8", hat: "#C2347A", scarf: "#F07AAE", girl: true }, o));
+const jayden = (x, y, s, o = {}) => bundle(x, y, s, Object.assign({ coat: "#E8833A", hat: "#2F6FA8", scarf: "#5E8C3A" }, o));
+
+// ----- props -----
+function bldg(x, w, h, col, base) {
+  let s = `<rect x="${x}" y="${base - h}" width="${w}" height="${h}" fill="${col}"/><rect x="${x - 6}" y="${base - h - 12}" width="${w + 12}" height="20" rx="10" fill="#fff"/>`;
+  for (let wy = base - h + 34; wy < base - 50; wy += 70) for (let wx = x + 22; wx < x + w - 30; wx += 58) s += `<path d="M${wx} ${wy + 44} V${wy + 14} Q${wx + 15} ${wy - 2} ${wx + 30} ${wy + 14} V${wy + 44} Z" fill="#FFF6D8" stroke="#0002" stroke-width="3"/>`;
+  return s;
+}
+const onion = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s})"><path d="M-55 0 Q-78 -55 -22 -92 Q0 -108 0 -136 Q0 -108 22 -92 Q78 -55 55 0 Z" fill="#3E8E5A"/><path d="M-40 -40 Q-30 -70 -10 -86" stroke="#7FC79A" stroke-width="7" fill="none"/><path d="M0 -136 V-180 M-15 -164 H15" stroke="#E0B23A" stroke-width="7"/></g>`;
+const sophia = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s})">
+<rect x="-175" y="-180" width="70" height="180" fill="#A44A35"/><rect x="105" y="-180" width="70" height="180" fill="#A44A35"/>${onion(-140, -180, 0.62)}${onion(140, -180, 0.62)}
+<rect x="-120" y="-270" width="240" height="270" fill="#B5533C"/><rect x="-60" y="-390" width="120" height="125" fill="#B5533C"/>${onion(0, -390, 1.3)}
+<path d="M-130 -270 H130 M-68 -390 H68" stroke="#fff" stroke-width="12" stroke-linecap="round"/>
+<path d="M-34 0 V-86 Q0 -128 34 -86 V0 Z" fill="#5A2A20"/><path d="M-90 -150 V-200 Q-70 -226 -50 -200 V-150 Z M50 -150 V-200 Q70 -226 90 -200 V-150 Z M-20 -300 V-350 Q0 -372 20 -350 V-300 Z" fill="#FFE6B0"/></g>`;
+const cone = (x, y) => `<g transform="translate(${x},${y})"><path d="M-24 0 L0 64 L24 0 Z" fill="#E0A458"/><path d="M-14 12 L10 40 M14 12 L-8 44" stroke="#B9783A" stroke-width="3"/><circle cy="-14" r="28" fill="#FFF3D6"/><circle cx="-10" cy="-32" r="13" fill="#FFF3D6"/></g>`;
+const tanghulu = (x, y) => `<g transform="translate(${x},${y})"><path d="M0 0 V-180" stroke="#C79A12" stroke-width="6"/>${[0, 1, 2, 3, 4].map((i) => `<circle cy="${-36 - i * 30}" r="17" fill="#E23A2E"/><circle cx="-6" cy="${-42 - i * 30}" r="5" fill="#fff" opacity=".7"/>`).join("")}</g>`;
+const pear = (x, y) => `<g transform="translate(${x},${y})"><path d="M0 -40 Q16 -40 16 -18 Q34 0 26 22 Q14 40 0 40 Q-14 40 -26 22 Q-34 0 -16 -18 Q-16 -40 0 -40Z" fill="#3A2A22"/><path d="M0 -40 l5 -16" stroke="#6B4A2E" stroke-width="5"/></g>`;
+const lantern = (x, y, s = 1) => `<g transform="translate(${x},${y}) scale(${s})"><path d="M0 -44 V-24" stroke="#333" stroke-width="3"/><circle r="64" fill="#FF5A3A" opacity=".4" filter="url(#glow)"/><rect x="-22" y="-28" width="44" height="9" fill="#E0B23A"/><ellipse rx="36" ry="28" fill="#E23A2E"/><path d="M-12 -26 Q-22 0 -12 26 M12 -26 Q22 0 12 26" stroke="#B82A20" stroke-width="3" fill="none"/><rect x="-22" y="19" width="44" height="9" fill="#E0B23A"/><path d="M0 28 V56" stroke="#E0B23A" stroke-width="4"/></g>`;
+const hut = (x, y, s) => `<g transform="translate(${x},${y}) scale(${s})"><rect x="-150" y="-200" width="300" height="200" fill="#8A5A3A"/><path d="M-150 -150 H150 M-150 -100 H150 M-150 -50 H150" stroke="#6B4228" stroke-width="5"/>
+<rect x="-110" y="-150" width="80" height="70" rx="6" fill="#FFD66B" opacity=".7" filter="url(#glow)"/><rect x="-110" y="-150" width="80" height="70" rx="6" fill="#FFD66B"/><path d="M-70 -150 V-80 M-110 -115 H-30" stroke="#8A5A3A" stroke-width="5"/><rect x="40" y="-120" width="70" height="120" rx="6" fill="#5A3A22"/>
+<path d="M-195 -190 Q-205 -340 0 -350 Q205 -340 195 -190 Q170 -162 120 -180 Q60 -158 0 -178 Q-60 -158 -120 -180 Q-170 -162 -195 -190 Z" fill="#fff"/><path d="M-160 -232 Q-100 -306 -20 -318" stroke="#DCE8F5" stroke-width="12" fill="none" stroke-linecap="round"/></g>`;
+const flag = (x, y) => `<g transform="translate(${x},${y})"><path d="M0 40 V-50" stroke="#555" stroke-width="6"/><path d="M0 -50 L58 -32 L0 -14Z" fill="#E23A2E"/></g>`;
+const angel = (x, y) => `<g transform="translate(${x},${y})" fill="#DCE8F5"><ellipse rx="40" ry="66"/><circle cy="-88" r="32"/><path d="M-30 -40 Q-120 -96 -104 14 Q-62 -8 -30 4Z M30 -40 Q120 -96 104 14 Q62 -8 30 4Z M-30 56 L-72 112 L-14 90Z M30 56 L72 112 L14 90Z"/></g>`;
+
+// Ice castle: 3 rows x 4 blocks, plus towers once it is complete
+const PAL = { rainbow: ["#7FD3FF", "#FF9AD5", "#B79CFF", "#8CF0B5", "#FFE07A"], pink: ["#FF9AD5", "#FFC2E6", "#FF7FC4"], blue: ["#7FD3FF", "#A9E4FF", "#5BB8F5"], green: ["#8CF0B5", "#B8F7D0", "#5FD99A"] };
+function castle(x, y, s, o = {}) {
+  const pal = PAL[o.lit], filled = o.filled || Array(12).fill(true), col = (k) => (pal ? pal[k % pal.length] : "#CFEFFF");
+  let g = "";
+  filled.forEach((f, k) => { const r = Math.floor(k / 4), c = k % 4, bx = -300 + c * 150, by = -100 * (r + 1);
+    if (f) g += `<rect x="${bx + 3}" y="${by + 3}" width="144" height="94" rx="8" fill="${col(r + c)}" fill-opacity="${pal ? 0.95 : 0.85}" stroke="#fff" stroke-width="4"/><path d="M${bx + 20} ${by + 22} h34" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".75"/>`;
+    else if (o.slots) g += `<rect class="slot${k < 4 || filled[k - 4] ? "" : " wait"}" data-k="${k}" x="${bx + 6}" y="${by + 6}" width="138" height="88" rx="10" fill="#ffffff33" stroke="#fff" stroke-width="5" stroke-dasharray="16 10"/>`; });
+  if (filled.every(Boolean)) {
+    const tower = (tx, k) => `<rect x="${tx + 3}" y="-417" width="144" height="114" rx="6" fill="${col(k)}" stroke="#fff" stroke-width="4"/><path d="M${tx - 10} -416 L${tx + 75} -540 L${tx + 160} -416 Z" fill="${col(k + 2)}" stroke="#fff" stroke-width="4"/><path d="M${tx + 75} -540 V-592" stroke="#fff" stroke-width="5"/><path d="M${tx + 75} -592 l42 14 l-42 14Z" fill="#E8566A"/>`;
+    g += tower(-300, 1) + tower(150, 3) + [-150, -90, -30, 30, 90].map((cx, k) => `<rect x="${cx + 5}" y="-340" width="40" height="42" rx="5" fill="${col(k)}" stroke="#fff" stroke-width="3"/>`).join("");
+  }
+  const glow = pal ? `<ellipse cx="0" cy="-200" rx="440" ry="300" fill="${pal[0]}" opacity=".45" filter="url(#glow)"/>` : "";
+  return `<g transform="translate(${x},${y}) scale(${s})">${glow}${g}</g>`;
+}
+
+// ===== scenes =====
+const night = (seed) => skyStars(seed);
+function suitcaseArt(packed) {
+  const items = packed.map((e, i) => emo(300 + (i % 4) * 120, 560 + Math.floor(i / 4) * 110, e, 84)).join("");
+  return frame(`<rect y="660" width="1080" height="220" fill="#E9C89A"/><rect x="800" y="80" width="220" height="190" rx="16" fill="#9CC8EE" stroke="#fff" stroke-width="12"/>${flakes(12, 4).replace(/cx="(\d+)"/g, (m, v) => `cx="${810 + (v % 200)}"`).replace(/cy="(\d+)"/g, (m, v) => `cy="${90 + (v % 170)}"`)}
+${txt(910, 320, "−20°C outside!", 34, "#2F6FA8")}<rect x="200" y="230" width="560" height="260" rx="30" fill="#2F6FA8"/><rect x="226" y="256" width="508" height="210" rx="18" fill="#5B8FD0"/>
+<rect x="180" y="470" width="600" height="300" rx="30" fill="#2F6FA8"/><rect x="206" y="496" width="548" height="250" rx="18" fill="#DDEBFA"/><rect x="420" y="760" width="120" height="20" rx="8" fill="#22304F"/>${items}
+${packed.length ? "" : txt(480, 640, "Empty!", 56, "#9AB0CC")}`, "#F3E3C9");
+}
+const ty = (t) => 740 - (t + 30) * 8.4;
+const deg = (t) => `${t < 0 ? "−" + -t : t}°C`;
+function thermoArt(placed) {
+  let s = `<rect x="516" y="${ty(40)}" width="48" height="${ty(0) - ty(40)}" fill="#FFD3C2"/><rect x="516" y="${ty(0)}" width="48" height="${780 - ty(0)}" fill="#CFE8FF"/>`;
+  for (let t = -30; t <= 40; t += 10) s += `<path d="M450 ${ty(t)} H500" stroke="${t ? "#2B3A67" : "#2F6FA8"}" stroke-width="${t ? 4 : 8}"/><text x="436" y="${ty(t) + 12}" text-anchor="end" font-family="Fredoka, Arial" font-weight="700" font-size="34" fill="${t ? "#2B3A67" : "#2F6FA8"}">${deg(t).replace("C", "")}</text>`;
+  s += txt(200, ty(0) + 12, "freezing!", 30, "#2F6FA8");
+  placed.forEach(([e, l, t]) => { s += `<path d="M580 ${ty(t)} H630" stroke="#E8833A" stroke-width="6"/>${emo(668, ty(t), e, 52)}<text x="706" y="${ty(t) + 11}" font-family="Fredoka, Arial" font-weight="600" font-size="28" fill="#22304F">${deg(t)}</text>`; });
+  return frame(`<rect x="500" y="110" width="80" height="680" rx="40" fill="#fff" stroke="#2B3A67" stroke-width="8"/>${s}<circle cx="540" cy="800" r="62" fill="#E23A2E" stroke="#2B3A67" stroke-width="8"/>${txt(200, 160, "Hot", 50, "#E23A2E")}${txt(200, 720, "Cold", 50, "#2F6FA8")}`, "#EAF2FB");
+}
+function buildArt(filled, lit) {
+  return frame(night(11) + moon(950, 120) + snowGround(770) + castle(540, 790, 1, { filled, slots: true, lit }) + daddy(120, 860, 0.42, { arms: "up", laugh: !!lit })
+    + jayden(970, 865, 0.34, { arms: lit ? "up" : "down", laugh: !!lit }), "url(#night)");
+}
+const SNOWMAN = [
+  ["eyes", "⚫", "Coal eyes"], ["nose", "🥕", "Carrot nose"], ["smile", "😊", "Coal smile"], ["arms", "🪵", "Stick arms"], ["scarf", "🧣", "Red scarf"], ["buttons", "🔘", "Buttons"],
+  ["tophat", "🎩", "Top hat", "hat"], ["bucket", "🪣", "Bucket hat", "hat"], ["beanie", "🧶", "Daddy’s beanie", "hat"], ["shades", "🕶️", "Sunglasses"], ["lantern", "🏮", "Red lantern"],
+];
+function snowmanArt(on) {
+  const has = (id) => on.includes(id);
+  let s = night(21) + moon(140, 120) + hut(930, 640, 0.6) + hut(130, 650, 0.5) + snowGround(700);
+  if (has("arms")) s += `<path d="M450 470 L300 360 M340 390 L310 330 M630 470 L780 360 M740 390 L790 340" stroke="#6B4A2E" stroke-width="14" stroke-linecap="round" fill="none"/>`;
+  s += `<circle cx="540" cy="690" r="160" fill="#fff"/><circle cx="540" cy="470" r="115" fill="#fff"/><circle cx="540" cy="300" r="82" fill="#fff"/><path d="M420 720 Q470 800 560 820" stroke="#DCE8F5" stroke-width="12" fill="none" stroke-linecap="round"/>`;
+  if (has("buttons")) s += [430, 475, 520].map((y) => `<circle cx="540" cy="${y}" r="12" fill="#2B2340"/>`).join("");
+  if (has("scarf")) s += `<path d="M462 368 Q540 396 618 368 L618 398 Q540 426 462 398 Z" fill="#E23A2E"/><rect x="580" y="390" width="34" height="96" rx="12" fill="#E23A2E"/><path d="M584 470 h26" stroke="#fff" stroke-width="5"/>`;
+  if (has("eyes")) s += `<circle cx="512" cy="282" r="12" fill="#2B2340"/><circle cx="568" cy="282" r="12" fill="#2B2340"/>`;
+  if (has("shades")) s += `<rect x="482" y="264" width="54" height="36" rx="12" fill="#22304F"/><rect x="544" y="264" width="54" height="36" rx="12" fill="#22304F"/><path d="M536 276 h8 M482 274 L462 266 M598 274 L618 266" stroke="#22304F" stroke-width="6"/>`;
+  if (has("nose")) s += `<path d="M540 300 L646 318 L540 330 Z" fill="#F08A24"/>`;
+  if (has("smile")) s += [[505, 340], [522, 352], [540, 356], [558, 352], [575, 340]].map(([x, y]) => `<circle cx="${x}" cy="${y}" r="7" fill="#2B2340"/>`).join("");
+  if (has("tophat")) s += `<rect x="452" y="222" width="176" height="20" rx="8" fill="#22304F"/><rect x="482" y="110" width="116" height="118" rx="8" fill="#22304F"/><rect x="482" y="196" width="116" height="20" fill="#E23A2E"/>`;
+  if (has("bucket")) s += `<path d="M470 236 L494 132 L586 132 L610 236 Z" fill="#E23A2E"/><path d="M478 200 Q540 180 602 200" stroke="#FF8A7A" stroke-width="6" fill="none"/><path d="M494 132 Q540 70 586 132" stroke="#555" stroke-width="5" fill="none"/>`;
+  if (has("beanie")) s += `<path d="M466 250 Q466 168 540 166 Q614 168 614 250 Z" fill="#E8833A"/><rect x="460" y="232" width="160" height="28" rx="14" fill="#fff"/><circle cx="540" cy="160" r="24" fill="#fff"/>`;
+  if (has("lantern")) s += lantern(790, 410, 0.95);
+  return frame(s + snowfall(36, 9), "url(#night)");
+}
+function skyline() { return bldg(0, 200, 330, "#E9B9A0", 640) + bldg(190, 170, 260, "#F3D9A0", 640) + bldg(760, 170, 280, "#C9D8EE", 640) + bldg(920, 180, 350, "#E8C7D6", 640); }
+const SC = {
+  cover: () => frame(night(1) + moon(960, 110) + castle(790, 720, 0.6, { lit: "rainbow" }) + snowGround(700) + pine(70, 760, 0.7)
+    + txt(300, 190, "HARBIN", 128, "#fff", `stroke="#2B3A67" stroke-width="6" paint-order="stroke"`) + txt(300, 270, "哈尔滨 · Snow Adventure", 44, "#FFE07A")
+    + daddy(220, 830, 0.62, { arms: "wave", laugh: true }) + michelle(380, 840, 0.52, { arms: "up", laugh: true }) + jayden(510, 845, 0.45, { arms: "up", laugh: true })
+    + tag(220, 856, "Daddy", "#2B3A67") + tag(380, 856, "Michelle", "#C2347A") + tag(530, 856, "Jayden", "#E8833A") + snowfall(60, 2), "url(#night)"),
+  city: () => frame(sunDisc(920, 120) + skyline() + sophia(540, 640, 0.85) + `<rect y="640" width="1080" height="240" fill="#BFE3F5"/><path d="M0 640 H1080" stroke="#fff" stroke-width="12"/><path d="M90 720 l60 30 l-20 40 M380 700 l40 50 l60 10 M560 780 l-40 40" stroke="#fff" stroke-width="5" fill="none"/>`
+    + txt(250, 840, "Frozen Songhua River", 36, "#2F6FA8") + daddy(700, 850, 0.5, { arms: "wave", laugh: true }) + michelle(830, 855, 0.42, { arms: "up", laugh: true }) + jayden(950, 860, 0.37, { arms: "up", laugh: true })
+    + badge(170, 110, "−25°C") + snowfall(40, 3)),
+  cold: () => frame(skyline() + snowGround(680) + `<rect x="40" y="380" width="300" height="320" fill="#F3D9A0"/><rect x="20" y="350" width="340" height="60" rx="12" fill="#C2347A"/>${txt(190, 392, "ICE CREAM", 40, "#fff")}<rect x="90" y="450" width="200" height="140" fill="#BFE3F5" stroke="#fff" stroke-width="8"/>${emo(190, 520, "🍦", 80)}`
+    + `<ellipse cx="300" cy="820" rx="90" ry="18" fill="#fff" stroke="#D5E0EF" stroke-width="4"/>` + pear(260, 790) + pear(330, 795) + pear(296, 770) + txt(300, 868, "frozen pears", 26, "#5A6785")
+    + daddy(500, 860, 0.62, { frost: true, breath: true, oh: true }) + jayden(700, 860, 0.46, { arms: "out", laugh: true }) + cone(780, 683) + michelle(920, 860, 0.52, { arms: "out", laugh: true }) + tanghulu(829, 730)
+    + badge(900, 110, "−25°C") + snowfall(30, 6)),
+  iceworld: () => frame(night(5) + `<path d="M200 780 L110 0 L250 0Z M880 780 L820 0 L960 0Z" fill="#B79CFF" opacity=".15"/>` + castle(500, 770, 1, { lit: "rainbow" })
+    + `<path d="M800 470 C930 520 930 720 1100 770" stroke="#A9E4FF" stroke-width="56" fill="none" opacity=".9"/><path d="M800 470 C930 520 930 720 1100 770" stroke="#fff" stroke-width="6" fill="none"/>`
+    + snowGround(770) + jayden(930, 660, 0.28, { arms: "up", laugh: true }) + txt(960, 470, "WHOOSH!", 56, "#FFE07A") + daddy(90, 860, 0.4, { arms: "up", oh: true }) + michelle(190, 865, 0.34, { arms: "up", laugh: true }) + snowfall(40, 8), "url(#night)"),
+  built: () => buildArt(Array(12).fill(true), "rainbow"),
+  yabuli: () => frame(sunDisc(950, 110) + `<path d="M-60 600 L260 200 L470 420 L700 110 L1140 600Z" fill="#F4F9FF"/><path d="M260 200 L470 420 L380 600 Z M700 110 L1140 600 L820 600Z" fill="#DCE8F5"/>`
+    + `<path d="M120 640 L820 150" stroke="#555" stroke-width="4"/>` + [0.2, 0.42, 0.64, 0.86].map((t) => `<g transform="translate(${120 + 700 * t},${640 - 490 * t})"><path d="M0 0 V40" stroke="#555" stroke-width="4"/><rect x="-26" y="40" width="52" height="12" rx="4" fill="#E8833A"/><path d="M-24 40 V18" stroke="#E8833A" stroke-width="6"/></g>`).join("")
+    + pine(70, 610, 0.6) + pine(990, 620, 0.7) + pine(890, 590, 0.5) + pine(560, 560, 0.4) + `<path d="M0 560 Q400 480 1080 600 V880 H0Z" fill="#fff"/><path d="M560 680 Q640 720 700 800" stroke="#DCE8F5" stroke-width="10" fill="none"/>`
+    + daddy(700, 770, 0.5, { ski: true, arms: "out", laugh: true }) + txt(860, 470, "WHOOSH!", 64, "#2F6FA8") + michelle(200, 840, 0.42, { ski: true, arms: "up", laugh: true }) + jayden(330, 850, 0.36, { ski: true, arms: "up", oh: true }) + snowfall(24, 5)),
+  pizza: () => frame(`<path d="M0 600 Q400 540 1080 620 V880 H0Z" fill="#fff"/>` + pine(80, 620, 0.6) + pine(1000, 630, 0.6)
+    + `<rect x="130" y="150" width="340" height="400" rx="30" fill="#fff" stroke="#E8833A" stroke-width="8"/><path d="M230 250 L285 470 M370 250 L315 470" stroke="#D23A3A" stroke-width="28" stroke-linecap="round"/>${txt(300, 225, "PIZZA 🍕", 46, "#E8833A")}`
+    + `<rect x="610" y="150" width="340" height="400" rx="30" fill="#fff" stroke="#2F6FA8" stroke-width="8"/><path d="M740 250 V470 M820 250 V470" stroke="#D23A3A" stroke-width="28" stroke-linecap="round"/>${txt(780, 225, "FRIES 🍟", 46, "#2F6FA8")}`
+    + jayden(450, 850, 0.4, { ski: true, oh: true }) + michelle(620, 850, 0.45, { ski: true, laugh: true, arms: "up" })),
+  snowtown: () => frame(night(7) + moon(150, 110) + hut(250, 700, 1) + hut(800, 690, 1.1) + `<path d="M0 290 Q540 450 1080 290" stroke="#333" stroke-width="3" fill="none"/>`
+    + [0.12, 0.31, 0.5, 0.69, 0.88].map((t) => lantern(1080 * t, 290 + 320 * t * (1 - t) + 44)).join("") + snowGround(700) + angel(280, 800)
+    + daddy(560, 870, 0.45, { arms: "wave", laugh: true }) + michelle(690, 875, 0.38, { arms: "up", laugh: true }) + jayden(800, 878, 0.33, { arms: "up", laugh: true }) + snowfall(50, 4), "url(#night)"),
+  kang: () => frame(`<rect x="380" y="70" width="320" height="250" rx="12" fill="url(#night)" stroke="#8A5A3A" stroke-width="18"/><path d="M540 70 V320 M380 195 H700" stroke="#8A5A3A" stroke-width="10"/>${moon(620, 140)}`
+    + flakes(10, 3).replace(/cx="(\d+)"/g, (m, v) => `cx="${396 + (v % 290)}"`).replace(/cy="(\d+)"/g, (m, v) => `cy="${86 + (v % 220)}"`)
+    + `<rect x="60" y="560" width="960" height="250" fill="#B5533C"/>` + [600, 660, 720].map((y) => `<path d="M60 ${y} H1020" stroke="#8E3E2C" stroke-width="5"/>`).join("") + `<rect x="480" y="700" width="120" height="80" rx="40" fill="#3A1A10"/><path d="M510 780 Q520 730 540 710 Q560 740 570 780 Z" fill="#F2A03A"/>`
+    + `<ellipse cx="240" cy="530" rx="80" ry="30" fill="#fff"/><ellipse cx="420" cy="540" rx="70" ry="26" fill="#fff"/><ellipse cx="580" cy="545" rx="64" ry="24" fill="#fff"/>`
+    + `<clipPath id="bed"><rect width="1080" height="600"/></clipPath><g clip-path="url(#bed)">` + daddy(240, 515 + 366 * 0.7, 0.7, { sleep: true, nohat: true }) + michelle(420, 530 + 366 * 0.58, 0.58, { sleep: true, nohat: true }) + jayden(580, 535 + 366 * 0.52, 0.52, { sleep: true, nohat: true }) + `</g>`
+    + `<path d="M80 556 Q400 530 720 556 L720 640 L80 640 Z" fill="#D2364A"/>` + [140, 260, 380, 500, 620].map((x) => `<circle cx="${x}" cy="598" r="16" fill="#F2C230"/><circle cx="${x}" cy="598" r="6" fill="#fff"/>`).join("")
+    + `<rect x="790" y="500" width="200" height="60" rx="10" fill="#9C6A3E"/><ellipse cx="890" cy="490" rx="80" ry="18" fill="#fff"/>` + [850, 890, 930].map((x) => `<path d="M${x - 22} 488 Q${x} 450 ${x + 22} 488 Z" fill="#FFF6E0" stroke="#E0C9A0" stroke-width="3"/>`).join("")
+    + txt(150, 380, "z", 60, "#7A5AC8") + txt(200, 320, "z", 76, "#7A5AC8") + txt(260, 250, "Z", 96, "#7A5AC8"), "#F6D9A8"),
+};
+
+// ===== book =====
+const PAGES = [
+  { t: "cover", min: 0.5 },
+  { t: "story", scene: "city", n: 1, min: 1.5, title: 'Hello, Harbin! <span class="cn">你好，哈尔滨</span>', text: "This December, our family is going on a {snowy adventure}! We will fly far, far north to {Harbin} (哈尔滨), a big city in the northeast of China. Harbin is so cold in winter that people call it the {Ice City}. The wide {Songhua River} freezes so hard that people can walk, skate and even ride sledges on it! In the middle of the city stands a beautiful old church with a big green {onion-shaped dome}. It is called {Saint Sophia Cathedral}, and it is more than one hundred years old.", act: "Shiver like you’re in the Ice City! Brrr!", ask: "Can you point to which way is north?" },
+  { t: "pack", title: "Pack for the Ice City", max: 3, min: 1.5 },
+  { t: "story", scene: "cold", n: 2, min: 1.5, title: 'So cold, so yummy! <span class="cn">糖葫芦 · 冻梨</span>', text: "Harbin is {very, very cold}, often colder than {minus twenty degrees}! When you breathe out, a little white cloud puffs out of your mouth, like a baby dragon. The cold can even turn Daddy’s {eyebrows white with frost}! But Harbin has yummy treats too. On busy {Central Street}, people eat {ice cream outside} in the snow, because it is too cold for it to melt. We can try {tanghulu} (糖葫芦), shiny fruit on a stick covered in crunchy sugar, and {frozen pears} (冻梨), which are black and as hard as rocks. Soak them in cold water and they turn soft, sweet and juicy!", act: "Breathe out like a baby dragon! Hhhaaa!", ask: "Which treat do you want to try first?" },
+  { t: "thermo", title: "Hot or cold?", max: 2, min: 1.5 },
+  { t: "story", scene: "iceworld", n: 3, min: 1.5, title: 'The Ice and Snow World <span class="cn">冰雪大世界</span>', text: "Every winter, workers cut {giant blocks of ice} out of the frozen Songhua River. Then thousands of builders stack them up, like huge see-through LEGO bricks, to build a whole {city made of ice}! There are ice castles, ice towers and ice bridges, some as tall as buildings. When the sun goes down, {colourful lights} shine inside the ice, and everything glows pink, blue, green and purple. And the best part? {Giant ice slides!} You sit on a little mat, hold on tight, and WHOOSH, down you go!", act: "Sit down and WHOOSH down the slide!", ask: "If you built an ice castle, what colour would you light it?" },
+  { t: "build", title: "Build an ice castle", max: 2, min: 2 },
+  { t: "quiz", scene: "built", min: 0.5, title: "Castle maths", q: "Our ice castle has {3 rows}, with {4 ice blocks} in each row. {How many ice blocks did we use?}", o: ["7 blocks", "12 blocks", "34 blocks"], a: 1, ex: "3 rows of 4 is 3 × 4 = 12. Real ice castles need thousands of blocks!" },
+  { t: "story", scene: "yabuli", n: 4, min: 1.5, title: 'Skiing at Yabuli <span class="cn">亚布力</span>', text: "Next, we ride a {train} through snowy forests to {Yabuli} (亚布力), one of the most famous {ski resorts} in China. Champions from all over Asia have raced down these mountains in the {Asian Winter Games}! A {chairlift} carries us up the mountain, with our legs dangling in the air. Then we click on our skis and slide down. To go slowly and stop, beginners point their ski tips together like a slice of {pizza}. To go fast, they keep their skis side by side, like {French fries}. Daddy will probably fall into the snow. PLOP!", act: "Make a pizza with your feet! Now French fries!", ask: "How many times do you think Daddy will fall over?" },
+  { t: "ski", title: "Yabuli Ski Race", max: 3, min: 1.5 },
+  { t: "quiz", scene: "pizza", min: 0.5, title: "Pizza or French fries?", q: "You are skiing too fast and you want to {slow down and stop}. {What should your skis look like?}", o: ["French fries: side by side", "Pizza: tips together", "A star: arms and legs out!"], a: 1, ex: "Pizza! Pushing the ski tips together makes a wedge that slows you down. French fries are for going fast." },
+  { t: "story", scene: "snowtown", n: 5, min: 1.5, title: 'Snow Town <span class="cn">雪乡</span>', text: "Our last stop is {Snow Town} (雪乡), a little village hidden deep in the mountain forest. It snows there from {autumn all the way to spring}, and the snow can be {as deep as Daddy is tall}! The snow piles up on the roofs in big, round, puffy lumps, like {fluffy mushrooms} or giant {cream cakes}. When night comes, rows of {red lanterns} light up along the street, and the whole village glows like a fairy tale. We can make {snow angels}, have a {snowball fight}, and build the biggest snowman ever!", act: "Lie down and make a snow angel on the floor!", ask: "What does the snow on the roofs look like to you?" },
+  { t: "snowman", title: "Build a Snow Town snowman", max: 2, min: 1.5 },
+  { t: "boss", title: "The Harbin Quiz", max: 5, min: 1.5 },
+  { t: "story", scene: "kang", n: 6, min: 1, title: 'Goodnight, Snow Town <span class="cn">暖暖的炕</span>', text: "After a long, snowy day, we go inside a cosy wooden house. In northeast China, many families sleep on a {kang} (炕), a big bed made of bricks. A fire underneath keeps it {toasty warm} all night long. We eat hot, juicy {dumplings} (饺子), then snuggle up together under thick, flowery blankets. Outside it is minus twenty-five degrees, and the snow is falling softly, softly. But inside, we are {warm and safe}. Close your eyes and dream about our {snowy adventure}. Goodnight, Harbin!", act: "Snuggle up and whisper: “Goodnight, Harbin!”", ask: "What was your favourite part of tonight’s story?" },
+  { t: "end", max: 1, min: 0.5 },
+];
+PAGES.forEach((p) => { if (p.t === "quiz") p.max = 2; });
+const MAXSTARS = PAGES.reduce((s, p) => s + (p.max || 0), 0);
+const PACK = [
+  ["🧥", "Down jacket", 1], ["🩱", "Swimsuit", 0, "A swimsuit at −20°C? Brrr, no way!"], ["🧤", "Mittens", 1], ["🥾", "Snow boots", 1],
+  ["🩴", "Flip-flops", 0, "Flip-flops in the snow? Your toes would freeze!"], ["🧣", "Scarf", 1], ["🧶", "Woolly hat", 1], ["⛱️", "Beach umbrella", 0, "There’s no beach in the Ice City!"],
+  ["🧦", "Thick socks", 1], ["🕶️", "Sunglasses", 1, "Yes! Snow is super bright in the sunshine."], ["🩳", "Shorts", 0, "Shorts? Your legs would turn into ice lollies!"], ["💄", "Lip balm", 1, "Yes! The cold wind makes lips dry."],
+];
+const TEMPS = [["❄️", "Inside the freezer", -18], ["☀️", "A hot summer day", 30], ["🌨️", "Harbin on a December night", -25], ["🛁", "A warm bath", 38], ["🧊", "Inside the fridge", 4], ["🏠", "Inside our home", 22]];
+const BOSS = [
+  ["What do people call Harbin?", ["The Ice City", "The Beach City", "The Desert City"], 0, "city"],
+  ["Where do the ice blocks for the Ice and Snow World come from?", ["A shop", "The frozen Songhua River", "The sky"], 1, "iceworld"],
+  ["How do beginners slow down on skis?", ["French fries", "Jumping up and down", "Pizza shape"], 2, "pizza"],
+  ["What does the snow on Snow Town roofs look like?", ["Fluffy mushrooms", "Green grass", "Hot noodles"], 0, "snowtown"],
+  ["Why can people eat ice cream outside in Harbin?", ["It’s summer there", "It’s too cold for it to melt", "The ice cream is hot"], 1, "cold"],
+];
+const FAV = [["🏰", "Ice and Snow World"], ["⛷️", "Skiing at Yabuli"], ["🏮", "Snow Town"], ["🍦", "Ice cream on Central Street"]];
+const TRIP = ["Walk on the frozen Songhua River", "Eat ice cream outside on Central Street", "Try tanghulu and a frozen pear", "Whoosh down a giant ice slide", "Ski at Yabuli (and fall in the snow!)", "Make a snow angel in Snow Town", "Build a snowman", "Sleep on a warm kang"];
+const NAMES = ["Bing Bing", "Mr. Frosty", "Snowy Bao", "Captain Brrr", "Princess Snowflake", "Icy Dumpling"];
+
+// ===== state (+ cloud sync) =====
+const CLOUD_GAME = "harbinTrip", KEY = "hb-progress1";
+let cloudTimer = null;
+const st = { i: 0, stars: 0, done: {}, snow: [], name: 0, fav: null, trip: {}, date: "" };
+try { Object.assign(st, JSON.parse(localStorage.getItem(KEY) || "{}")); } catch (e) {}
+function syncCloudSoon() {
+  if (!window.CloudSave || !CloudSave.current()) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => CloudSave.saveGame(CLOUD_GAME, { progress: st }), 500);
+}
+const saveSt = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} syncCloudSoon(); };
+if (window.CloudSave && CloudSave.current()) {
+  CloudSave.pullGame(CLOUD_GAME, null).then((remote) => {
+    if (remote && remote.progress) { Object.assign(st, remote.progress); try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) {} if (typeof go === "function") go(st.i || 0); }
+  }).catch(() => {});
+}
+
+const stage = $("#stage"), panel = $("#panel");
+let cleanup = null, bubbleT;
+
+let ac;
+function beep(f, d = 0.1, type = "sine", v = 0.12) { if ($("#mute").getAttribute("aria-pressed") === "true") return;
+  try { ac = ac || new (window.AudioContext || window.webkitAudioContext)(); const o = ac.createOscillator(), g = ac.createGain(); o.type = type; o.frequency.value = f;
+    g.gain.setValueAtTime(v, ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + d); o.connect(g).connect(ac.destination); o.start(); o.stop(ac.currentTime + d); } catch (e) {} }
+const ding = () => { beep(660); setTimeout(() => beep(880, 0.15), 90); };
+const yay = () => { beep(523); setTimeout(() => beep(659), 110); setTimeout(() => beep(784, 0.25), 220); };
+const boo = () => beep(180, 0.25, "square", 0.08);
+function say(t) { const b = $("#bubble"); if (!b) return; b.textContent = t; b.classList.add("on"); clearTimeout(bubbleT); bubbleT = setTimeout(() => b.classList.remove("on"), 2600); }
+
+function award(n) { const key = "p" + st.i, prev = st.done[key] || 0; if (n <= prev) return;
+  st.done[key] = n; st.stars += n - prev; saveSt(); $("#starN").textContent = st.stars;
+  const el = $("#stars"); el.classList.remove("pop"); void el.offsetWidth; el.classList.add("pop"); }
+const starsTxt = (n, m) => `<span class="earn">${"★".repeat(n)}<i>${"★".repeat(Math.max(0, m - n))}</i></span>`;
+const fmt = (t) => t.replace(/\{([^}]*)\}/g, "<mark>$1</mark>");
+// English voices can't read the Chinese names, so leave them out of read-aloud
+const plain = (t) => t.replace(/[{}]/g, "").replace(/\s*\([^)]*[一-鿿][^)]*\)/g, "").replace(/[一-鿿·，]+/g, "");
+function speak(text) { if (!("speechSynthesis" in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(plain(text)); u.rate = 0.92;
+  const vs = speechSynthesis.getVoices(); const v = vs.find((v) => /en-GB/i.test(v.lang)) || vs.find((v) => /^en/i.test(v.lang)); if (v) u.voice = v; speechSynthesis.speak(u); }
+function btn(label, cls, fn) { const b = document.createElement("button"); b.className = "btn " + (cls || ""); b.innerHTML = label; b.onclick = fn; return b; }
+function setPanel(title, html) { panel.innerHTML = `<h2>${title}</h2><div class="txt">${html}</div><div class="act"></div>`; return panel.querySelector(".act"); }
+function show(svg) { stage.className = ""; stage.innerHTML = `<div class="art">${svg}</div><div id="bubble" aria-live="polite"></div>`; }
+const art = (svg) => { stage.querySelector(".art").innerHTML = svg; };
+const scene = (key) => show(SC[key]());
+const shuffle = (a) => a.map((v) => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map((x) => x[1]);
+const stripTags = (h) => h.replace(/<[^>]*>[^<]*<\/span>/g, "").trim();
+
+function go(n) {
+  if (cleanup) { cleanup(); cleanup = null; }
+  if ("speechSynthesis" in window) speechSynthesis.cancel();
+  st.i = Math.max(0, Math.min(PAGES.length - 1, n)); saveSt(); render();
+  $("#book").scrollIntoView({ block: "nearest" });
+}
+function render() {
+  const p = PAGES[st.i];
+  $("#dots").innerHTML = PAGES.map((q, k) => `<span class="${k === st.i ? "on" : ""} ${q.max ? "g" : ""} ${st.done["p" + k] ? "d" : ""}"></span>`).join("");
+  $("#starN").textContent = st.stars;
+  const left = Math.ceil(PAGES.slice(st.i).reduce((s, q) => s + q.min, 0));
+  $("#clock").textContent = p.t === "end" ? "⏱ The end!" : `⏱ about ${left} min left`;
+  $("#back").disabled = st.i === 0; $("#next").hidden = p.t === "end";
+  $("#next").textContent = p.t === "cover" ? "Start the story" : "Next";
+  $("#read").hidden = !(p.text || p.q);
+  ({ cover: renderCover, story: renderStory, quiz: renderQuiz, boss: renderBoss, pack: renderPack, thermo: renderThermo, build: renderBuild, ski: renderSki, snowman: renderSnowman, end: renderEnd })[p.t](p);
+}
+
+// ----- pages -----
+function renderCover() {
+  scene("cover");
+  setPanel("Our Snowy Harbin Adventure", `This December our family is flying to <b>Harbin</b>, the Ice City! Tonight we visit the <b>Ice and Snow World</b>, go skiing at <b>Yabuli</b> and spend a night in <b>Snow Town</b>, with games along the way.<br><br>Story time is about <b>20 minutes</b>. Earn up to <b>${MAXSTARS} stars</b>!`);
+  panel.insertAdjacentHTML("beforeend", `<label class="date">✈️ Our trip starts on <input type="date" id="tripDate" value="${st.date || ""}"></label><p class="small" id="sleeps"></p>`);
+  const sleeps = () => { const el = $("#sleeps"); if (!st.date) { el.textContent = "Pick the day we fly to count the sleeps!"; return; }
+    const d = Math.round((new Date(st.date + "T00:00") - new Date(new Date().toDateString())) / 864e5);
+    el.innerHTML = d > 0 ? `<b>🛌 ${d} more sleep${d === 1 ? "" : "s"} until Harbin!</b>` : d === 0 ? "<b>🎉 We fly to Harbin today!</b>" : "<b>❄️ Our Harbin adventure has begun!</b>"; };
+  $("#tripDate").onchange = (e) => { st.date = e.target.value; saveSt(); sleeps(); };
+  sleeps();
+  if (st.stars) panel.append(btn("Start over", "ghost", () => { Object.assign(st, { i: 0, stars: 0, done: {}, snow: [], fav: null }); saveSt(); render(); }));
+  setTimeout(() => say("Brrr! Let's go to Harbin!"), 300);
+}
+function renderStory(p) {
+  scene(p.scene);
+  setPanel(p.title, fmt(p.text));
+  panel.querySelector(".act").innerHTML = `<span class="count">${p.n} of 6</span><span class="pill">👉 ${p.act}</span>`;
+  panel.insertAdjacentHTML("beforeend", `<p class="ask">💬 Daddy asks: ${p.ask}</p>`);
+}
+function renderQuiz(p) {
+  scene(p.scene); const a = setPanel(p.title, fmt(p.q)); let tries = 0;
+  p.o.forEach((o, k) => a.append(btn(o, "c" + k, (e) => {
+    if (k === p.a) { a.querySelectorAll("button").forEach((b) => (b.disabled = true)); e.target.disabled = false; e.target.classList.add("right");
+      const n = tries ? 1 : 2; award(n); n === 2 ? yay() : beep(523, 0.2);
+      a.insertAdjacentHTML("beforeend", `<div class="res">${starsTxt(n, 2)}<p>${tries ? "Got it! " : "Spot on! "}${p.ex}</p></div>`); }
+    else { boo(); tries++; e.target.disabled = true; e.target.classList.add("wrong"); }
+  })));
+}
+function renderBoss(p) {
+  let k = 0, score = 0; scene("city");
+  const next = () => {
+    if (k >= BOSS.length) { award(score); score === BOSS.length ? yay() : beep(523, 0.2);
+      const a = setPanel(p.title, `You got <b>${score} out of ${BOSS.length}</b>!`);
+      a.insertAdjacentHTML("beforeend", `<div class="res">${starsTxt(score, BOSS.length)}<p>${score === BOSS.length ? "You’re a Harbin Expert!" : "Great listening!"} Now it’s time to get cosy for bed…</p></div>`);
+      if (score < BOSS.length) a.append(btn("Try again", "ghost", () => renderBoss(p))); return; }
+    const [q, o, ans, sc] = BOSS[k]; art(SC[sc]());
+    const a = setPanel(`Harbin Quiz: ${k + 1} of ${BOSS.length}`, q);
+    o.forEach((t, j) => a.append(btn(t, "c" + j, (e) => { a.querySelectorAll("button").forEach((b) => (b.disabled = true));
+      a.children[ans].classList.add("right"); if (j === ans) { score++; yay(); } else { boo(); e.target.classList.add("wrong"); }
+      setTimeout(() => { k++; next(); }, 1100); })));
+  };
+  next();
+}
+
+// ----- game: pack the suitcase -----
+function renderPack(p) {
+  const packed = [], need = PACK.filter((x) => x[2]).length; let miss = 0;
+  show(suitcaseArt(packed));
+  const a = setPanel(p.title, fmt("Harbin can be colder than {−20°C}! Tap everything we should pack. Watch out for the silly things!"));
+  const grid = document.createElement("div"); grid.className = "grid";
+  PACK.forEach(([e, n, good, msg]) => grid.append(btn(`<span class="e">${e}</span>${n}`, "item", (ev) => {
+    const b = ev.currentTarget; b.disabled = true;
+    if (!good) { boo(); miss++; b.classList.add("wrong"); say(msg); return; }
+    b.setAttribute("aria-pressed", "true"); packed.push(e); art(suitcaseArt(packed)); ding(); say(msg || `${n}: packed!`);
+    if (packed.length === need) { const s = miss <= 1 ? 3 : miss <= 3 ? 2 : 1; award(s); yay();
+      grid.querySelectorAll("button").forEach((x) => (x.disabled = true));
+      a.insertAdjacentHTML("beforeend", `<div class="res">${starsTxt(s, 3)}<p>All packed! Now we’re ready for the Ice City. Remember: lots of warm layers, like an onion!</p></div>`); }
+  })));
+  a.append(grid);
+}
+
+// ----- game: warmest to coldest -----
+function renderThermo(p) {
+  const order = [...TEMPS].sort((x, y) => y[2] - x[2]), placed = []; let miss = 0;
+  show(thermoArt(placed));
+  const a = setPanel(p.title, fmt("Tap them in order from the {warmest} to the {coldest}. Start with the hottest one!"));
+  shuffle(TEMPS).forEach((it) => a.append(btn(`${it[0]} ${it[1]} · <b>${deg(it[2])}</b>`, "row", (e) => {
+    if (it !== order[placed.length]) { boo(); miss++; say("Hmm, is that the warmest one left?"); return; }
+    e.currentTarget.disabled = true; placed.push(it); art(thermoArt(placed)); ding();
+    if (placed.length === order.length) { const s = miss ? 1 : 2; award(s); yay(); say("Brrr! Harbin is the coldest!");
+      a.insertAdjacentHTML("beforeend", `<div class="res">${starsTxt(s, 2)}<p>Numbers with a minus sign are <b>below zero</b>. The bigger the number after the minus, the colder it is. A December night in Harbin is even colder than our freezer!</p></div>`); }
+  })));
+}
+
+// ----- game: build an ice castle -----
+function renderBuild(p) {
+  const filled = Array(12).fill(false); let lit = null;
+  show(buildArt(filled, lit));
+  const a = setPanel(p.title, fmt("Tap the dashed spots to place the ice blocks. Remember: {start from the bottom}! Then choose a colour to light it up."));
+  const onTap = (e) => { const sl = e.target.closest(".slot"); if (!sl) return; const k = +sl.dataset.k;
+    if (k >= 4 && !filled[k - 4]) { boo(); say("Oops! Ice can’t float in the air. Build the row below first!"); return; }
+    filled[k] = true; ding(); art(buildArt(filled, lit)); const n = filled.filter(Boolean).length;
+    if (n < 12) { say(`${n} block${n === 1 ? "" : "s"}!`); return; }
+    award(1); yay(); say("The castle is finished!");
+    const res = Object.assign(document.createElement("div"), { className: "res", innerHTML: "<p><b>Now light it up!</b> Pick a colour:</p>" });
+    [["🌈 Rainbow", "rainbow"], ["💗 Pink", "pink"], ["💙 Blue", "blue"], ["💚 Green", "green"]].forEach(([l, c]) => res.append(btn(l, "alt", () => {
+      lit = c; art(buildArt(filled, lit)); award(2); yay(); say("Wow! It glows!"); })));
+    res.insertAdjacentHTML("beforeend", `<p class="small">Real ice castles have lights inside every block, just like this.</p>`);
+    a.append(res); };
+  stage.addEventListener("click", onTap);
+  cleanup = () => stage.removeEventListener("click", onTap);
+}
+
+// ----- game: ski race -----
+function renderSki(p) {
+  stage.className = "ski";
+  stage.innerHTML = `<svg viewBox="0 0 1080 880" role="img" aria-label="Daddy skiing down the mountain"><defs><clipPath id="c"><rect width="1080" height="880" rx="60"/></clipPath></defs><g clip-path="url(#c)">
+<rect width="1080" height="880" fill="#F4F9FF"/><g id="bg"></g><g id="obj"></g><g id="sk">${daddy(0, 0, 0.32, { ski: true, arms: "out", laugh: true })}</g>
+<rect x="30" y="30" width="340" height="80" rx="40" fill="#fff" stroke="#D5E0EF" stroke-width="4"/><text id="hud" x="200" y="86" text-anchor="middle" font-family="Fredoka, Arial" font-weight="700" font-size="42" fill="#2B3A67">🚩 0 · ⏱ 30</text>
+<text id="big" x="540" y="380" text-anchor="middle" font-family="Fredoka, Arial" font-weight="700" font-size="72" fill="#2F6FA8">Ready?</text></g></svg><div id="bubble" aria-live="polite"></div>`;
+  const sk = $("#sk"), obj = $("#obj"), bg = $("#bg"), hud = $("#hud"), big = $("#big");
+  const marks = (() => { const r = R(31); let s = ""; for (let i = 0; i < 18; i++) { const x = (r() * 1040) | 0, y = (r() * 880) | 0; s += `<path d="M${x} ${y} q14 30 0 60" stroke="#DCE8F5" stroke-width="6" fill="none" stroke-linecap="round"/>`; } return s; })();
+  let x = 540, dir = 0, objs = [], t0 = 0, last = 0, raf = 0, spawn = 0, flags = 0, ouch = 0, scroll = 0, running = false;
+  const draw = () => { bg.innerHTML = `<g transform="translate(0,${scroll % 880 - 880})">${marks}</g><g transform="translate(0,${scroll % 880})">${marks}</g>`;
+    obj.innerHTML = objs.map((o) => (o.f ? flag(o.x, o.y) : pine(o.x, o.y + 60, 0.45))).join("");
+    sk.setAttribute("transform", `translate(${x},760) rotate(${dir * -12})`); sk.style.opacity = ouch > 0 && Math.floor(ouch * 10) % 2 ? 0.4 : 1; };
+  const step = (now) => { const dt = Math.min(50, now - last) / 1000, el = (now - t0) / 1000; last = now;
+    const speed = 340 + el * 9; x = Math.max(70, Math.min(1010, x + dir * 560 * dt)); scroll += speed * dt; ouch = Math.max(0, ouch - dt);
+    if ((spawn -= dt) <= 0) { spawn = 0.42 + Math.random() * 0.3; objs.push({ x: 70 + Math.random() * 940, y: -80, f: Math.random() < 0.48 }); }
+    objs.forEach((o) => { o.y += speed * dt;
+      if (!o.hit && Math.abs(o.y - 690) < 70 && Math.abs(o.x - x) < 70) {
+        if (o.f) { o.hit = o.gone = true; flags++; ding(); }
+        else if (ouch <= 0) { o.hit = true; ouch = 1; boo(); say(["PLOP! Daddy fell in the snow!", "Ouch! Watch out for trees!", "Oops! Snowy face!"][flags % 3]); } } });
+    objs = objs.filter((o) => !o.gone && o.y < 960);
+    hud.textContent = `🚩 ${flags} · ⏱ ${Math.max(0, Math.ceil(30 - el))}`; draw();
+    if (el >= 30) finish(); else raf = requestAnimationFrame(step); };
+  const a = setPanel(p.title, fmt("Help Daddy ski down the mountain! Catch the {red flags} 🚩 and dodge the {trees} 🌲. Hold ◀ ▶, tap the left or right side of the picture, or use the arrow keys. You have 30 seconds!"));
+  const start = () => { objs = []; flags = 0; ouch = 0; x = 540; running = true; big.textContent = ""; a.innerHTML = "";
+    const L = btn("◀", "hold", () => {}), Rb = btn("▶", "hold", () => {});
+    [[L, -1], [Rb, 1]].forEach(([b, d]) => { b.onpointerdown = (e) => { e.preventDefault(); dir = d; }; b.onpointerup = b.onpointerleave = b.onpointercancel = () => { if (dir === d) dir = 0; }; });
+    a.append(L, Rb); t0 = last = performance.now(); raf = requestAnimationFrame(step); };
+  const finish = () => { running = false; dir = 0; const s = flags >= 12 ? 3 : flags >= 6 ? 2 : flags >= 1 ? 1 : 0; if (s) award(s); s >= 2 ? yay() : beep(523, 0.2);
+    big.textContent = "Finish!"; a.innerHTML = "";
+    a.insertAdjacentHTML("beforeend", `<div class="res">${starsTxt(s, 3)}<p>You caught <b>${flags} flags</b>! ${s === 3 ? "You’re a Yabuli ski champion!" : "Catch 12 flags for 3 stars."}</p></div>`);
+    a.append(btn("⛷️ Ski again", "", start)); };
+  a.append(btn("⛷️ Start!", "big", start));
+  const key = (e) => { if (!running) return; if (e.key === "ArrowLeft") dir = e.type === "keydown" ? -1 : dir === -1 ? 0 : dir; if (e.key === "ArrowRight") dir = e.type === "keydown" ? 1 : dir === 1 ? 0 : dir; if (e.key.startsWith("Arrow")) e.preventDefault(); };
+  const down = (e) => { if (!running) return; const r = stage.getBoundingClientRect(); dir = e.clientX < r.left + r.width / 2 ? -1 : 1; };
+  const up = () => { dir = 0; };
+  stage.addEventListener("pointerdown", down); addEventListener("pointerup", up); addEventListener("keydown", key); addEventListener("keyup", key);
+  draw();
+  cleanup = () => { running = false; cancelAnimationFrame(raf); stage.removeEventListener("pointerdown", down); removeEventListener("pointerup", up); removeEventListener("keydown", key); removeEventListener("keyup", key); };
+}
+
+// ----- game: snowman -----
+function renderSnowman(p) {
+  show(snowmanArt(st.snow));
+  const a = setPanel(p.title, "In Snow Town we can build the biggest snowman ever! Tap things to dress him up. Tap again to take them off.");
+  const grid = document.createElement("div"); grid.className = "grid";
+  const sync = () => { grid.querySelectorAll(".item").forEach((b) => b.setAttribute("aria-pressed", st.snow.includes(b.dataset.id))); art(snowmanArt(st.snow)); };
+  SNOWMAN.forEach(([id, e, n, g]) => { const b = btn(`<span class="e">${e}</span>${n}`, "item", () => {
+      if (st.snow.includes(id)) st.snow = st.snow.filter((x) => x !== id);
+      else { if (g) st.snow = st.snow.filter((x) => !SNOWMAN.some((s) => s[0] === x && s[3] === g)); st.snow.push(id); ding(); }
+      saveSt(); sync(); const c = st.snow.length; if (c >= 6) award(2); else if (c >= 3) award(1);
+      if (c === 6) { yay(); say(`${NAMES[st.name]} looks amazing!`); } });
+    b.dataset.id = id; grid.append(b); });
+  a.append(grid, btn("🏷️ Give him a name", "pink", () => { st.name = (st.name + 1) % NAMES.length; saveSt(); yay(); say(`Hello, I’m ${NAMES[st.name]}!`); }));
+  a.insertAdjacentHTML("beforeend", `<p class="small">Use 3 things for ★, 6 things for ★★.</p>`);
+  sync();
+}
+
+// ----- end -----
+function renderEnd() {
+  const fav = FAV.find((f) => f[1] === st.fav);
+  show(SC.cover());
+  stage.insertAdjacentHTML("beforeend", `<div class="cert"><svg class="medal" viewBox="-12 -12 24 24" aria-hidden="true"><path d="M0 -10 L2.9 -3.1 L9.5 -3.1 L4.2 1.2 L6.2 8 L0 4 L-6.2 8 L-4.2 1.2 L-9.5 -3.1 L-2.9 -3.1 Z" fill="#F2C230" stroke="#C79A12" stroke-width="1"/></svg><div><small>${st.stars} of ${MAXSTARS} stars · Daddy Story Time</small><strong>Little Harbin Explorer ${fav ? fav[0] : "❄️"}</strong></div></div>`);
+  const pct = st.stars / MAXSTARS;
+  const a = setPanel("Goodnight, little explorers!", `You earned <b>${st.stars} of ${MAXSTARS} stars</b>. ${pct >= 0.8 ? "You’re a <b>Harbin Expert</b>!" : "Go back and replay any game for more stars."}<br><br><b>Which place are you most excited about?</b>`);
+  const favs = document.createElement("div"); favs.className = "score";
+  FAV.forEach(([e, n]) => favs.append(btn(`<span>${e} ${n}</span>${st.fav === n ? "💖" : ""}`, "row", () => { st.fav = n; saveSt(); award(1); yay(); renderEnd(); say(`Me too! I can’t wait!`); })));
+  a.append(favs);
+  a.insertAdjacentHTML("beforeend", `<h3>✅ Our real Harbin checklist</h3><p class="small">Bring this on the trip and tick things off together!</p>`);
+  const trip = document.createElement("div"); trip.className = "trip";
+  TRIP.forEach((t, k) => { const l = document.createElement("label"); l.innerHTML = `<input type="checkbox" ${st.trip[k] ? "checked" : ""}> ${t}`;
+    l.querySelector("input").onchange = (e) => { st.trip[k] = e.target.checked; saveSt(); if (e.target.checked) ding(); }; trip.append(l); });
+  a.append(trip);
+  a.insertAdjacentHTML("beforeend", `<h3>⭐ Your stars</h3>`);
+  const list = document.createElement("div"); list.className = "score";
+  PAGES.forEach((q, k) => { if (q.max && q.t !== "end") list.append(btn(`<span>${stripTags(q.title)}</span>${starsTxt(st.done["p" + k] || 0, q.max)}`, "row", () => go(k))); });
+  a.append(list, btn("Read it again", "ghost", () => go(0)));
+}
+
+// ===== wiring =====
+$("#back").onclick = () => go(st.i - 1);
+$("#next").onclick = () => go(st.i + 1);
+$("#read").onclick = () => { const t = panel.querySelector(".txt"); if (t) speak(t.textContent); };
+$("#mute").onclick = (e) => { const b = e.currentTarget; b.setAttribute("aria-pressed", b.getAttribute("aria-pressed") === "true" ? "false" : "true"); };
+addEventListener("keydown", (e) => { if (e.target.tagName === "INPUT") return; if (e.key === "PageDown") go(st.i + 1); if (e.key === "PageUp") go(st.i - 1); });
+if (!("speechSynthesis" in window)) $("#read").remove();
+render();
+</script>
+</body>
+</html>
