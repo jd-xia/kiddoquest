@@ -35,6 +35,8 @@ h1{font-family:Fredoka,Arial,sans-serif; font-weight:700; color:var(--brand); fo
 .fall{animation:fall 16s linear infinite} @keyframes fall{to{transform:translateY(880px)}}
 .slot{cursor:pointer; animation:pulse 1.2s ease-in-out infinite} .slot.wait{animation:none; opacity:.3}
 @keyframes pulse{50%{opacity:.35}}
+.hid,.card,.peek{cursor:pointer} .hid.hint{animation:blink .8s ease-in-out infinite} @keyframes blink{50%{opacity:1}}
+.peek{transition:transform .16s ease-out}
 #panel{background:var(--surface); border:2px solid var(--line); border-radius:24px; padding:20px 22px}
 #panel h2{font-family:Fredoka,Arial,sans-serif; font-weight:700; font-size:1.9rem; line-height:1.15; margin:0 0 10px; color:var(--brand)}
 #panel h3{font-family:Fredoka,Arial,sans-serif; font-weight:600; font-size:1.15rem; margin:20px 0 4px; color:var(--brand)}
@@ -297,8 +299,10 @@ const PAGES = [
   { t: "story", scene: "city", n: 1, min: 1.5, title: 'Hello, Harbin! <span class="cn">你好，哈尔滨</span>', text: "This December, Mummy, Daddy, Michelle and Jayden are going on a {snowy adventure}! We will fly far, far north to {Harbin} (哈尔滨), a big city in the northeast of China. Harbin is so cold in winter that people call it the {Ice City}. The wide {Songhua River} freezes so hard that people can walk, skate and even ride sledges on it! In the middle of the city stands a beautiful old church with a big green {onion-shaped dome}. It is called {Saint Sophia Cathedral}, and it is more than one hundred years old.", act: "Shiver like you’re in the Ice City! Brrr!", ask: "Can you point to which way is north?" },
   { t: "pack", title: "Pack for the Ice City", max: 3, min: 1.5 },
   { t: "story", scene: "cold", n: 2, min: 1.5, title: 'So cold, so yummy! <span class="cn">糖葫芦 · 冻梨</span>', text: "Harbin is {very, very cold}, often colder than {minus twenty degrees}! When you breathe out, a little white cloud puffs out of your mouth, like a baby dragon. The cold can even turn Daddy’s {eyebrows white with frost}! But Harbin has yummy treats too. On busy {Central Street}, people eat {ice cream outside} in the snow, because it is too cold for it to melt. Mummy can’t wait to try {tanghulu} (糖葫芦), shiny fruit on a stick covered in crunchy sugar. We will all try {frozen pears} (冻梨) too. They are black and as hard as rocks. Soak them in cold water and they turn soft, sweet and juicy!", act: "Breathe out like a baby dragon! Hhhaaa!", ask: "Which treat do you want to try first?" },
+  { t: "candy", title: "Make tanghulu", max: 2, min: 1.5 },
   { t: "thermo", title: "Hot or cold?", max: 2, min: 1.5 },
   { t: "story", scene: "iceworld", n: 3, min: 1.5, title: 'The Ice and Snow World <span class="cn">冰雪大世界</span>', text: "Every winter, workers cut {giant blocks of ice} out of the frozen Songhua River. Then thousands of builders stack them up, like huge see-through LEGO bricks, to build a whole {city made of ice}! There are ice castles, ice towers and ice bridges, some as tall as buildings. When the sun goes down, {colourful lights} shine inside the ice, and everything glows pink, blue, green and purple. And the best part? {Giant ice slides!} You sit on a little mat, hold on tight, and WHOOSH, down you go!", act: "Sit down and WHOOSH down the slide!", ask: "If you built an ice castle, what colour would you light it?" },
+  { t: "find", title: "Hide and seek in the ice", max: 2, min: 1.5 },
   { t: "build", title: "Build an ice castle", max: 2, min: 2 },
   { t: "quiz", scene: "built", min: 0.5, title: "Castle maths", q: "Our ice castle has {3 rows}, with {4 ice blocks} in each row. {How many ice blocks did we use?}", o: ["7 blocks", "12 blocks", "34 blocks"], a: 1, ex: "3 rows of 4 is 3 × 4 = 12. Real ice castles need thousands of blocks!" },
   { t: "story", scene: "yabuli", n: 4, min: 1.5, title: 'Skiing at Yabuli <span class="cn">亚布力</span>', text: "Next, we hop in a {car} and drive through the {snowy forest} to {Yabuli} (亚布力), one of the most famous {ski resorts} in China. Champions from all over Asia have raced down these mountains in the {Asian Winter Games}! A {chairlift} carries us up the mountain, with our legs dangling in the air. Then we click on our skis and slide down. To go slowly and stop, beginners point their ski tips together like a slice of {pizza}. To go fast, they keep their skis side by side, like {French fries}. Daddy will probably fall into the snow. PLOP! And Mummy will take a funny photo!", act: "Make a pizza with your feet! Now French fries!", ask: "How many times do you think Daddy will fall over?" },
@@ -306,6 +310,8 @@ const PAGES = [
   { t: "quiz", scene: "pizza", min: 0.5, title: "Pizza or French fries?", q: "You are skiing too fast and you want to {slow down and stop}. {What should your skis look like?}", o: ["French fries: side by side", "Pizza: tips together", "A star: arms and legs out!"], a: 1, ex: "Pizza! Pushing the ski tips together makes a wedge that slows you down. French fries are for going fast." },
   { t: "story", scene: "snowtown", n: 5, min: 1.5, title: 'Snow Town <span class="cn">雪乡</span>', text: "Our last stop is {Snow Town} (雪乡), a little village hidden deep in the mountain forest. It snows there from {autumn all the way to spring}, and the snow can be {as deep as Daddy is tall}! The snow piles up on the roofs in big, round, puffy lumps, like {fluffy mushrooms} or giant {cream cakes}. When night comes, rows of {red lanterns} light up along the street, and the whole village glows like a fairy tale. We can make {snow angels}, have a {snowball fight} with Mummy and Daddy, and build the biggest snowman ever!", act: "Lie down and make a snow angel on the floor!", ask: "What does the snow on the roofs look like to you?" },
   { t: "snowman", title: "Build a Snow Town snowman", max: 2, min: 1.5 },
+  { t: "snowball", title: "Snowball fight!", max: 3, min: 1.5 },
+  { t: "memory", title: "Harbin memory match", max: 2, min: 1.5 },
   { t: "boss", title: "The Harbin Quiz", max: 6, min: 1.5 },
   { t: "story", scene: "kang", n: 6, min: 1, title: 'Goodnight, Snow Town <span class="cn">暖暖的炕</span>', text: "After a long, snowy day, we go inside a cosy wooden house. In northeast China, many families sleep on a {kang} (炕), a big bed made of bricks. A fire underneath keeps it {toasty warm} all night long. We eat hot, juicy {dumplings} (饺子), then Mummy and Daddy snuggle up with us under thick, flowery blankets. Outside it is minus twenty-five degrees, and the snow is falling softly, softly. But inside, we are {warm and safe}. Close your eyes and dream about our {snowy adventure}. Goodnight, Harbin!", act: "Snuggle up and whisper: “Goodnight, Harbin!”", ask: "What was your favourite part of tonight’s story?" },
   { t: "end", max: 1, min: 0.5 },
@@ -327,7 +333,7 @@ const BOSS = [
   ["Why can people eat ice cream outside in Harbin?", ["It’s summer there", "It’s too cold for it to melt", "The ice cream is hot"], 1, "cold"],
 ];
 const FAV = [["🏰", "Ice and Snow World"], ["⛷️", "Skiing at Yabuli"], ["🏮", "Snow Town"], ["🍦", "Ice cream on Central Street"]];
-const TRIP = ["Walk on the frozen Songhua River", "Eat ice cream outside on Central Street", "Try tanghulu and a frozen pear", "Whoosh down a giant ice slide", "Ski at Yabuli (and fall in the snow!)", "Make a snow angel in Snow Town", "Build a snowman", "Take a family photo with Mummy and Daddy in the snow", "Sleep on a warm kang"];
+const TRIP = ["Walk on the frozen Songhua River", "Eat ice cream outside on Central Street", "Try tanghulu and a frozen pear", "Whoosh down a giant ice slide", "Ski at Yabuli (and fall in the snow!)", "Make a snow angel in Snow Town", "Build a snowman", "Have a snowball fight with Mummy and Daddy", "Take a family photo with Mummy and Daddy in the snow", "Sleep on a warm kang"];
 const NAMES = ["Bing Bing", "Mr. Frosty", "Snowy Bao", "Captain Brrr", "Princess Snowflake", "Icy Dumpling"];
 
 // ===== state (+ cloud sync) =====
@@ -391,13 +397,13 @@ function render() {
   $("#back").disabled = st.i === 0; $("#next").hidden = p.t === "end";
   $("#next").textContent = p.t === "cover" ? "Start the story" : "Next";
   $("#read").hidden = !(p.text || p.q);
-  ({ cover: renderCover, story: renderStory, quiz: renderQuiz, boss: renderBoss, pack: renderPack, thermo: renderThermo, build: renderBuild, ski: renderSki, snowman: renderSnowman, end: renderEnd })[p.t](p);
+  ({ cover: renderCover, story: renderStory, quiz: renderQuiz, boss: renderBoss, pack: renderPack, thermo: renderThermo, build: renderBuild, ski: renderSki, snowman: renderSnowman, candy: renderCandy, find: renderFind, snowball: renderSnowball, memory: renderMemory, end: renderEnd })[p.t](p);
 }
 
 // ----- pages -----
 function renderCover() {
   scene("cover");
-  setPanel("Our Snowy Harbin Adventure", `This December Mummy, Daddy, Michelle and Jayden are flying to <b>Harbin</b>, the Ice City! Tonight we visit the <b>Ice and Snow World</b>, go skiing at <b>Yabuli</b> and spend a night in <b>Snow Town</b>, with games along the way.<br><br>Story time is about <b>20 minutes</b>. Earn up to <b>${MAXSTARS} stars</b>!`);
+  setPanel("Our Snowy Harbin Adventure", `This December Mummy, Daddy, Michelle and Jayden are flying to <b>Harbin</b>, the Ice City! Tonight we visit the <b>Ice and Snow World</b>, go skiing at <b>Yabuli</b> and spend a night in <b>Snow Town</b>, with games along the way.<br><br>Story time is about <b>${Math.round(PAGES.reduce((s, q) => s + q.min, 0))} minutes</b>. Earn up to <b>${MAXSTARS} stars</b>!`);
   panel.insertAdjacentHTML("beforeend", `<label class="date">✈️ Our trip starts on <input type="date" id="tripDate" value="${st.date || ""}"></label><p class="small" id="sleeps"></p>`);
   const sleeps = () => { const el = $("#sleeps"); if (!st.date) { el.textContent = "Pick the day we fly to count the sleeps!"; return; }
     const d = Math.round((new Date(st.date + "T00:00") - new Date(new Date().toDateString())) / 864e5);
@@ -543,6 +549,126 @@ function renderSnowman(p) {
   a.append(grid, btn("🏷️ Give him a name", "pink", () => { st.name = (st.name + 1) % NAMES.length; saveSt(); yay(); say(`Hello, I’m ${NAMES[st.name]}!`); }));
   a.insertAdjacentHTML("beforeend", `<p class="small">Use 3 things for ★, 6 things for ★★.</p>`);
   sync();
+}
+
+// ----- game: tanghulu patterns -----
+const FRUIT = [["🍓", "Strawberry"], ["🍊", "Orange"], ["🍇", "Grape"], ["🥝", "Kiwi"]];
+const CANDY = [["🍓", "🍊"], ["🍓", "🍇", "🍊"], ["🍓", "🍓", "🥝"]];
+function candyArt(stick, round, done) {
+  let s = `<g opacity=".45">${skyline()}</g>` + snowGround(700) + `<path d="M90 470 H1010" stroke="#C79A12" stroke-width="14" stroke-linecap="round"/>`;
+  stick.forEach((f, i) => { const x = 190 + i * 120;
+    s += f ? emo(x, 470, f, 104) + (done ? `<circle cx="${x}" cy="470" r="58" fill="#FFB38A" opacity=".35"/><path d="M${x - 30} 445 q14 -20 34 -22" stroke="#fff" stroke-width="9" fill="none" stroke-linecap="round" opacity=".85"/>` : "")
+      : `<circle cx="${x}" cy="470" r="54" fill="#ffffff99" stroke="#E8833A" stroke-width="6" stroke-dasharray="14 9"/>${txt(x, 492, "?", 60, "#E8833A")}`; });
+  return frame(s + txt(540, 240, done ? "Crunchy and shiny!" : `Tanghulu ${round + 1} of ${CANDY.length}`, 60, "#C2347A", `stroke="#fff" stroke-width="8" paint-order="stroke"`) + snowfall(20, 12));
+}
+function renderCandy(p) {
+  let round = 0, miss = 0, stick, tm;
+  const setup = () => { const pat = CANDY[round]; stick = Array.from({ length: 7 }, (_, i) => (i < 4 ? pat[i % pat.length] : null)); show(candyArt(stick, round)); };
+  setup();
+  const a = setPanel(p.title, fmt("Tanghulu sellers put the fruit on the stick in a {pattern}. Look carefully and tap the fruit that comes {next}!"));
+  const pad = document.createElement("div"); pad.className = "grid";
+  FRUIT.forEach(([e, n]) => pad.append(btn(`<span class="e">${e}</span>${n}`, "item", () => {
+    const i = stick.indexOf(null), pat = CANDY[round]; if (i < 0) return;
+    if (e !== pat[i % pat.length]) { boo(); miss++; say("Hmm, look at the pattern again!"); return; }
+    stick[i] = e; ding();
+    if (i < 6) { art(candyArt(stick, round)); return; }
+    art(candyArt(stick, round, true)); yay(); say("Dip it in hot sugar… crunchy!");
+    if (++round < CANDY.length) { tm = setTimeout(setup, 1600); return; }
+    const s = miss <= 1 ? 2 : 1; award(s); pad.querySelectorAll("button").forEach((b) => (b.disabled = true));
+    a.insertAdjacentHTML("beforeend", `<div class="res">${starsTxt(s, 2)}<p>Three tanghulu sticks! The sugar is boiled until it is super hot, then it freezes hard and shiny in the cold air.</p></div>`);
+  })));
+  a.append(pad);
+  cleanup = () => clearTimeout(tm);
+}
+
+// ----- game: hide and seek in the ice -----
+const HIDE = [["🐧", "Penguin", 250, 330], ["🐻‍❄️", "Polar bear", 760, 290], ["🦊", "Fox", 430, 560], ["🦭", "Seal", 870, 620], ["🦉", "Owl", 560, 220], ["🐟", "Fish", 150, 660]];
+function findArt(found, hint) {
+  const r = R(17); let s = night(9);
+  for (let row = 0; row < 5; row++) for (let c = 0; c < 8; c++) { const x = -10 + c * 140 - (row % 2) * 70, y = 160 + row * 120;
+    s += `<rect x="${x}" y="${y}" width="136" height="116" rx="10" fill="${PAL.rainbow[(row + c) % 5]}" fill-opacity="${(0.55 + r() * 0.3).toFixed(2)}" stroke="#fff" stroke-width="4"/><path d="M${x + 18} ${y + 22} h30" stroke="#fff" stroke-width="6" stroke-linecap="round" opacity=".7"/>`; }
+  s += HIDE.map(([e, , x, y], k) => { const f = found.includes(k);
+    return `<g class="hid${hint && !f ? " hint" : ""}" data-k="${k}" opacity="${f ? 1 : 0.42}"><circle cx="${x}" cy="${y}" r="62" fill="#fff" fill-opacity="${f ? 0.9 : 0}" stroke="${f ? "#F2C230" : "none"}" stroke-width="8"/>${emo(x, y, e, 78)}</g>`; }).join("");
+  return frame(s + snowGround(790) + txt(540, 110, `Found ${found.length} of ${HIDE.length}`, 56, "#FFE07A"), "url(#night)");
+}
+function renderFind(p) {
+  const found = []; let hints = 0, hint = false;
+  show(findArt(found, hint));
+  const a = setPanel(p.title, fmt("Some animals are {hiding inside the ice}! Look closely at the glowing blocks and tap each animal you find."));
+  const list = document.createElement("div"); list.className = "grid";
+  const sync = () => { list.innerHTML = HIDE.map(([e, n], k) => `<button class="item" disabled aria-pressed="${found.includes(k)}"><span class="e">${found.includes(k) ? e : "❓"}</span>${found.includes(k) ? n : "?"}</button>`).join(""); };
+  const hb = btn("💡 Give me a hint", "ghost", () => { hints++; hint = true; art(findArt(found, hint)); say("Look for the blinking ones!"); });
+  const onTap = (e) => { const g = e.target.closest(".hid"); if (!g) return; const k = +g.dataset.k; if (found.includes(k)) return;
+    found.push(k); hint = false; ding(); say(`You found the ${HIDE[k][1].toLowerCase()}!`); art(findArt(found, hint)); sync();
+    if (found.length < HIDE.length) return;
+    const s = hints ? 1 : 2; award(s); yay(); hb.remove();
+    a.insertAdjacentHTML("beforeend", `<div class="res">${starsTxt(s, 2)}<p>You found them all! At the real Ice and Snow World there are giant ice animals too. Let’s look for them together.</p></div>`); };
+  sync(); a.append(list, hb);
+  stage.addEventListener("click", onTap);
+  cleanup = () => stage.removeEventListener("click", onTap);
+}
+
+// ----- game: snowball fight -----
+function renderSnowball(p) {
+  const X = [200, 540, 880], T = 25;
+  const wall = (x) => `<path d="M${x - 150} 800 V640 Q${x - 150} 596 ${x - 100} 600 Q${x - 50} 580 ${x} 596 Q${x + 50} 580 ${x + 100} 600 Q${x + 150} 596 ${x + 150} 640 V800 Z" fill="#fff" stroke="#DCE8F5" stroke-width="6"/>`;
+  stage.className = "";
+  stage.innerHTML = `<div class="art">${frame(night(14) + moon(940, 110) + hut(170, 470, 0.55) + hut(910, 470, 0.6) + snowGround(560)
+    + `<g clip-path="url(#pc)">${X.map((x, k) => `<g class="peek" data-k="${k}" style="transform:translateY(240px)"><rect x="${x - 110}" y="470" width="220" height="170" fill="transparent"/><g id="who${k}"></g></g>`).join("")}</g><clipPath id="pc"><rect width="1080" height="640"/></clipPath>`
+    + X.map(wall).join("") + michelle(70, 880, 0.3, { arms: "up", laugh: true }) + jayden(1010, 882, 0.27, { arms: "up", laugh: true })
+    + `<rect x="30" y="30" width="340" height="80" rx="40" fill="#fff" stroke="#D5E0EF" stroke-width="4"/><text id="hud" x="200" y="86" text-anchor="middle" font-family="Fredoka, Arial" font-weight="700" font-size="42" fill="#2B3A67">❄️ 0 · ⏱ ${T}</text>`
+    + `<text id="big" x="540" y="330" text-anchor="middle" font-family="Fredoka, Arial" font-weight="700" font-size="72" fill="#FFE07A">Ready?</text>`, "url(#night)")}</div><div id="bubble" aria-live="polite"></div>`;
+  const hud = $("#hud"), big = $("#big"), pops = [...stage.querySelectorAll(".peek")];
+  let up = [null, null, null], hits = 0, t0 = 0, next = 0, tick = 0, running = false, timers = [];
+  const splat = (x) => `<g fill="#fff"><circle cx="${x}" cy="530" r="30"/><circle cx="${x - 30}" cy="510" r="12"/><circle cx="${x + 32}" cy="548" r="10"/><circle cx="${x + 26}" cy="504" r="9"/></g>`;
+  const face = (k, who, hit) => { $("#who" + k).innerHTML = (who === "dad" ? daddy : mom)(X[k], 690, 0.42, { arms: hit ? "down" : "up", laugh: !hit, oh: hit }) + (hit ? splat(X[k]) : ""); };
+  const hide = (k) => { up[k] = null; pops[k].style.transform = "translateY(240px)"; };
+  const pop = () => { const free = [0, 1, 2].filter((k) => !up[k]); if (!free.length) return;
+    const k = free[(Math.random() * free.length) | 0], who = Math.random() < 0.5 ? "mum" : "dad"; up[k] = who; face(k, who, false); pops[k].style.transform = "translateY(0)";
+    timers.push(setTimeout(() => { if (up[k] === who) hide(k); }, 850 + Math.random() * 550)); };
+  const finish = () => { running = false; clearInterval(tick); timers.forEach(clearTimeout); [0, 1, 2].forEach(hide);
+    const s = hits >= 12 ? 3 : hits >= 7 ? 2 : hits >= 1 ? 1 : 0; if (s) award(s); s >= 2 ? yay() : beep(523, 0.2); big.textContent = "Time’s up!"; a.innerHTML = "";
+    a.insertAdjacentHTML("beforeend", `<div class="res">${starsTxt(s, 3)}<p>You hit Mummy and Daddy <b>${hits} times</b>! ${s === 3 ? "Snowball champions!" : "Hit them 12 times for 3 stars."}</p></div>`);
+    a.append(btn("❄️ Play again", "", start)); };
+  const start = () => { hits = 0; up = [null, null, null]; running = true; big.textContent = ""; a.innerHTML = "<p class=\"small\">Tap Mummy and Daddy when they pop up!</p>"; t0 = performance.now(); next = 0;
+    tick = setInterval(() => { const el = (performance.now() - t0) / 1000; hud.textContent = `❄️ ${hits} · ⏱ ${Math.max(0, Math.ceil(T - el))}`;
+      if (el >= T) return finish(); if (el >= next) { pop(); next = el + 0.55 + Math.random() * 0.45; } }, 100); };
+  const onTap = (e) => { if (!running) return; const g = e.target.closest(".peek"); if (!g) return; const k = +g.dataset.k, who = up[k]; if (!who || who === "hit") return;
+    up[k] = "hit"; hits++; face(k, who, true); ding(); say(who === "dad" ? ["SPLAT! Got Daddy!", "Daddy has a snowy nose!", "Bullseye!"][hits % 3] : ["SPLAT! Got Mummy!", "Mummy is giggling!", "Snowy hat!"][hits % 3]);
+    hud.textContent = `❄️ ${hits} · ⏱ ${Math.max(0, Math.ceil(T - (performance.now() - t0) / 1000))}`; timers.push(setTimeout(() => hide(k), 380)); };
+  const a = setPanel(p.title, fmt("In Snow Town, Mummy and Daddy are hiding behind the {snow walls}! Michelle and Jayden, tap them when they pop up to throw a {snowball}. You have 25 seconds!"));
+  a.append(btn("❄️ Start!", "big", start));
+  stage.addEventListener("pointerdown", onTap);
+  cleanup = () => { running = false; clearInterval(tick); timers.forEach(clearTimeout); stage.removeEventListener("pointerdown", onTap); };
+}
+
+// ----- game: memory match -----
+const MEM = [["🍡", "Tanghulu"], ["🍐", "Frozen pear"], ["⛷️", "Skiing"], ["🏰", "Ice castle"], ["⛄", "Snowman"], ["🏮", "Lantern"]];
+function memArt(deck, open, got) {
+  let s = night(19);
+  deck.forEach((m, k) => { const x = 75 + (k % 4) * 240, y = 70 + Math.floor(k / 4) * 260, face = open.includes(k) || got.includes(k);
+    s += `<g class="card" data-k="${k}"><rect x="${x}" y="${y}" width="210" height="236" rx="24" fill="${face ? "#fff" : "#2F6FA8"}" stroke="${got.includes(k) ? "#F2C230" : "#fff"}" stroke-width="8"/>`
+      + (face ? emo(x + 105, y + 100, MEM[m][0], 100) + txt(x + 105, y + 206, MEM[m][1], 28, "#22304F") : `<circle cx="${x + 105}" cy="${y + 118}" r="62" fill="#ffffff22"/>` + emo(x + 105, y + 118, "❄️", 76)) + `</g>`; });
+  return frame(s, "url(#night)");
+}
+function renderMemory(p) {
+  let deck, got, open, tries, busy, tm;
+  const a = setPanel(p.title, fmt("Do you remember our trip? Tap two cards to turn them over and find the {matching pairs}!"));
+  const info = document.createElement("p"); info.className = "small"; a.append(info);
+  const upd = () => { info.textContent = `Pairs found: ${got.length / 2} of ${MEM.length} · Tries: ${tries}`; };
+  const deal = () => { deck = shuffle([...MEM.keys(), ...MEM.keys()]); got = []; open = []; tries = 0; busy = false; show(memArt(deck, open, got)); upd(); a.querySelector(".res")?.remove(); };
+  const onTap = (e) => { const c = e.target.closest(".card"); if (!c || busy) return; const k = +c.dataset.k;
+    if (open.includes(k) || got.includes(k)) return; open.push(k); beep(520, 0.06); art(memArt(deck, open, got));
+    if (open.length < 2) return; tries++; const [x, y] = open;
+    if (deck[x] !== deck[y]) { busy = true; upd(); tm = setTimeout(() => { open = []; busy = false; art(memArt(deck, open, got)); }, 900); return; }
+    got.push(x, y); open = []; ding(); say(`${MEM[deck[x]][1]}! A match!`); art(memArt(deck, open, got)); upd();
+    if (got.length < deck.length) return;
+    const s = tries <= 12 ? 2 : 1; award(s); yay(); say("You found them all!");
+    const res = Object.assign(document.createElement("div"), { className: "res", innerHTML: `${starsTxt(s, 2)}<p>All ${MEM.length} pairs in <b>${tries} tries</b>! ${s === 2 ? "What a super memory!" : "Find them in 12 tries for 2 stars."}</p>` });
+    res.append(btn("🔄 Play again", "", deal)); a.append(res); };
+  deal();
+  stage.addEventListener("click", onTap);
+  cleanup = () => { clearTimeout(tm); stage.removeEventListener("click", onTap); };
 }
 
 // ----- end -----
