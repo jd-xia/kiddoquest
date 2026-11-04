@@ -120,6 +120,35 @@ class FamilyFlowTest {
     }
 
     @Test
+    void theParentGivesAndTakesCoins() throws Exception {
+        String parent = bearer(UUID.randomUUID().toString());
+        String stranger = bearer(UUID.randomUUID().toString());
+        String kid = create(parent, "Mia");
+        mvc.perform(get("/api/v1/family").param("day", DAY).header("Authorization", "Bearer " + parent))
+                .andExpect(jsonPath("$.kids[0].coins").value(1000));
+        coins(parent, kid, "1357", 50).andExpect(status().isForbidden()).andExpect(jsonPath("$.error").value("pin_missing"));
+        send(parent, "/api/v1/family/pin", "{\"pin\":\"1357\"}").andExpect(status().isOk());
+
+        coins(parent, kid, "1357", 50).andExpect(status().isOk()).andExpect(jsonPath("$.kids[0].coins").value(1050));
+        coins(parent, kid, "0000", 50).andExpect(status().isForbidden()).andExpect(jsonPath("$.error").value("wrong_pin"));
+        // the saved farm itself changed, with a new revision, so open devices take it
+        mvc.perform(get("/api/v1/children/" + kid).header("Authorization", "Bearer " + parent))
+                .andExpect(jsonPath("$.player.gems").value(1050)).andExpect(jsonPath("$.revision").value(2));
+        // taking away more than there is stops at 0
+        coins(parent, kid, "1357", -5000).andExpect(jsonPath("$.kids[0].coins").value(0));
+        coins(parent, kid, "1357", 200000).andExpect(status().isBadRequest());
+        coins(stranger, kid, "1357", 10).andExpect(status().isForbidden());   // the stranger has no PIN of their own
+        send(stranger, "/api/v1/family/pin", "{\"pin\":\"9999\"}").andExpect(status().isOk());
+        coins(stranger, kid, "9999", 10).andExpect(status().isNotFound());
+    }
+
+    private ResultActions coins(String token, String child, String pin, int add) throws Exception {
+        return mvc.perform(post("/api/v1/family/kids/" + child + "/coins").header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"pin\":\"" + pin + "\",\"day\":\"" + DAY + "\",\"add\":" + add + "}"));
+    }
+
+    @Test
     void wrongPinsWaitAndStrangersSeeNothing() throws Exception {
         String parent = bearer(UUID.randomUUID().toString());
         String stranger = bearer(UUID.randomUUID().toString());

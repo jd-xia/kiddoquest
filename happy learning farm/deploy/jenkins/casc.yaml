@@ -1,0 +1,35 @@
+# Jenkins Configuration as Code: one admin user and the deploy job. Read on every Jenkins start.
+jenkins:
+  systemMessage: "Happy Learning Farm: run the job happy-learning-farm-deploy to test, build and deploy to this computer's Docker."
+  numExecutors: 2
+  securityRealm:
+    local:
+      allowsSignup: false
+      users:
+        - id: "admin"
+          name: "Farm admin"
+          password: "${JENKINS_ADMIN_PASSWORD}"
+  authorizationStrategy:
+    loggedInUsersCanDoAnything:
+      allowAnonymousRead: false
+
+unclassified:
+  location:
+    url: "http://localhost:8090/"
+
+jobs:
+  - script: >
+      pipelineJob('happy-learning-farm-deploy') {
+        description('Tests the backends, backs up the database, keeps the current images as :previous, builds and deploys the farm to this computer\'s Docker, then checks that it answers. The steps are in the project\'s Jenkinsfile, read fresh from the project folder on every run.')
+        logRotator { numToKeep(30) }
+        parameters {
+          booleanParam('RUN_TESTS', true, 'Run the backend tests first; a failing test stops the deploy.')
+          booleanParam('BACKUP_DB', true, 'Back up both databases into backup/ before deploying.')
+        }
+        definition {
+          cps {
+            script("node('built-in') { load '/project/Jenkinsfile' }")
+            sandbox(true)
+          }
+        }
+      }

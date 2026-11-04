@@ -1,0 +1,87 @@
+// Happy Learning Farm: test, back up, build and deploy to this computer's Docker.
+// Jenkins (deploy/jenkins) mounts this project folder at /project and loads this file on every run, so the run
+// uses the folder exactly as it is now. It deploys to the compose project "happylearningfarm", the same one
+// `docker compose up` makes in this folder, so the MySQL volume and its data stay.
+// Parameters: RUN_TESTS, BACKUP_DB (both on unless switched off when starting the run).
+def project = '/project'
+def images = ['jiandao/kiddoquest-happy-learning-farm-backend-mysql', 'jiandao/kiddoquest-happy-learning-farm-backend-openidsec',
+              'jiandao/kiddoquest-happy-learning-farm-backend-data', 'jiandao/kiddoquest-happy-learning-farm-backend-gateway']
+// a run started without parameters does everything
+boolean on(String name) {
+  return params[name] == null || params[name]
+}
+
+node('built-in') {
+  withEnv(["COMPOSE=docker compose -p happylearningfarm --project-directory ${project} -f ${project}/docker-compose.yml -f ${project}/deploy/jenkins/compose.deploy.yml",
+           "PROJECT=${project}"]) {
+    timestamps {
+      stage('Check') {
+        sh '''
+          test -n "$HOST_PROJECT_DIR" || { echo "HOST_PROJECT_DIR is not set (deploy/jenkins/docker-compose.yml)"; exit 1; }
+          docker version --format 'Docker {{.Server.Version}}'
+          $COMPOSE config --quiet
+          # The frontend folder must be visible to Docker at HOST_PROJECT_DIR, or nginx would serve an empty folder.
+          docker run --rm -v "$HOST_PROJECT_DIR/frontend:/x:ro" alpine:3.20 test -f /x/index.html \
+            || { echo "Docker cannot see $HOST_PROJECT_DIR/frontend. Set HOST_PROJECT_DIR in deploy/jenkins/.env."; exit 1; }
+        '''
+      }
+
+      if (on('RUN_TESTS')) {
+        stage('Test') {
+          sh '''
+            for app in backend-data/backend backend-openID/backend; do
+              echo "== $app"
+              docker run --rm -v "$HOST_PROJECT_DIR/$app:/src" -v kiddoquest-m2:/root/.m2 -w /src \
+                maven:3.9-eclipse-temurin-17 mvn -q -B test
+            done
+          '''
+        }
+      }
+
+      if (on('BACKUP_DB')) {
+        stage('Back up database') {
+          sh '''
+            if [ -z "$($COMPOSE ps -q mysql)" ]; then echo "MySQL is not running: nothing to back up."; exit 0; fi
+            name="kiddoquest-$(date +%Y-%m-%d-%H%M)-jenkins.sql"
+            mkdir -p "$PROJECT/backup"
+            $COMPOSE exec -T mysql sh -c 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --databases kiddoquest_openid kiddoquest_farm --single-transaction --routines --triggers --default-character-set=utf8mb4 --hex-blob --set-gtid-purged=OFF > /tmp/kiddoquest.sql 2>/tmp/dump.err' \
+              || { $COMPOSE exec -T mysql cat /tmp/dump.err; exit 1; }
+            $COMPOSE cp mysql:/tmp/kiddoquest.sql "$PROJECT/backup/$name"
+            $COMPOSE exec -T mysql rm -f /tmp/kiddoquest.sql /tmp/dump.err
+            tail -n 1 "$PROJECT/backup/$name" | grep -q 'Dump completed' || { echo "The backup looks incomplete."; exit 1; }
+            echo "Backed up to backup/$name ($(wc -c < "$PROJECT/backup/$name") bytes)"
+          '''
+        }
+      }
+
+      stage('Keep previous images') {
+        // The images running now are tagged :previous, so a bad deploy can go back (deploy/jenkins/README.md).
+        String keep = ''
+        for (String img : images) {
+          keep += "if docker image inspect ${img}:latest >/dev/null 2>&1; then docker tag ${img}:latest ${img}:previous; echo kept ${img}:previous; fi\n"
+        }
+        sh keep
+      }
+
+      stage('Build') {
+        sh '$COMPOSE build'
+      }
+
+      stage('Deploy') {
+        sh '$COMPOSE up -d'
+      }
+
+      stage('Smoke test') {
+        sh '''
+          for i in $(seq 1 60); do
+            if curl -fsS http://host.docker.internal:8080/api/v1/health >/dev/null 2>&1; then break; fi
+            sleep 3
+          done
+          curl -fsS http://host.docker.internal:8080/api/v1/health && echo
+          curl -fsS -o /dev/null http://host.docker.internal:8080/index.html && echo "Frontend answers on http://localhost:8080"
+          $COMPOSE ps
+        '''
+      }
+    }
+  }
+}

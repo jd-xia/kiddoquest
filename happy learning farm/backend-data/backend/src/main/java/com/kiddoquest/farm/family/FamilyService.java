@@ -11,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.kiddoquest.farm.domain.ChildProfile;
 import com.kiddoquest.farm.domain.ParentPin;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kiddoquest.farm.repo.ChildProfileRepository;
+import com.kiddoquest.farm.repo.GameSnapshotRepository;
 import com.kiddoquest.farm.repo.ParentPinRepository;
 import com.kiddoquest.farm.sync.ChildIds;
 import com.kiddoquest.farm.web.FarmDtos.Family;
@@ -37,20 +39,25 @@ public class FamilyService {
 
     private final ChildProfileRepository children;
     private final ParentPinRepository pins;
+    private final GameSnapshotRepository snapshots;
+    private final ObjectMapper mapper;
     private final Clock clock;
     private final BCryptPasswordEncoder hasher = new BCryptPasswordEncoder();
     /** Wrong PINs in a row per account, and when trying is allowed again. */
     private final Map<String, long[]> misses = new ConcurrentHashMap<>();
 
-    public FamilyService(ChildProfileRepository children, ParentPinRepository pins, Clock clock) {
+    public FamilyService(ChildProfileRepository children, ParentPinRepository pins, GameSnapshotRepository snapshots,
+            ObjectMapper mapper, Clock clock) {
         this.children = children;
         this.pins = pins;
+        this.snapshots = snapshots;
+        this.mapper = mapper;
         this.clock = clock;
     }
 
     @Transactional(readOnly = true)
     public Family family(String ownerId, String day) {
-        List<KidTime> kids = children.findByOwnerUserIdOrderByCreatedAtAsc(ownerId).stream().map(c -> kid(c, day)).toList();
+        List<KidTime> kids = children.findByOwnerUserIdOrderByCreatedAtAsc(ownerId).stream().map(c -> kid(c, day, coins(c))).toList();
         return new Family(pins.existsById(ownerId), kids);
     }
 
@@ -122,10 +129,21 @@ public class FamilyService {
         return new PlayTime(day, child.isMain(), limit, bonus, used, left);
     }
 
-    private static KidTime kid(ChildProfile c, String day) {
+    private static KidTime kid(ChildProfile c, String day, Long coins) {
         PlayTime t = time(c, day);
         return new KidTime(c.getId(), c.getUsername(), c.getDisplayName(), c.getLook(), c.isMain(), c.getDailyMinutes(),
-                t.bonusMinutes(), t.usedSeconds());
+                t.bonusMinutes(), t.usedSeconds(), coins);
+    }
+
+    /** The coins in the child's saved farm, for the parent's settings. */
+    private Long coins(ChildProfile c) {
+        return snapshots.findById(c.getId()).map(snap -> {
+            try {
+                return mapper.readTree(snap.getPlayerJson()).path("gems").asLong(0);
+            } catch (Exception ex) {
+                return null;
+            }
+        }).orElse(null);
     }
 
     /** A new day starts the count again and drops yesterday's extra minutes. */
