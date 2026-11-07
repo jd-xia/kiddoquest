@@ -91,6 +91,30 @@ public class ChildService {
         return screenState(child);
     }
 
+    /**
+     * A parent gives coins or takes them away (FamilyController checks the PIN first). The saved farm gets a new
+     * revision, so a device that has it open takes the server's copy the next time it syncs. Never below 0.
+     */
+    @Transactional
+    public long adjustCoins(String ownerId, String email, String childId, int add) {
+        ChildProfile child = children.lockByIdAndOwner(checked(childId), ownerId).orElseThrow(NotFoundException::new);
+        GameSnapshot snap = snapshots.findById(child.getId()).orElse(null);
+        if (snap == null) {
+            throw new SyncRejectedException("This farm has not been saved yet. Open it once, then change its coins.");
+        }
+        ObjectNode player;
+        try {
+            player = (ObjectNode) mapper.readTree(snap.getPlayerJson());
+        } catch (Exception ex) {
+            throw new SyncRejectedException("Farm data could not be read. Nothing was changed.");
+        }
+        long coins = Math.max(0, Math.min(1_000_000_000L, player.path("gems").asLong(0) + add));
+        player.put("gems", coins);
+        Instant now = clock.instant();
+        store(child, snap, validator.sanitize(player, child.getDisplayName(), child.getGrade(), child.getLook(), now), now, email);
+        return coins;
+    }
+
     /** The screen moved to another farm or closed it: the farm is free again, nobody is asked about it. */
     @Transactional
     public void releaseScreen(String ownerId, String childId, String screen) {

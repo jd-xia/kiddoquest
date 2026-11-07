@@ -1,0 +1,9 @@
+# Added on top of docker-compose.yml when Jenkins deploys. Inside Jenkins the project is at /project, but the
+# frontend bind mount must name the folder as this computer's Docker sees it (HOST_PROJECT_DIR).
+services:
+  nginx:
+    volumes:
+      - type: bind
+        source: ${HOST_PROJECT_DIR:?HOST_PROJECT_DIR is not set}/frontend
+        target: /usr/share/nginx/html
+        read_only: true

@@ -20,7 +20,15 @@ const bbaWhen=v=>v?cloudWhen(v):'';
 function bbaBoot(){
   if(!cloudToken()){
     $('#app').innerHTML=`<div class="bba-head"><h1>🧠 Brain Boost for each child</h1></div>${npcHTML(MAYOR,'Sign in on the farm first, then open Parent settings → Brain Boost for each child.')}<div class="btns"><a class="b" href="index.html">Go to the farm</a></div>`;return}
-  bbaLocked();bbaAsk();
+  bbaLocked();
+  /* Coming from Parent settings, the PIN was just entered there: use it instead of asking again. */
+  let pass=null;try{pass=JSON.parse(sessionStorage.getItem('hmf-parent-pass')||'null');sessionStorage.removeItem('hmf-parent-pass')}catch(e){}
+  if(pass&&famPinOk(pass.pin)&&pass.until>Date.now()){
+    cloudFetch(cloudConfig().dataBase+'/api/v1/family/unlock',{method:'POST',auth:true,json:{pin:pass.pin},timeoutMs:8000})
+      .then(()=>{FAM.pin=pass.pin;bbaStart()}).catch(()=>bbaAsk());
+    return;
+  }
+  bbaAsk();
 }
 function bbaLocked(){$('#app').innerHTML=`<div class="bba-head"><h1>🧠 Brain Boost for each child</h1></div>${npcHTML(MAYOR,'This page is for grown-ups. Enter the parent PIN to choose each child\'s topics, levels and questions.')}<div class="btns"><button class="b" data-act="bbaAsk">Enter the parent PIN</button><button class="b ghost" data-act="bbaFarm">Back to the farm</button></div>`}
 function bbaAsk(){famPinBox('Brain Boost for each child','Enter the parent PIN to set up Brain Boost.','bbaPin')}

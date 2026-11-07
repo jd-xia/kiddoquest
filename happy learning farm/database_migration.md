@@ -2,7 +2,7 @@
 
 账号和农场存档都在 MySQL 里。换服务器时，不要拷贝 Docker 卷，导出一份 SQL，再在新机器上导入。
 
-当前这份备份是 `backup/kiddoquest-2026-10-29.sql`。
+最新的备份是 `backup/kiddoquest-2026-11-03-1851.sql`（2 个账号、3 个孩子、3 个农场）。Jenkins 每次部署前也会自动备份一份 `backup/kiddoquest-<时间>-jenkins.sql`（见 `deploy/jenkins/README.md`）。
 
 两个库要一起带走：
 

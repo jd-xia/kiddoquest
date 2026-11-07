@@ -71,8 +71,16 @@ public final class FarmDtos {
             Integer leftSeconds) {
     }
 
+    /** coins: what the saved farm has now; null when the farm was never saved. */
     public record KidTime(String id, String username, String displayName, String look, boolean main, Integer dailyMinutes,
-            int bonusMinutes, int usedSeconds) {
+            int bonusMinutes, int usedSeconds, Long coins) {
+    }
+
+    /** A parent gives (add > 0) or takes away (add < 0) coins. */
+    public record CoinWrite(
+            @NotBlank @Pattern(regexp = PIN) String pin,
+            @NotBlank @Pattern(regexp = DAY) String day,
+            @NotNull @Min(-100_000) @Max(100_000) Integer add) {
     }
 
     public record Family(boolean pinSet, List<KidTime> kids) {

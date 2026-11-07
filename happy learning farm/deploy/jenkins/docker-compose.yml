@@ -1,0 +1,27 @@
+# Jenkins on http://localhost:8090 (user admin, password in deploy/jenkins/.env).
+# From this folder: docker compose up -d --build
+# The project folder is mounted at /project; Jenkins builds and deploys the farm through this computer's Docker.
+name: kiddoquest-jenkins
+
+services:
+  jenkins:
+    build: .
+    image: kiddoquest-jenkins:local
+    # root so the mounted Docker socket can be used; this Jenkins is only for this computer
+    user: root
+    ports:
+      - "8090:8080"
+    environment:
+      JENKINS_ADMIN_PASSWORD: ${JENKINS_ADMIN_PASSWORD:?Set JENKINS_ADMIN_PASSWORD in deploy/jenkins/.env}
+      # The project folder as this computer's Docker sees it, for bind mounts made from inside Jenkins
+      # (Docker Desktop shows C:\ as /run/desktop/mnt/host/c).
+      HOST_PROJECT_DIR: ${HOST_PROJECT_DIR:-/run/desktop/mnt/host/c/github/workspace/kiddoquest/happy learning farm}
+      TZ: Asia/Singapore
+    volumes:
+      - jenkins-home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ../..:/project
+    restart: unless-stopped
+
+volumes:
+  jenkins-home:

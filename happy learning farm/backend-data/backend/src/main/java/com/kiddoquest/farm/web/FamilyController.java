@@ -13,6 +13,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.kiddoquest.farm.family.FamilyService;
+import com.kiddoquest.farm.service.ChildService;
+import com.kiddoquest.farm.web.FarmDtos.CoinWrite;
 import com.kiddoquest.farm.web.FarmDtos.Family;
 import com.kiddoquest.farm.web.FarmDtos.KidTimeWrite;
 import com.kiddoquest.farm.web.FarmDtos.PinCheck;
@@ -31,9 +33,11 @@ import jakarta.validation.constraints.Pattern;
 public class FamilyController {
 
     private final FamilyService family;
+    private final ChildService children;
 
-    public FamilyController(FamilyService family) {
+    public FamilyController(FamilyService family, ChildService children) {
         this.family = family;
+        this.children = children;
     }
 
     @GetMapping("/api/v1/family")
@@ -60,6 +64,15 @@ public class FamilyController {
     @Operation(summary = "Parent: mark the main farm, set minutes a day, or add time today")
     public Family writeKid(@AuthenticationPrincipal Jwt jwt, @PathVariable String childId, @Valid @RequestBody KidTimeWrite request) {
         return family.writeKid(ChildController.owner(jwt), childId, request);
+    }
+
+    @PostMapping("/api/v1/family/kids/{childId}/coins")
+    @Operation(summary = "Parent: give a child coins (add > 0) or take some away (add < 0). Never below 0. Needs the parent PIN.")
+    public Family coins(@AuthenticationPrincipal Jwt jwt, @PathVariable String childId, @Valid @RequestBody CoinWrite request) {
+        String owner = ChildController.owner(jwt);
+        family.unlock(owner, request.pin());
+        children.adjustCoins(owner, ChildController.email(jwt), childId, request.add());
+        return family.family(owner, request.day());
     }
 
     @PostMapping("/api/v1/children/{childId}/play")

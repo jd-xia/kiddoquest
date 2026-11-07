@@ -120,7 +120,11 @@ function famDraw(f){
         <button class="b ghost sm" data-act="famAdd" data-id="${esc(k.id)}" data-sign="-1" aria-label="Take minutes away from ${esc(k.displayName)} today">−</button>
         <input type="number" class="famn" data-kid="${esc(k.id)}" min="1" max="600" step="1" value="5" aria-label="Minutes">
         <button class="b ghost sm" data-act="famAdd" data-id="${esc(k.id)}" data-sign="1" aria-label="Add minutes for ${esc(k.displayName)} today">+</button> min</div>`:''}`}
-      <p class="muted">${today}</p></div>`}).join('')||'<p class="muted">No farms on this account yet.</p>';
+      <p class="muted">${today}</p>
+      <div class="row famtoday">🪙 <b>${k.coins==null?'–':esc(String(k.coins))}</b> coins
+        <button class="b ghost sm" data-act="famCoins" data-id="${esc(k.id)}" data-sign="-1" aria-label="Take coins away from ${esc(k.displayName)}">−</button>
+        <input type="number" class="famc" data-kid="${esc(k.id)}" min="1" max="100000" step="1" value="10" aria-label="Coins for ${esc(k.displayName)}">
+        <button class="b ghost sm" data-act="famCoins" data-id="${esc(k.id)}" data-sign="1" aria-label="Give ${esc(k.displayName)} coins">+</button></div></div>`}).join('')||'<p class="muted">No farms on this account yet.</p>';
   el.innerHTML=`<div class="dlg famdlg"><div style="flex:1"><div class="dlg-name">👪 Parent settings</div>
     <p class="muted">The main account has no time limit. Each child plays up to their minutes a day; a warning shows 5 minutes before the end. A new day starts at midnight.</p>
     ${rows}<p class="syncwarn" id="famerr" aria-live="polite" style="display:none"></p>
@@ -142,6 +146,21 @@ function famN(input){
   if(input){input.focus();input.select&&input.select()}
   const e=$('#famerr');if(e){e.textContent='Minutes must be a whole number from 1 to 600.';e.style.display=''}
   return 0;
+}
+/* Coins: the parent gives some (+) or takes some away (−) on the farm server; never below 0. The farm on this
+   screen sends its last change first and then takes the server's copy, so the new total shows at once. */
+async function famCoins(id,sign){
+  if(!FAM.pin){famOpen();return}
+  const input=$(`.famc[data-kid="${id}"]`),n=Number(input&&input.value),e=$('#famerr');
+  if(!(Number.isInteger(n)&&n>=1&&n<=100000)){if(e){e.textContent='Coins must be a whole number from 1 to 100000.';e.style.display=''}if(input)input.focus();return}
+  const here=cloudIsAccount()&&cloudRead().childId===id;
+  if(here&&!(await cloudFlush(6000))){if(e){e.textContent='This farm has a change that is not on the farm server yet. Try again in a moment.';e.style.display=''}return}
+  try{
+    const f=await cloudFetch(famApi('/family/kids/'+encodeURIComponent(id)+'/coins'),{method:'POST',auth:true,json:{pin:FAM.pin,day:famDay(),add:n*sign},timeoutMs:8000});
+    famDraw(f);cloudLoadKidsNow();
+    if(here)await cloudCheckServer();   // takes the server's copy with the new coins
+    const k=(f.kids||[]).find(x=>x.id===id);if(k)toast(`${k.displayName} has ${k.coins} coins now.`);
+  }catch(err){if(err.code==='wrong_pin'||err.code==='pin_wait'){FAM.pin=null;cloudTell(famPinMsg(err));return}if(e){e.textContent=err.message||'The coins were not changed. Try again.';e.style.display=''}}
 }
 function cloudLoadKidsNow(){cloudKidStamp=0;cloudLoadKids()}
 function famDone(){FAM.pin=null;cloudClose();if(UI&&UI.screen==='players'&&typeof rPlayers==='function')rPlayers()}
@@ -173,7 +192,11 @@ Object.assign(ACT,{
   famOpen:()=>famOpen(),famPinNew:()=>famPinNew(),famUnlockSettings:()=>famUnlock(famOpen),famCancel:()=>famCancel(),
   famAdd:d=>{const n=famN($(`.famn[data-kid="${d.id}"]`));if(n)famWrite(d.id,{addMinutes:n*Number(d.sign||1)})},famMain:d=>famWrite(d.id,{main:true}),famDone:()=>famDone(),
   famPinChangeAsk:()=>famPinBox('Change PIN','Choose a new 4-digit parent PIN.','famPinChange','<input id="fampin2" class="pininput" type="password" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="again">'),
-  famBrain:()=>{FAM.pin=null;cloudClose();navTo('brain-boost-admin.html',{screen:'admin'})},   // the Brain Boost page asks for the PIN itself
+  /* The PIN was just entered here, so the Brain Boost page does not ask again: it is handed over in this tab only,
+     for two minutes, and the Brain Boost page removes it as soon as it reads it. */
+  famBrain:()=>{try{if(FAM.pin)sessionStorage.setItem('hmf-parent-pass',JSON.stringify({pin:FAM.pin,until:Date.now()+120000}))}catch(e){}
+    FAM.pin=null;cloudClose();navTo('brain-boost-admin.html',{screen:'admin'})},
+  famCoins:d=>famCoins(d.id,Number(d.sign||1)),
   famPinChange:()=>famPinChange(),famAddAsk:()=>famAddAsk(),famAddNow:()=>famAddNow(),famGateOk:()=>famGateOk()
 });
 /* First count right after the page starts, so a child whose time is up sees it at once. */
