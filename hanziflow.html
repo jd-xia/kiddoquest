@@ -524,6 +524,8 @@ function createWriter(char, speed, delay, forQuiz){
     outlineColor: '#e5ddff',
     drawingColor: '#3c3c50',
     showOutline: true,
+    // Start blank so strokes appear one by one (default would show the full char first)
+    showCharacter: false,
     showHintAfterMisses: forQuiz ? 1 : false,
     highlightOnComplete: true,
     leniency: 1.15
