@@ -5,7 +5,7 @@ spring:
   application:
     name: backend-openid
   datasource:
-    url: ${OPENID_DB_URL:jdbc:mysql://localhost:3306/kiddoquest_openid?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8}
+    url: ${OPENID_DB_URL:jdbc:mysql://localhost:13306/kiddoquest_openid?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8}
     username: ${OPENID_DB_USERNAME:root}
     password: ${OPENID_DB_PASSWORD:kiddoquest-local}
     driver-class-name: com.mysql.cj.jdbc.Driver

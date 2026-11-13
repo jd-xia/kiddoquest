@@ -23,7 +23,7 @@ services:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-kiddoquest-local}
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     ports:
-      - "3306:3306"
+      - "13306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
     healthcheck:

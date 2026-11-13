@@ -6,10 +6,10 @@ How to run the whole stack (MySQL, OpenID, farm API, Nginx on 8080) and Jenkins 
 |---|---|---|---|
 | 8080 | Nginx: game and APIs | Everyone | **Funnel** (public https) |
 | 22 | SSH | Only your tailnet devices | **Serve** |
-| 3306 | MySQL | Only your tailnet devices | **Serve** |
-| 8090 | Jenkins | Only your tailnet devices | **Serve** |
+| 13306 | MySQL | Only your tailnet devices | **Serve** |
+| 18090 | Jenkins | Only your tailnet devices | **Serve** |
 
-Funnel puts a port on the public internet. Serve shares it only with devices signed in to your own tailnet. Never funnel 22, 3306 or 8090: Jenkins runs as root with the Docker socket, so whoever gets into it controls the machine.
+Funnel puts a port on the public internet. Serve shares it only with devices signed in to your own tailnet. Never funnel 22, 13306 or 18090: Jenkins runs as root with the Docker socket, so whoever gets into it controls the machine.
 
 The folder name `happy learning farm` has spaces, so always quote it.
 
@@ -20,6 +20,8 @@ sudo apt update && sudo apt install -y curl
 curl -fsSL https://tailscale.com/install.sh | sh
 sudo tailscale up
 tailscale status
+sudo systemctl enable tailscaled
+sudo systemctl start tailscaled
 ```
 
 `tailscale up` prints a link; open it and sign in to your tailnet. `tailscale status` shows this machine's name. Its full name, `<name>.tail5e7276.ts.net`, is written `<host>` below.
@@ -37,7 +39,7 @@ Because the hostname is new:
 1. In `frontend/common/cloud-config.js`, change `HMF_SERVICE` and the hostname check to `<host>`. Commit and push, so the GitHub Pages copy of the game calls this server.
 2. In Google Cloud Console, open the OAuth client and add `https://<host>` to **Authorized JavaScript origins**. Without it, Google sign-in fails.
 
-## 2. Tailscale: open 22, 3306 and 8090 with Serve
+## 2. Tailscale: open 22, 13306 and 18090 with Serve
 
 SSH needs an SSH server on the machine:
 
@@ -50,17 +52,17 @@ Then share the three ports with your tailnet only:
 
 ```bash
 sudo tailscale serve --bg --tcp 22 tcp://127.0.0.1:22
-sudo tailscale serve --bg --tcp 3306 tcp://127.0.0.1:3306
-sudo tailscale serve --bg --https 8090 http://127.0.0.1:8090
+sudo tailscale serve --bg --tcp 13306 tcp://127.0.0.1:13306
+sudo tailscale serve --bg --https 18090 http://127.0.0.1:18090
 ```
 
 From another device signed in to your tailnet:
 
 - SSH: `ssh <user>@<host>`
-- MySQL: a client such as DBeaver or MySQL Workbench, host `<host>`, port `3306`, user `root`, password from `.env` (step 4).
-- Jenkins: `https://<host>:8090/`
+- MySQL: a client such as DBeaver or MySQL Workbench, host `<host>`, port `13306`, user `root`, password from `.env` (step 4).
+- Jenkins: `https://<host>:18090/`
 
-MySQL and Jenkins answer once they run (steps 5 to 7). The compose files bind 3306 and 8090 to `127.0.0.1`, so the LAN cannot reach them directly; only Serve can. Docker-published ports bypass `ufw`, which is why this matters.
+MySQL and Jenkins answer once they run (steps 5 to 7). The compose files bind 13306 and 18090 to `127.0.0.1`, so the LAN cannot reach them directly; only Serve can. Docker-published ports bypass `ufw`, which is why this matters.
 
 Check or undo:
 
@@ -68,8 +70,8 @@ Check or undo:
 tailscale serve status
 tailscale funnel status
 sudo tailscale serve --tcp 22 off
-sudo tailscale serve --tcp 3306 off
-sudo tailscale serve --https 8090 off
+sudo tailscale serve --tcp 13306 off
+sudo tailscale serve --https 18090 off
 ```
 
 Funnel and Serve settings survive reboots.
@@ -168,7 +170,7 @@ Jenkins builds links and redirects from its own address. Set it to the Serve add
 ```yaml
 unclassified:
   location:
-    url: "https://<host>:8090/"
+    url: "https://<host>:18090/"
 ```
 
 Start it:
@@ -178,7 +180,7 @@ docker compose up -d --build
 docker compose logs -f jenkins
 ```
 
-The first build downloads Jenkins and the Docker CLI and takes a few minutes. When the log shows `Jenkins is fully up and running`, press Ctrl+C and open `https://<host>:8090/`. Sign in as `admin`. There is no setup wizard: the admin user and the deploy job come from `casc.yaml` on every start.
+The first build downloads Jenkins and the Docker CLI and takes a few minutes. When the log shows `Jenkins is fully up and running`, press Ctrl+C and open `https://<host>:18090/`. Sign in as `admin`. There is no setup wizard: the admin user and the deploy job come from `casc.yaml` on every start.
 
 To deploy a new version later:
 

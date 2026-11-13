@@ -10,7 +10,7 @@ spring:
   application:
     name: backend-data
   datasource:
-    url: ${FARM_DB_URL:jdbc:mysql://localhost:3306/kiddoquest_farm?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8}
+    url: ${FARM_DB_URL:jdbc:mysql://localhost:13306/kiddoquest_farm?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=utf8}
     username: ${FARM_DB_USERNAME:root}
     password: ${FARM_DB_PASSWORD:kiddoquest-local}
     driver-class-name: com.mysql.cj.jdbc.Driver

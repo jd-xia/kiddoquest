@@ -53,7 +53,7 @@ Google Cloud Console 里创建一个 **Web** 客户端，把 `https://jd-xia.git
 本机单独运行时，先有一个 MySQL，再设置：
 
 ```powershell
-$env:OPENID_DB_URL = "jdbc:mysql://localhost:3306/kiddoquest_openid?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
+$env:OPENID_DB_URL = "jdbc:mysql://localhost:13306/kiddoquest_openid?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC"
 $env:OPENID_DB_USERNAME = "root"
 $env:OPENID_DB_PASSWORD = "kiddoquest-local"
 mvn spring-boot:run

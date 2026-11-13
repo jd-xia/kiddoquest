@@ -15,7 +15,7 @@ jenkins:
 
 unclassified:
   location:
-    url: "http://localhost:8090/"
+    url: "http://localhost:18090/"
 
 jobs:
   - script: >

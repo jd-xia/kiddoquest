@@ -1,6 +1,6 @@
 # Jenkins：一键部署到本机 Docker
 
-Jenkins 跑在本机 Docker 里，地址 http://localhost:8090 ，用户 `admin`，密码在 `deploy/jenkins/.env`（不提交到 git）。
+Jenkins 跑在本机 Docker 里，地址 http://localhost:18090 ，用户 `admin`，密码在 `deploy/jenkins/.env`（不提交到 git）。
 
 ## 启动 Jenkins
 
@@ -14,7 +14,7 @@ Jenkins 的设置（管理员、部署任务）都写在 `casc.yaml` 里，每�
 
 ## 部署
 
-打开 http://localhost:8090 → 任务 **happy-learning-farm-deploy** → **Build with Parameters** → Build。
+打开 http://localhost:18090 → 任务 **happy-learning-farm-deploy** → **Build with Parameters** → Build。
 
 流水线就是项目根目录的 `Jenkinsfile`，每次运行都从项目文件夹现读，所以部署的是文件夹里**现在**的代码（包括还没提交的改动）。步骤：
 
@@ -38,5 +38,5 @@ docker compose up -d --no-build
 
 ## 注意
 
-- Jenkins 以 root 身份运行并挂载了 Docker socket，等于能控制这台电脑的 Docker。只在本机用，不要把 8090 端口开放到外网。
+- Jenkins 以 root 身份运行并挂载了 Docker socket，等于能控制这台电脑的 Docker。只在本机用，不要把 18090 端口开放到外网。
 - 项目文件夹搬家后，改 `deploy/jenkins/.env` 里的 `HOST_PROJECT_DIR`（Docker Desktop 把 `C:\` 显示为 `/run/desktop/mnt/host/c`），再 `docker compose up -d`。
