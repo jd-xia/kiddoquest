@@ -4,7 +4,7 @@
    GitHub Pages, m700, mvinb-2203, and mvinb-2207 call HMF_SERVICE. Other hostnames use their own origin.
    HMF_SERVICE is the public https gateway, with no trailing slash.
    An https page cannot call an http service. */
-const HMF_SERVICE='https://mvinb-2203.tail5e7276.ts.net';
+const HMF_SERVICE='https://m700.tail5e7276.ts.net';
 const HMF_REMOTE_HOSTS=['jd-xia.github.io','mvinb-2203.tail5e7276.ts.net','mvinb-2207.tail5e7276.ts.net','m700.tail5e7276.ts.net'];
 const HMF_API=(HMF_REMOTE_HOSTS.includes(location.hostname)?HMF_SERVICE:(location.hostname==='localhost'||location.hostname==='127.0.0.1'?'http://localhost:8080':location.origin)).replace(/\/$/,'');
 window.HMF_CLOUD={
