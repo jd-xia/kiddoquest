@@ -17,18 +17,16 @@
 
 ## 备份
 
-在项目目录执行。MySQL 容器要处于运行状态（`docker compose ps` 里 `mysql` 是 healthy）。
+脚本在 `scripts/database/`（说明见 `scripts/database/README.md`）。在项目根目录执行，MySQL 容器要处于运行状态（`docker compose ps` 里 `mysql` 是 healthy）。
 
 ```powershell
-New-Item -ItemType Directory -Force -Path backup | Out-Null
-docker compose exec -T mysql sh -c 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" --databases kiddoquest_openid kiddoquest_farm --single-transaction --routines --triggers --default-character-set=utf8mb4 --hex-blob --set-gtid-purged=OFF > /tmp/kiddoquest.sql'
-docker compose cp mysql:/tmp/kiddoquest.sql backup/kiddoquest.sql
-docker compose exec -T mysql rm -f /tmp/kiddoquest.sql
+.\scripts\database\backup.ps1
+.\scripts\database\verify.ps1
 ```
 
-密码从容器自己的环境变量读取，不用写进命令。`--single-transaction` 导出的是 InnoDB 的一份一致快照。
+会生成 `backup/kiddoquest-<时间>.sql`。Jenkins 部署前用 `backup.sh jenkins`，文件名带 `-jenkins`。
 
-不要用 PowerShell 的 `>` 直接接 `docker exec`。那样得到的是 UTF-16 文件，导入会失败。上面的做法是先在容器里写成 UTF-8，再用 `docker compose cp` 拷出来。
+密码从容器环境变量读取。不要用 PowerShell 的 `>` 直接接 `docker exec`（会得到 UTF-16，导入失败）；脚本是在容器里写成 UTF-8 再 `docker compose cp` 出来。
 
 `mysqldump` 可能打印一行 “Using a password on the command line interface can be insecure.” 这不影响文件。
 
@@ -39,10 +37,7 @@ docker compose exec -T mysql rm -f /tmp/kiddoquest.sql
 先只启动 MySQL，等它 healthy，再导入，最后启动其余服务：
 
 ```powershell
-docker compose up -d mysql
-docker compose cp backup/kiddoquest.sql mysql:/tmp/kiddoquest.sql
-docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" < /tmp/kiddoquest.sql'
-docker compose exec -T mysql rm -f /tmp/kiddoquest.sql
+.\scripts\database\restore.ps1 backup\kiddoquest.sql
 docker compose up -d
 ```
 
@@ -51,7 +46,7 @@ SQL 里有 `DROP TABLE IF EXISTS`。如果 data 应用或登录服务已经建�
 导入之后可以用下面两句确认行还在：
 
 ```powershell
-docker compose exec -T mysql sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "SELECT COUNT(*) AS users FROM kiddoquest_openid.openid_user; SELECT COUNT(*) AS children FROM kiddoquest_farm.farm_child;"'
+.\scripts\database\verify.ps1
 ```
 
 ## 语音聊天（Farm Chat）

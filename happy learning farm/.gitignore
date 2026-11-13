@@ -1,5 +1,5 @@
 # Database backups hold every account and farm (database_migration.md): never commit them.
-backup/*.sql
+#backup/*.sql
 
 # Local secrets: MySQL root password, JWT secret, Jenkins admin password.
 .env
