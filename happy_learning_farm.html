@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>开心学习农场 · Happy Learning Farm</title>
+<meta name="description" content="在一座能走进去的农场里练数学。金币只能在学校里赚。">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --sky-top:#8FD3E8;
+    --sky-mid:#BFE9EE;
+    --sky-bottom:#FFF3C4;
+    --grass:#5FAE55;
+    --grass-dark:#4C9744;
+    --ink:#22412B;
+    --ink-soft:#4E6552;
+    --card:#FFFDF6;
+    --edge:#F0E4C6;
+    --gold:#FFC145;
+    --gold-dark:#D89A20;
+    --coral:#FF6B4A;
+    --shadow:0 16px 34px rgba(43,58,46,.16);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{
+    font-family:'Noto Sans SC',sans-serif;
+    color:var(--ink);
+    background:linear-gradient(180deg,var(--sky-top) 0%,var(--sky-mid) 38%,var(--sky-bottom) 68%,var(--grass) 69%,var(--grass-dark) 100%);
+  }
+  a{color:inherit}
+  .scene{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+  .sun{position:absolute;top:4%;right:6%;width:min(128px,22vw);height:min(128px,22vw);animation:spin 48s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .cloud{position:absolute;opacity:.95;animation:drift 36s ease-in-out infinite}
+  .cloud.c1{top:8%;left:-8%;width:160px}
+  .cloud.c2{top:16%;left:42%;width:110px;animation-duration:28s;animation-delay:-10s}
+  @keyframes drift{50%{transform:translateX(48px)}}
+  .hill{position:absolute;left:0;bottom:0;width:100%;height:28vh;min-height:140px}
+  .wrap{position:relative;z-index:1;max-width:980px;margin:0 auto;padding:22px 18px 48px}
+  .back{
+    display:inline-flex;align-items:center;gap:6px;
+    text-decoration:none;font-size:13px;font-weight:700;color:#2F4A34;
+    background:rgba(255,255,255,.62);border:1px solid rgba(255,255,255,.9);
+    border-radius:999px;padding:7px 12px;
+  }
+  .gate{
+    margin-top:16px;
+    background:var(--card);
+    border:2px solid var(--edge);
+    border-radius:28px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    display:grid;
+    grid-template-columns:minmax(260px,42%) 1fr;
+  }
+  .art{background:linear-gradient(180deg,#9AD7EA,#FFF6D0 62%,#7BC96F 63%,#5FAE55);min-height:320px;position:relative}
+  .art svg{display:block;width:100%;height:100%}
+  .copy{padding:28px 28px 24px}
+  .eyebrow{
+    display:inline-block;margin:0 0 8px;
+    font-size:12px;font-weight:700;letter-spacing:.04em;color:#6A4A12;
+    background:#FFF1C9;border-radius:999px;padding:4px 10px;
+  }
+  h1{
+    font-family:'ZCOOL KuaiLe',sans-serif;
+    font-size:clamp(34px,5vw,48px);
+    line-height:1.05;margin:0;letter-spacing:1px;
+  }
+  .en{margin:4px 0 0;font-weight:700;color:#6B7F6E;font-size:14px}
+  .lead{margin:14px 0 0;font-size:16px;line-height:1.65;color:var(--ink-soft)}
+  .enter{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    margin-top:18px;min-height:52px;padding:0 22px;
+    text-decoration:none;font-weight:900;font-size:18px;
+    color:#3B2A00;border-radius:16px;
+    background:linear-gradient(180deg,#FFE08A,var(--gold));
+    box-shadow:0 5px 0 var(--gold-dark);
+  }
+  .enter:hover{transform:translateY(-2px)}
+  .enter:active{transform:translateY(2px);box-shadow:0 2px 0 var(--gold-dark)}
+  .note{margin:12px 0 0;font-size:13px;line-height:1.5;color:#6B7F6E}
+  .loop{
+    display:flex;flex-wrap:wrap;gap:8px;margin-top:18px;
+  }
+  .loop span{
+    background:#F6F1E4;border-radius:999px;padding:6px 10px;
+    font-size:13px;font-weight:700;color:#3E5338;
+  }
+  .features{margin-top:22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  .feat{
+    background:rgba(255,253,246,.92);
+    border:2px solid rgba(255,255,255,.95);
+    border-radius:18px;
+    padding:14px 14px 16px;
+    box-shadow:0 8px 18px rgba(43,58,46,.08);
+  }
+  .feat b{display:block;font-family:'ZCOOL KuaiLe',sans-serif;font-size:18px;margin:0 0 4px}
+  .feat p{margin:0;font-size:13px;line-height:1.55;color:var(--ink-soft)}
+  footer{margin-top:22px;text-align:center;font-size:12px;color:#2F4A34}
+  @media (max-width:760px){
+    .gate{grid-template-columns:1fr}
+    .art{min-height:210px}
+    .copy{padding:20px 18px 18px}
+    .features{grid-template-columns:1fr}
+    .enter{width:100%}
+  }
+</style>
+</head>
+<body>
+<div class="scene" aria-hidden="true">
+  <svg class="cloud c1" viewBox="0 0 200 90"><ellipse cx="55" cy="55" rx="50" ry="30" fill="#fff"/><ellipse cx="105" cy="42" rx="42" ry="34" fill="#fff"/><ellipse cx="150" cy="58" rx="38" ry="26" fill="#fff"/></svg>
+  <svg class="cloud c2" viewBox="0 0 200 90"><ellipse cx="55" cy="55" rx="50" ry="30" fill="#fff"/><ellipse cx="105" cy="42" rx="42" ry="34" fill="#fff"/><ellipse cx="150" cy="58" rx="38" ry="26" fill="#fff"/></svg>
+  <svg class="sun" viewBox="0 0 120 120">
+    <g stroke="#FFD166" stroke-width="6" stroke-linecap="round">
+      <line x1="60" y1="2" x2="60" y2="18"/><line x1="60" y1="102" x2="60" y2="118"/>
+      <line x1="2" y1="60" x2="18" y2="60"/><line x1="102" y1="60" x2="118" y2="60"/>
+      <line x1="20" y1="20" x2="31" y2="31"/><line x1="89" y1="89" x2="100" y2="100"/>
+      <line x1="100" y1="20" x2="89" y2="31"/><line x1="31" y1="89" x2="20" y2="100"/>
+    </g>
+    <circle cx="60" cy="60" r="34" fill="#FFD166"/>
+  </svg>
+  <svg class="hill" viewBox="0 0 1440 220" preserveAspectRatio="none">
+    <path d="M0,90 C220,20 420,140 720,80 C1000,25 1220,120 1440,60 L1440,220 L0,220 Z" fill="#5FAE55"/>
+    <path d="M0,140 C260,90 480,180 760,120 C1040,70 1240,160 1440,120 L1440,220 L0,220 Z" fill="#4C9744"/>
+  </svg>
+</div>
+
+<div class="wrap">
+  <a class="back" href="index.html">← 游戏乐园</a>
+
+  <section class="gate">
+    <div class="art" aria-hidden="true">
+      <svg viewBox="0 0 360 420" xmlns="http://www.w3.org/2000/svg">
+        <rect width="360" height="250" fill="#9AD7EA"/>
+        <rect y="250" width="360" height="170" fill="#7BC96F"/>
+        <circle cx="300" cy="58" r="28" fill="#FFD166"/>
+        <ellipse cx="70" cy="70" rx="34" ry="16" fill="#fff"/>
+        <ellipse cx="96" cy="64" rx="22" ry="18" fill="#fff"/>
+        <path d="M0 268 Q80 240 160 268 T320 258 L360 250 L360 300 L0 300 Z" fill="#5FAE55"/>
+        <rect x="118" y="168" width="124" height="92" fill="#E24B3B"/>
+        <polygon points="104,168 180,108 256,168" fill="#C0392B"/>
+        <rect x="164" y="210" width="32" height="50" fill="#6B3A1F"/>
+        <rect x="136" y="186" width="22" height="22" fill="#FFE08A" stroke="#C0392B"/>
+        <rect x="202" y="186" width="22" height="22" fill="#FFE08A" stroke="#C0392B"/>
+        <rect x="248" y="214" width="10" height="46" rx="3" fill="#8B5A2B"/>
+        <circle cx="253" cy="198" r="22" fill="#3FA34D"/>
+        <rect x="28" y="292" width="70" height="46" rx="6" fill="#C4A15A"/>
+        <rect x="108" y="292" width="70" height="46" rx="6" fill="#8FBF62"/>
+        <rect x="188" y="292" width="70" height="46" rx="6" fill="#E7C56A"/>
+        <rect x="268" y="292" width="64" height="46" rx="6" fill="#7D9A4E"/>
+        <path d="M150 360 L150 292" stroke="#E8D7A2" stroke-width="18"/>
+        <path d="M210 360 L210 292" stroke="#E8D7A2" stroke-width="18"/>
+        <path d="M138 292 Q180 250 222 292" fill="none" stroke="#8B5A2B" stroke-width="8"/>
+        <text x="180" y="286" text-anchor="middle" font-family="ZCOOL KuaiLe, sans-serif" font-size="16" fill="#FFF8E4">农场大门</text>
+        <ellipse cx="70" cy="368" rx="28" ry="16" fill="#F7F3EA"/>
+        <circle cx="90" cy="356" r="12" fill="#F7F3EA"/>
+        <circle cx="94" cy="352" r="2" fill="#2B3A2E"/>
+        <text x="290" y="378" font-family="ZCOOL KuaiLe, sans-serif" font-size="18" fill="#22412B">6×7</text>
+      </svg>
+    </div>
+    <div class="copy">
+      <p class="eyebrow">P1–P6 · 数学是唯一的收入</p>
+      <h1>开心学习农场</h1>
+      <p class="en">Happy Learning Farm</p>
+      <p class="lead">孩子在一座 3D 农场里走动。金币只能在数学学校里赚：答对才有，答错不扣，还会把做法讲出来。想买种子、养动物、换衣服，就再回学校答一关。</p>
+      <a class="enter" href="happy%20learning%20farm/frontend/index.html">进入农场</a>
+      <p class="note">家长先用 Google 登录，再选今天是谁在玩。</p>
+      <div class="loop" aria-label="怎么玩">
+        <span>1. 学校答对</span>
+        <span>2. 赚到金币</span>
+        <span>3. 回农场花钱</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="features" aria-label="主要功能">
+    <article class="feat"><b>🌾 自己的农场</b><p>田、动物栏都在南边大门外面，有自己的名字牌。作物按真实时间长大，浇水会快一点。</p></article>
+    <article class="feat"><b>📚 数学学校</b><p>P1 到 P6，口算、应用题和脑力关卡。答完回到农场花钱。</p></article>
+    <article class="feat"><b>🎣 钓鱼</b><p>选乘法口诀，连续答对才能把鱼钓上来。</p></article>
+    <article class="feat"><b>💬 找 Bella 聊聊</b><p>农场市长会看田里的情况，提醒该收菜、该补种，或者下一关去哪。</p></article>
+    <article class="feat"><b>🏡 Club</b><p>最多 10 个小朋友。每人一块地挨在一起，能看见朋友的农场，点一下朋友就能聊天。自己的田只有自己能种。</p></article>
+    <article class="feat"><b>👨‍👩‍👧 家长</b><p>用 Google 登录。可以看每个孩子的进度，设定每天能玩多久，主账号要 PIN。</p></article>
+    <article class="feat"><b>🎨 自己的 icon</b><p>走进创作工坊，把人物、动物和农场上的图案换成自己画的。</p></article>
+  </section>
+
+  <footer>🌱 小咪与小登的游戏乐园</footer>
+</div>
+</body>
+</html>
