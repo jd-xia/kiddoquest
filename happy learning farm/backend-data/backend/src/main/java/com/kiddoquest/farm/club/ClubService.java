@@ -42,7 +42,7 @@ import com.kiddoquest.farm.web.FarmExceptions.SyncRejectedException;
 @Service
 public class ClubService {
 
-    public static final int MAX_MEMBERS = 4;
+    public static final int MAX_MEMBERS = 10;
 
     private final ClubRepository clubs;
     private final ClubMemberRepository members;
@@ -92,7 +92,7 @@ public class ClubService {
     public List<ClubInfo> search(String query) {
         String text = query == null ? "" : query.replaceAll("\\p{Cntrl}", "").trim().replaceAll("\\s+", " ");
         String pattern = "%" + key(text).replace("\\", "").replace("%", "").replace("_", "") + "%";
-        return clubs.search(pattern, PageRequest.of(0, 10)).stream()
+        return clubs.search(pattern, PageRequest.of(0, 30)).stream()
                 .map(club -> new ClubInfo(club.getId(), club.getName(), (int) members.countByClubId(club.getId()), MAX_MEMBERS))
                 .toList();
     }
@@ -140,6 +140,9 @@ public class ClubService {
         int slot = 0;
         while (taken.contains(slot)) {
             slot++;
+        }
+        if (slot >= MAX_MEMBERS) {
+            throw new SyncRejectedException("That club is full. A club has up to " + MAX_MEMBERS + " farmers.");
         }
         members.saveAndFlush(member(club.getId(), child.getId(), slot, clock.instant()));
         events.publishEvent(new ClubChanged(club.getId(), usernames(club.getId())));

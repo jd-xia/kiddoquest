@@ -4,16 +4,27 @@
    lets a child's own account save that child's farm; see ClubService).
    The map: every child's own fields, meadow and animal pen are in a lot in the lane outside the farm, through the
    gate in the south fence; the middle of the farm is a square everyone shares. Farming alone, your farm is lot 0.
-   In a club each member has the lot of their slot (0 to 3), so every screen shows every lot in the same place.
+   In a club each member has the lot of their slot (0 to 9), so every screen shows every lot in the same place.
    Positions go over the chat socket with the player code of the lot a child stands in ('area'), measured from
    that lot's middle, so each screen draws them on the right lot. */
-const CLUB_MAX=4;
-/* Where each slot's lot sits: added to the lot's own field, meadow and pen positions (plaza.js lotPlot, PEN). */
-const CLUB_LOT=[{x:-20,z:27},{x:12,z:27},{x:-20,z:43},{x:12,z:43}];
+const CLUB_MAX=10;
+/* Where each slot's lot sits: added to the lot's own field, meadow and pen positions (plaza.js lotPlot, PEN).
+   Two columns and five rows, far enough south of the gate that both farms are ahead of you, not beside the gate.
+   The left column is as close to the path as the animal pen allows. Slot 0 is the near-left lot. */
+const CLUB_LOT=[
+  {x:-18,z:36},{x:11,z:36},{x:-18,z:53},{x:11,z:53},{x:-18,z:70},
+  {x:11,z:70},{x:-18,z:87},{x:11,z:87},{x:-18,z:104},{x:11,z:104}
+];
 /* One lot: the field, the meadow and the animal pen together. A child inside it is on that child's farm. */
 const CLUB_HOME={x0:-7.4,x1:16.9,z0:-6.9,z1:6.6};
 /* The farm lane with every lot, and the gate in the farm's south fence that leads to it. */
-const CLUB_LANE={x0:-29.5,x1:30.5,z0:19.6,z1:50.5};
+const CLUB_LANE={x0:-29.5,x1:30.5,z0:19.6,z1:52};
+/* The lane grows with the last occupied row, and stays long enough for that row's front path. */
+function clubFitLane(){
+  let maxSlot=0;
+  if(clubOn())for(const m of CLUB.members)if(m&&m.slot>maxSlot)maxSlot=Math.min(m.slot,CLUB_LOT.length-1);
+  CLUB_LANE.z1=CLUB_LOT[Math.floor(maxSlot/2)*2].z+16;
+}
 const CLUB_GATE={x0:0,x1:3.2,z0:17,z1:19.8};
 const CLUB={club:null,members:[],loaded:false,loading:false,at:0,mates:{},sentAt:0,sent:'',reload:null};
 function clubCacheKey(){return 'hmf-club-'+((typeof cloudRead==='function'&&cloudRead().childId)||'')}
@@ -84,7 +95,7 @@ function clubOpen(){
   if(!(typeof cloudIsAccount==='function'&&cloudIsAccount())){cloudTell('Open a saved farm first.');return}
   const el=$('#dlg');if(!el||DLG)return;CLUB_FOUND=null;CLUB_LEAVE=false;
   el.className='show';el.innerHTML='<div class="dlg clubdlg" id="clubdlg"><div style="flex:1" id="clubbody"></div></div>';
-  clubPaint();clubLoad(true);
+  clubPaint();clubLoad(true);if(!clubOn())clubBrowse();
 }
 function clubPaint(){
   const box=$('#clubbody');if(!box)return;const me=clubMe();
@@ -99,22 +110,33 @@ function clubPaint(){
       <div class="dlg-btns">${CLUB_LEAVE?'<button class="b sm" data-act="clubLeaveYes">Yes, leave the club</button><button class="b ghost sm" data-act="clubLeaveNo">Stay</button>':'<button class="b ghost sm" data-act="clubLeave">Leave the club</button>'}<button class="b ghost sm" data-act="cloudClose">Close</button></div>`;
     return;
   }
-  const found=CLUB_FOUND==null?'':CLUB_FOUND.length?CLUB_FOUND.map(c=>`<div class="clubrow"><span class="clube">🏡</span><span class="clubwho"><b>${esc(c.name)}</b><small>${c.members} of ${c.max} farmers</small></span>
-      <button class="b sm" data-act="clubJoin" data-id="${esc(c.id)}" ${c.members>=c.max?'disabled':''}>${c.members>=c.max?'Full':'Join'}</button></div>`).join(''):'<p class="muted">No club has that name yet. You can make it!</p>';
+  const qKeep=($('#clubFind')||{}).value||'',nameKeep=($('#clubName')||{}).value||'';
+  const empty=qKeep.trim()?'No club has that name yet. You can make it!':'No clubs yet. You can make the first one.';
+  const found=CLUB_FOUND==null?'<p class="muted">Loading clubs…</p>':CLUB_FOUND.length?CLUB_FOUND.map(c=>`<div class="clubrow"><span class="clube">🏡</span><span class="clubwho"><b>${esc(c.name)}</b><small>${c.members} of ${c.max} farmers</small></span>
+      <button class="b sm" data-act="clubJoin" data-id="${esc(c.id)}" ${c.members>=c.max?'disabled':''}>${c.members>=c.max?'Full':'Join'}</button></div>`).join(''):`<p class="muted">${empty}</p>`;
   box.innerHTML=`<div class="dlg-name">🏡 Club</div>
     <p>A club is a farm you share with up to ${CLUB_MAX-1} friends. You all walk the same farm and see each other. Your fields and animals stay yours.</p>
-    <h4>Find a club</h4><div class="row"><input id="clubFind" maxlength="20" autocomplete="off" placeholder="Club name" aria-label="Club name to find"><button class="b sm" data-act="clubSearch">Search</button></div>
+    <h4>Clubs now</h4><div class="row"><input id="clubFind" maxlength="20" autocomplete="off" placeholder="Club name" aria-label="Club name to find"><button class="b sm" data-act="clubSearch">Search</button></div>
     <div class="clublist">${found}</div>
     <h4>Make a club</h4><div class="row"><input id="clubName" maxlength="20" autocomplete="off" placeholder="A new club name" aria-label="New club name"><button class="b sm" data-act="clubCreate">Make it</button></div>
     <p class="muted">3 to 20 letters or numbers. Nobody else can have the same name.</p>
     <div class="dlg-btns"><button class="b ghost sm" data-act="cloudClose">Close</button></div>`;
+  const find=$('#clubFind'),made=$('#clubName');if(find)find.value=qKeep;if(made)made.value=nameKeep;
   for(const [id,act] of [['clubFind',clubSearch],['clubName',clubCreate]]){const i=$('#'+id);if(i)i.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();act()}})}
+}
+async function clubFetchList(q){
+  try{return await cloudFetch(cloudConfig().dataBase+'/api/v1/clubs?q='+encodeURIComponent(q),{auth:true})||[]}
+  catch(e){cloudTell('Clubs could not be loaded. Try again in a moment.');return null}
+}
+async function clubBrowse(){
+  const list=await clubFetchList('');
+  if(!list||clubOn()||!$('#clubdlg'))return;
+  CLUB_FOUND=list;clubPaint();
 }
 async function clubSearch(){
   const q=(($('#clubFind')||{}).value||'').trim();
-  try{CLUB_FOUND=await cloudFetch(cloudConfig().dataBase+'/api/v1/clubs?q='+encodeURIComponent(q),{auth:true})||[]}
-  catch(e){CLUB_FOUND=null;cloudTell('Clubs could not be loaded. Try again in a moment.');return}
-  clubPaint();const i=$('#clubFind');if(i){i.value=q;i.focus()}
+  const list=await clubFetchList(q);if(!list)return;
+  CLUB_FOUND=list;clubPaint();const i=$('#clubFind');if(i){i.value=q;i.focus()}
 }
 async function clubCall(url,json){
   if(CLUB_BUSY)return null;CLUB_BUSY=true;
@@ -126,7 +148,7 @@ function clubTook(res){
   if(!res)return;const before=clubSig();
   CLUB.club=res.club||null;CLUB.members=res.members||[];CLUB.loaded=true;CLUB.at=Date.now();
   try{localStorage.setItem(clubCacheKey(),JSON.stringify({club:CLUB.club,members:CLUB.members}))}catch(e){}
-  clubPaint();if(typeof clubRedraw==='function')clubRedraw(clubSig()!==before);
+  clubPaint();if(!CLUB.club)clubBrowse();if(typeof clubRedraw==='function')clubRedraw(clubSig()!==before);
 }
 async function clubCreate(){
   const name=(($('#clubName')||{}).value||'').trim();if(!name){const i=$('#clubName');if(i)i.focus();return}

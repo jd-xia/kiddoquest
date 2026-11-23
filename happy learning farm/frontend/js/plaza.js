@@ -68,6 +68,7 @@ function buildFarm(){
     update:farmUpdate,onTap:farmTap,hover:farmHover,unhover:hideMarks,onDrag:dx=>{CAM.yaw-=dx*.008},rotate:d=>{CAM.yaw+=d*Math.PI/4},zoom:d=>{CAM.zoom=Math.max(.6,Math.min(farmZoomMax(),CAM.zoom*Math.pow(1.22,d)))},
     leave(){if(F.player&&!LASTPOS)LASTPOS={x:F.player.position.x,z:F.player.position.z};KEYS.clear()}};
   F.lane=true;F.home=myLot();F.mates={};F.lots={};   // the lane with this child's own farm, and in a club every friend's farm
+  if(typeof clubFitLane==='function')clubFitLane();
   scene.add(skyDome('#4E95E0','#FFE7C4','#BFD9A2'));scene.fog=new THREE.Fog(col('#F5E3C6'),60,170);
   F.sun=addLights(scene,{sky:'#E4EEF6',ground:'#6A8A52',hemi:.62,sun:'#FFF1DE',si:1.65,pos:[28,30,18],range:34});F.rim=new THREE.Color(.95,.93,.9);F.bloom=.14;F.vig=.2;F.sat=1.02;F.con=.05;
   buildFarmWorld();return F;
@@ -337,16 +338,45 @@ function buildPond(wide){
   const sign=signPlane(wide?'Big fishing pond':'Fishing pond','#1E6F9C',2.4);sign.position.set(-1.35,.95,-d-.15);sign.rotation.y=Math.PI;g.add(sign);
   return g;
 }
-/* The square in the middle of the farm, where everyone meets. Each child's own farm is out in the lane. */
+/* The square in the middle of the farm, where everyone meets: a two-tier stone fountain.
+   Each child's own farm is out in the lane. */
 function buildSquare(S){
-  const g=new THREE.Group();S.add(g);
-  g.add(mesh(CYL(1.7,1.9,.55,20),'#B9AE9E',0,.27,-1,{flat:true}));
-  const water=new THREE.Mesh(CYL(1.4,1.4,.08,24),new THREE.MeshStandardMaterial({color:col('#4FB6E6'),roughness:.12,metalness:.2}));water.position.set(0,.56,-1);g.add(water);
-  const spout=mesh(CYL(.18,.24,1.3,10),'#D9D2C5',0,.9,-1,{r:.6});g.add(spout);
-  for(let k=0;k<8;k++){const a=k/8*Math.PI*2,r=3.4;g.add(mesh(SPH(.32,8,6),['#FF7AA8','#FFD43B','#FFFFFF','#B98CFF'][k%4],Math.cos(a)*r,.25,-1+Math.sin(a)*r*.75))}
+  const g=new THREE.Group(),cz=-1;S.add(g);
+  const pave=new THREE.Mesh(new THREE.RingGeometry(2.2,3.55,56),mat('#D2C4AE',{r:.92}));
+  pave.rotation.x=-Math.PI/2;pave.position.set(0,.02,cz);pave.receiveShadow=true;g.add(pave);
+  const apron=new THREE.Mesh(new THREE.CircleGeometry(2.16,48),mat('#C4B49C',{r:.88}));
+  apron.rotation.x=-Math.PI/2;apron.position.set(0,.03,cz);g.add(apron);
+  g.add(mesh(CYL(2.02,2.18,.14,40),'#E8E1D4',0,.09,cz,{r:.58}));
+  const wall=new THREE.Mesh(new THREE.CylinderGeometry(1.86,1.98,.34,40,1,true),mat('#E8E1D4',{r:.5}));
+  wall.position.set(0,.26,cz);wall.castShadow=true;g.add(wall);
+  const floor=new THREE.Mesh(new THREE.CircleGeometry(1.8,40),mat('#7E9098',{r:.35,m:.08}));
+  floor.rotation.x=-Math.PI/2;floor.position.set(0,.14,cz);g.add(floor);
+  const lip=mesh(new THREE.TorusGeometry(1.9,.08,12,56),'#F8F4EC',0,.44,cz,{r:.28,m:.12});lip.rotation.x=Math.PI/2;g.add(lip);
+  const bowl=new THREE.Mesh(pondSurface(),waterMat());
+  bowl.rotation.x=-Math.PI/2;bowl.scale.set(1.7,1.7,1);bowl.position.set(0,.3,cz);g.add(bowl);
+  g.add(mesh(CYL(.28,.36,.32,20),'#DDD4C6',0,.5,cz,{r:.46}));
+  const cupWall=new THREE.Mesh(new THREE.CylinderGeometry(.48,.56,.16,28,1,true),mat('#E8E1D4',{r:.45}));
+  cupWall.position.set(0,.7,cz);g.add(cupWall);
+  const lip2=mesh(new THREE.TorusGeometry(.52,.045,10,36),'#F7F3EA',0,.78,cz,{r:.26,m:.14});lip2.rotation.x=Math.PI/2;g.add(lip2);
+  const cup=new THREE.Mesh(pondSurface(),waterMat());
+  cup.rotation.x=-Math.PI/2;cup.scale.set(.42,.42,1);cup.position.set(0,.72,cz);g.add(cup);
+  g.add(mesh(CYL(.09,.12,.26,12),'#F4EFE6',0,.9,cz,{r:.32,m:.16}));
+  g.add(mesh(SPH(.1,16,12),'#F8F5EF',0,1.08,cz,{r:.22,m:.2}));
+  const jetMat=new THREE.MeshStandardMaterial({color:col('#EAF8FF'),transparent:true,opacity:.82,roughness:.05,metalness:.06,emissive:col('#A9D7EA'),emissiveIntensity:.45,depthWrite:false,side:THREE.DoubleSide});
+  const jet=(h,x,y,z)=>{const geo=new THREE.CylinderGeometry(.04,.07,h,12);geo.translate(0,h/2,0);const m=new THREE.Mesh(geo,jetMat);m.position.set(x,y,z);m.castShadow=false;g.add(m);return m};
+  const jets=[jet(.62,0,1.16,cz)];
+  for(let k=0;k<8;k++){const a=k/8*Math.PI*2+.35;jets.push(jet(.28,Math.cos(a)*1.05,.32,cz+Math.sin(a)*1.05))}
+  const dropMat=new THREE.MeshStandardMaterial({color:col('#F5FCFF'),transparent:true,opacity:.82,roughness:.04,metalness:.12,emissive:col('#C5E8F6'),emissiveIntensity:.45,depthWrite:false});
+  const drops=[];
+  for(let k=0;k<12;k++){const m=new THREE.Mesh(SPH(.032,8,6),dropMat);m.castShadow=false;g.add(m);drops.push({m,a:k/12*Math.PI*2,span:.85+(k%3)*.2})}
+  const glow=new THREE.Sprite(new THREE.SpriteMaterial({map:dotTex(),color:'#D9F4FF',transparent:true,opacity:.42,blending:THREE.AdditiveBlending,depthWrite:false,toneMapped:false}));
+  glow.scale.set(1.1,1.7,1);glow.position.set(0,1.55,cz);g.add(glow);
+  [['#FFF8F2','#FFD56A'],['#FF8FB8','#FFE7A0'],['#E4C6FF','#FFF1C2'],['#FFE56A','#C9842A'],['#FFB08A','#FFF3C4'],['#FFFFFF','#F2C14E'],['#D7F3FF','#7EB6E8'],['#FFE0F0','#F2C14E']].forEach((c,i)=>{
+    const a=i/8*Math.PI*2+.15,f=bankFlower(c[0],c[1],.62+(i%3)*.16);f.position.set(Math.cos(a)*2.72,0,cz+Math.sin(a)*2.72);g.add(f)});
   const post=signPlane('🏡 The farms are through the south gate','#E0A800',4.6);post.position.set(0,1.25,3.4);g.add(post);
   for(const x of[-2.1,2.1])g.add(mesh(CYL(.08,.1,1.4,8),'#8B5A2B',x,.7,3.4));
-  F.baseObs.push({x0:-2,x1:2,z0:-3,z1:1});
+  F.fountain={jets,drops,glow};
+  F.baseObs.push({x0:-2.15,x1:2.15,z0:-3.15,z1:1.15});
 }
 /* This child's own farm in their lot: the field, the meadow (once bought) and the animal pen, with name signs. */
 function buildOwnLot(S,markHit){
@@ -736,18 +766,22 @@ function walkTo(x,z,pending){
   F.target=F.route.shift();F.pending=pending;F.stuck=0;
   F.ring.position.set(to.x,.06,to.z);F.ringT=0;
 }
-/* The way from p to `to`: the farm and the lane meet only at the south gate, and a lot is entered by its field's
-   front gap, from the path that runs between the two rows of lots. */
+/* The way from p to `to`: the farm and the lane meet only at the south gate. Each row of lots has a path
+   along its front. A lot is entered by its field's front gap, from that path, via the path down the middle. */
 function routeTo(p,to){
-  const gx=(CLUB_GATE.x0+CLUB_GATE.x1)/2,cz=34.8;
+  const gx=(CLUB_GATE.x0+CLUB_GATE.x1)/2;
   const where=(x,z)=>{if(z<=CLUB_GATE.z0+.4)return 'farm';for(let s=0;s<CLUB_LOT.length;s++)if(clubIn(clubLotRect(s),x,z))return s;return 'lane'};
   const a=where(p.x,p.z),b=where(to.x,to.z);
   if(a===b)return [to];
-  const door=s=>({x:CLUB_LOT[s].x,z:CLUB_LOT[s].z+5.6}),cross=s=>({x:CLUB_LOT[s].x,z:cz});
-  const up=a==='farm'?[{x:gx,z:16},{x:gx,z:20.8}]:a==='lane'?[]:[door(a),cross(a)];
-  const down=b==='farm'?[{x:gx,z:20.8},{x:gx,z:16}]:b==='lane'?[]:[cross(b),door(b)];
-  const mid=a==='farm'&&b!=='lane'||b==='farm'&&a!=='lane'?[{x:gx,z:cz}]:[];   // keep to the paths, round the lots near the gate
-  const out=[];for(const q of[...up,...mid,...down,to])if(!out.length||Math.hypot(out[out.length-1].x-q.x,out[out.length-1].z-q.z)>.05)out.push(q);
+  const front=s=>CLUB_LOT[s].z+7.8,door=s=>({x:CLUB_LOT[s].x,z:CLUB_LOT[s].z+5.6});
+  const leave=s=>[door(s),{x:CLUB_LOT[s].x,z:front(s)},{x:gx,z:front(s)}];
+  const enter=s=>[{x:gx,z:front(s)},{x:CLUB_LOT[s].x,z:front(s)},door(s)];
+  const gate=[{x:gx,z:16},{x:gx,z:20.8}];
+  const pts=[];
+  if(a==='farm')pts.push(...gate);else if(a!=='lane')pts.push(...leave(a));
+  if(b==='farm')pts.push(...[...gate].reverse());else if(b!=='lane')pts.push(...enter(b));
+  pts.push(to);
+  const out=[];for(const q of pts)if(!out.length||Math.hypot(out[out.length-1].x-q.x,out[out.length-1].z-q.z)>.05)out.push(q);
   return out;
 }
 function blocked(x,z){if(!inWorld(x,z))return true;const r=.35;for(const o of F.obs)if(x>o.x0-r&&x<o.x1+r&&z>o.z0-r&&z<o.z1+r)return true;return false}
@@ -838,6 +872,12 @@ function farmUpdate(dt){
   F.clouds.forEach(c=>{c.position.x+=dt*.7;if(c.position.x>90)c.position.x=-90});
   F.lanterns.forEach((l,k)=>{const s=1.5+Math.sin(t*3+k)*.15;l.scale.set(s,s,1)});
   if(F.water)F.water.material.emissiveIntensity=.1+Math.sin(t*1.4)*.04;
+  if(F.fountain){
+    F.fountain.jets.forEach((j,i)=>{j.scale.y=.58+.42*Math.sin(t*2.5+i*.65)});
+    F.fountain.drops.forEach((d,i)=>{const u=(t*.65+i*.08)%1,arc=Math.sin(u*Math.PI),rad=.35+u*d.span;
+      d.m.position.set(Math.cos(d.a)*rad,.95+arc*.55-u*.35,-1+Math.sin(d.a)*rad);d.m.scale.setScalar(.55+.7*(1-u))});
+    const s=1.15+.18*Math.sin(t*2.2);F.fountain.glow.scale.set(s,1.9+Math.sin(t*3)*.2,1);
+  }
   F.smoke.forEach(s=>{const k=(t*.25+s.o)%1;s.p.position.set(20.5+k*.6,5.6+k*3.2,-2.8+Math.sin(k*6)*.3);const sc=.4+k*1.1;s.p.scale.setScalar(sc);s.p.material.opacity=.45*(1-k)});
   animSparkles(F.dust,t);
   for(const P2 of F.plots)if(P2.spark.visible)P2.spark.position.y=1.9+Math.sin(t*3)*.12;
@@ -847,6 +887,9 @@ function farmUpdate(dt){
   updFx(F,dt);
   F.tick+=dt;if(F.tick>.5){F.tick=0;syncPlots(false);refreshSheet();if(F.lane)clubSyncLots()}
   if(F.lane)clubFrame(dt,moving);
+  const inLane=P.z>CLUB_GATE.z1;
+  if(inLane&&!F.sawLane){F.sawLane=1;clubGlance()}
+  else if(P.z<CLUB_GATE.z0)F.sawLane=0;
   placeCamera(Math.min(1,dt*5));
 }
 function addXP(n){const f=farmOf(cur()),b=farmLevel(f.xp).l;f.xp+=n;const a=farmLevel(f.xp).l;
@@ -921,6 +964,22 @@ function fenceSide(parent,ax,az,bx,bz,step,color){const L=Math.hypot(bx-ax,bz-az
   for(let k=0;k<=n;k++){const t=k/n;parent.add(mesh(rbox(.2,1.05,.2,.05),color,ax+(bx-ax)*t,.52,az+(bz-az)*t))}
   for(const y of[.36,.78]){const r=mesh(BOX(L,.1,.07),color,(ax+bx)/2,y,(az+bz)/2);r.rotation.y=-Math.atan2(bz-az,bx-ax);parent.add(r)}}
 const ownerTag=name=>labelSprite(`${name}'s`,{h:.34,bg:'rgba(47,163,107,.92)',fg:'#FFFFFF',border:'#D8F5E4'});
+/* A name board beside the center path, facing the gate, so a friend's farm is readable while you walk south. */
+function lotSign(name,o,color){
+  const gx=(CLUB_GATE.x0+CLUB_GATE.x1)/2,s=signPlane(`🏡 ${name}'s farm`,color,3.4);
+  s.position.set(gx+(o.x<gx?-3.4:3.4),1.8,o.z-7.6);s.rotation.y=Math.PI;return s;
+}
+/* On entering the lane, turn to face the nearest other farm (your own, when you farm alone). */
+function clubGlance(){
+  const me=F.player.position,friends=[];
+  if(typeof clubOn==='function'&&clubOn())for(const m of clubOthers()){const o=CLUB_LOT[m.slot];if(o)friends.push({x:o.x,z:o.z-1,name:m.name})}
+  const spots=friends.length?friends:(F.home?[{x:F.home.x,z:F.home.z-1}]:[]);
+  if(!spots.length)return;
+  let b=spots[0],bd=1e9;
+  for(const o of spots){const d=Math.hypot(o.x-me.x,o.z-me.z);if(d<bd){bd=d;b=o}}
+  const yaw=Math.atan2(b.x-me.x,b.z-me.z);CAM.yaw=yaw;F.yaw=yaw;
+  if(b.name&&typeof toast==='function')toast(`🏡 ${b.name}'s farm is this way.`);
+}
 function buildLane(S,markHit){
   const L=CLUB_LANE,g=CLUB_GATE,w=L.x1-L.x0,top=18.6;
   const grass=earthMat('yard').clone();grass.map=grass.map.clone();grass.map.repeat.set(w/4.2,(L.z1-top)/4.2);grass.map.needsUpdate=true;
@@ -928,15 +987,15 @@ function buildLane(S,markHit){
   const dirt=mat('#C99A5E',{r:.95});
   const path=(x0,x1,z0,z1)=>{const m=new THREE.Mesh(new THREE.PlaneGeometry(x1-x0,z1-z0),dirt);m.rotation.x=-Math.PI/2;m.position.set((x0+x1)/2,.022,(z0+z1)/2);m.receiveShadow=true;S.add(m)};
   path(g.x0+.2,g.x1-.2,15.6,L.z1-1);   // from the gate down the middle
-  path(L.x0+1,L.x1-1,34,35.6);   // across, between the two rows of lots
+  const seen={};for(const o of CLUB_LOT){if(o.z+8.6>L.z1-1||seen[o.z])continue;seen[o.z]=1;path(L.x0+1,L.x1-1,o.z+7,o.z+8.6)}   // across, in front of each row that fits
   const fc=new THREE.Group();S.add(fc);
   for(const [ax,az,bx,bz] of[[L.x0,19.2,g.x0,19.2],[g.x1,19.2,L.x1,19.2],[L.x1,19.2,L.x1,L.z1],[L.x1,L.z1,L.x0,L.z1],[L.x0,L.z1,L.x0,19.2]])fenceSide(fc,ax,az,bx,bz,2.5,'#C9A27A');
   for(const x of[g.x0,g.x1])S.add(mesh(CYL(.12,.14,3,8),'#8B5A2B',x,1.5,18.5));
   const club=typeof clubOn==='function'&&clubOn();
   const arch=signPlane(club?'Club: '+CLUB.club.name:`🏡 ${cur().name}'s farm`,club?'#8B5CF6':'#E0A800',3.6);arch.position.set((g.x0+g.x1)/2,2.8,18.56);S.add(arch);
   const archBack=arch.clone();archBack.rotation.y=Math.PI;archBack.position.z=18.44;S.add(archBack);
-  buildOwnLot(S,markHit);
-  if(club)for(const m of clubOthers())if(CLUB_LOT[m.slot])F.lots[m.username]=buildLot(S,m,markHit);
+  buildOwnLot(S,markHit);S.add(lotSign(cur().name,F.home,'#E0A800'));
+  if(club)for(const m of clubOthers()){const o=CLUB_LOT[m.slot];if(!o)continue;F.lots[m.username]=buildLot(S,m,markHit);S.add(lotSign(m.name,o,'#2FA36B'))}
 }
 function buildLot(S,m,markHit){
   const o=CLUB_LOT[m.slot],g=new THREE.Group();g.position.set(o.x,0,o.z);S.add(g);

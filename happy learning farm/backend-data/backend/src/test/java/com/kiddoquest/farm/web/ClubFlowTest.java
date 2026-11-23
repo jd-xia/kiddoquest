@@ -100,7 +100,12 @@ class ClubFlowTest {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name").value("Sunny Farm"))
                 .andExpect(jsonPath("$[0].members").value(1))
-                .andExpect(jsonPath("$[0].max").value(4));
+                .andExpect(jsonPath("$[0].max").value(10));
+
+        mvc.perform(get("/api/v1/clubs").header("Authorization", "Bearer " + jay))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].name").value("Sunny Farm"));
 
         JsonNode joined = body(clubPost(jay, "/api/v1/clubs/" + clubId + "/join", "{\"as\":\"" + jayChild + "\"}")
                 .andExpect(status().isOk()).andReturn());
@@ -138,25 +143,27 @@ class ClubFlowTest {
     }
 
     @Test
-    void aClubHoldsFourAndAChildIsInOneClub() throws Exception {
-        String owner = bearer("user-c");
-        String[] kids = new String[5];
+    void aClubHoldsTenAndAChildIsInOneClub() throws Exception {
+        String[] tokens = new String[11];
+        String[] kids = new String[11];
         for (int i = 0; i < kids.length; i++) {
-            kids[i] = create(owner, "Kid" + i, farm(0, null));
+            tokens[i] = bearer("user-ten-" + i);
+            kids[i] = create(tokens[i], "Kid" + i, farm(0, null));
         }
-        String clubId = body(clubPost(owner, "/api/v1/clubs", "{\"as\":\"" + kids[0] + "\",\"name\":\"Big Barn\"}")
+        String clubId = body(clubPost(tokens[0], "/api/v1/clubs", "{\"as\":\"" + kids[0] + "\",\"name\":\"Big Barn\"}")
                 .andExpect(status().isCreated()).andReturn()).path("club").path("id").asText();
-        clubPost(owner, "/api/v1/clubs", "{\"as\":\"" + kids[0] + "\",\"name\":\"Second Barn\"}")
+        clubPost(tokens[0], "/api/v1/clubs", "{\"as\":\"" + kids[0] + "\",\"name\":\"Second Barn\"}")
                 .andExpect(status().isUnprocessableEntity());
-        for (int i = 1; i < 4; i++) {
-            clubPost(owner, "/api/v1/clubs/" + clubId + "/join", "{\"as\":\"" + kids[i] + "\"}").andExpect(status().isOk());
+        for (int i = 1; i < 10; i++) {
+            clubPost(tokens[i], "/api/v1/clubs/" + clubId + "/join", "{\"as\":\"" + kids[i] + "\"}").andExpect(status().isOk());
         }
-        clubPost(owner, "/api/v1/clubs/" + clubId + "/join", "{\"as\":\"" + kids[4] + "\"}")
+        clubPost(tokens[10], "/api/v1/clubs/" + clubId + "/join", "{\"as\":\"" + kids[10] + "\"}")
                 .andExpect(status().isUnprocessableEntity());
-        clubPost(owner, "/api/v1/clubs/leave", "{\"as\":\"" + kids[2] + "\"}").andExpect(status().isNoContent());
-        JsonNode in = body(clubPost(owner, "/api/v1/clubs/" + clubId + "/join", "{\"as\":\"" + kids[4] + "\"}")
+        clubPost(tokens[2], "/api/v1/clubs/leave", "{\"as\":\"" + kids[2] + "\"}").andExpect(status().isNoContent());
+        JsonNode in = body(clubPost(tokens[10], "/api/v1/clubs/" + clubId + "/join", "{\"as\":\"" + kids[10] + "\"}")
                 .andExpect(status().isOk()).andReturn());
         assertEquals(2, in.path("members").get(2).path("slot").asInt(), "the newcomer takes the free place on the map");
+        assertEquals(10, in.path("club").path("max").asInt());
     }
 
     @Test
