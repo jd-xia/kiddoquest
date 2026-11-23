@@ -127,7 +127,7 @@ function cloudMountSignIn(slotId){
 }
 function cloudLogin(){
   if(DLG)return;const cfg=cloudConfig();
-  if(!cfg.googleClientId){dialog(MAYOR,['Sign-in is not set up on this copy of the farm yet.','Ask a grown-up to add the Google client id in cloud-config.local.js.']);return}
+  if(!cfg.googleClientId){dialog(MAYOR,['Sign-in is not set up on this copy of the farm yet.','Ask a grown-up to add the Google client id in cloud-config.js.']);return}
   if(!cfg.authBase){dialog(MAYOR,['This published farm does not have the laptop address yet.','Add the https address in cloud-config.js.']);return}
   const el=$('#dlg');if(!el)return;const email=cloudRead().session&&cloudRead().session.email;
   const title=cloudPickingAccount?'Switch account':cloudIsAccount()?'Sign in again':'Sign in';
