@@ -123,6 +123,9 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
         }
         Sent sent = chat.send(owner, childId, to, text);
         fan(sent);
+        if ("bella".equals(to)) {
+            fan(chat.advise(owner, childId));
+        }
     }
 
     private void speakVoice(WebSocketSession session, String to, String voice, String mime) throws IOException {
@@ -134,6 +137,9 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
         }
         Sent sent = chat.sendVoice(owner, childId, to, voice, mime);
         fan(sent);
+        if ("bella".equals(to)) {
+            fan(chat.advise(owner, childId));
+        }
     }
 
     public void broadcast(Sent sent) {
@@ -229,6 +235,10 @@ public class ChatSocket extends TextWebSocketHandler implements OnlineKids {
             for (String username : Set.copyOf(byUser.keySet())) {
                 deliver(username, sent.line(), "hall");
             }
+            return;
+        }
+        if ("bella".equals(sent.other())) {
+            deliver(sent.mine(), sent.line(), "bella");
             return;
         }
         deliver(sent.mine(), sent.line(), sent.other());

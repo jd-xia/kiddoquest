@@ -1,6 +1,7 @@
 package com.kiddoquest.farm.chat;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -11,10 +12,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kiddoquest.farm.domain.ChildProfile;
 import com.kiddoquest.farm.domain.FarmMessage;
+import com.kiddoquest.farm.domain.GameSnapshot;
 import com.kiddoquest.farm.repo.ChildProfileRepository;
 import com.kiddoquest.farm.repo.FarmMessageRepository;
+import com.kiddoquest.farm.repo.GameSnapshotRepository;
 import com.kiddoquest.farm.sync.ChildIds;
 import com.kiddoquest.farm.web.FarmDtos.ChatLine;
 import com.kiddoquest.farm.web.FarmExceptions.NotFoundException;
@@ -31,11 +36,16 @@ public class ChatService {
 
     private final ChildProfileRepository children;
     private final FarmMessageRepository messages;
+    private final GameSnapshotRepository snapshots;
+    private final ObjectMapper mapper;
     private final Map<String, long[]> pace = new ConcurrentHashMap<>();
 
-    public ChatService(ChildProfileRepository children, FarmMessageRepository messages) {
+    public ChatService(ChildProfileRepository children, FarmMessageRepository messages, GameSnapshotRepository snapshots,
+            ObjectMapper mapper) {
         this.children = children;
         this.messages = messages;
+        this.snapshots = snapshots;
+        this.mapper = mapper;
     }
 
     @Transactional(readOnly = true)
@@ -51,7 +61,7 @@ public class ChatService {
         if (room == null) {
             throw new SyncRejectedException("Choose the farm chat, or another saved child.");
         }
-        if (!"hall".equals(room) && children.findByUsername(with).isEmpty()) {
+        if (!"hall".equals(room) && !room.startsWith("bella|") && children.findByUsername(with).isEmpty()) {
             throw new NotFoundException();
         }
         List<FarmMessage> found = messages.latest(room, PageRequest.of(0, 40));
@@ -102,7 +112,7 @@ public class ChatService {
         if (room == null) {
             throw new SyncRejectedException("Choose the farm chat, or another saved child.");
         }
-        if (!"hall".equals(to) && children.findByUsername(to).isEmpty()) {
+        if (!"hall".equals(to) && !"bella".equals(to) && children.findByUsername(to).isEmpty()) {
             throw new NotFoundException();
         }
         pace(mine.username());
@@ -118,6 +128,44 @@ public class ChatService {
         message.setFromLook(ready.mine().look() == null || ready.mine().look().isBlank() ? "girl" : ready.mine().look());
         message.setCreatedAt(Instant.now());
         return message;
+    }
+
+    /** One reply from Bella in this child's private Ask Bella room. Not sent to anyone else. */
+    @Transactional
+    public Sent advise(String ownerId, String childId) {
+        Speaker mine = bind(ownerId, childId);
+        ChildProfile child = requireMine(ownerId, childId);
+        JsonNode player = null;
+        GameSnapshot snap = snapshots.findById(childId).orElse(null);
+        if (snap != null && snap.getPlayerJson() != null) {
+            try {
+                player = mapper.readTree(snap.getPlayerJson());
+            } catch (Exception ignored) {
+                player = null;
+            }
+        }
+        FarmMessage message = new FarmMessage();
+        message.setId(UUID.randomUUID().toString());
+        message.setRoom("bella|" + mine.username());
+        message.setFromUsername("bella");
+        message.setFromName("Bella");
+        message.setFromLook("bear");
+        message.setKind("text");
+        Instant now = Instant.now();
+        message.setBody(BellaAdvice.reply(player, minutesLeft(child), now));
+        message.setCreatedAt(now.plusMillis(1));
+        messages.save(message);
+        return new Sent(line(message), message.getRoom(), mine.username(), "bella");
+    }
+
+    private static Integer minutesLeft(ChildProfile child) {
+        if (child.isMain() || child.getDailyMinutes() == null) {
+            return null;
+        }
+        String day = LocalDate.now().toString();
+        int used = day.equals(child.getPlayDay()) ? child.getPlaySeconds() : 0;
+        int bonus = day.equals(child.getPlayDay()) ? child.getBonusMinutes() : 0;
+        return Math.max(0, (child.getDailyMinutes() + bonus) * 60 - used);
     }
 
     private static Sent sent(FarmMessage message, Ready ready) {

@@ -138,6 +138,20 @@ class HallFlowTest {
         assertThrows(NotFoundException.class, () -> chat.history("user-b", child, "hall"));
         assertThrows(NotFoundException.class, () -> chat.send("user-a", child, "P0099999", "hi"));
 
+        Thread.sleep(900);
+        chat.send("user-a", child, "bella", "What should I do?");
+        chat.advise("user-a", child);
+        JsonNode bella = body(mvc.perform(get("/api/v1/chat/history").param("as", child).param("with", "bella")
+                .header("Authorization", "Bearer " + mia)).andExpect(status().isOk()).andReturn());
+        assertEquals(2, bella.size());
+        assertEquals("What should I do?", bella.get(0).path("text").asText());
+        assertEquals("bella", bella.get(1).path("from").asText());
+        assertEquals("Bella", bella.get(1).path("name").asText());
+        assertTrue(bella.get(1).path("text").asText().startsWith("A field is empty."));
+        JsonNode hall = body(mvc.perform(get("/api/v1/chat/history").param("as", child).param("with", "hall")
+                .header("Authorization", "Bearer " + mia)).andExpect(status().isOk()).andReturn());
+        assertEquals(3, hall.size());
+
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete("/api/v1/children/" + child)
                 .header("Authorization", "Bearer " + mia)).andExpect(status().isNoContent());
         assertEquals(0, messages.count());

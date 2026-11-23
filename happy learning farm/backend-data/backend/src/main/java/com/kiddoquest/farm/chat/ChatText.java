@@ -21,6 +21,9 @@ public final class ChatText {
         if ("hall".equals(with)) {
             return "hall";
         }
+        if ("bella".equals(with)) {
+            return "bella|" + mine;
+        }
         if (with == null || !with.matches("P\\d{7}") || with.equals(mine)) {
             return null;
         }

@@ -53,7 +53,11 @@ function hallMine(){
   try{if(typeof cloudPlayerCode==='function'&&typeof cur==='function')return cloudPlayerCode(cur())||''}catch(e){}
   return '';
 }
-function hallLook(look){try{if(typeof cloudLookEmoji==='function')return cloudLookEmoji(look)}catch(e){}return '🧒'}
+function hallLook(look, from){if(from==='bella'||look==='bear')return '🐻';try{if(typeof cloudLookEmoji==='function')return cloudLookEmoji(look)}catch(e){}return '🧒'}
+function hallBellaHTML(){
+  const on=HALL.thread==='bella';
+  return `<button type="button" class="hallrow bella${on?' on':''}" data-act="hallBella" aria-pressed="${on}"><span class="halle" aria-hidden="true">🐻</span><span class="hallwho"><b>Ask Bella</b><small>One idea from your farm</small></span></button>`;
+}
 function hallWhen(iso){
   const d=new Date(iso);if(Number.isNaN(d.getTime()))return '';
   return d.toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
@@ -99,13 +103,14 @@ function hallStats(r){return `Lv ${r&&r.level||1} · ⭐ ${r&&r.stars||0} · �
 function hallPaintList(){
   const el=$('#hallList');if(!el)return;
   const mine=hallMine();
-  if(HALL.note&&!HALL.rows.length){el.innerHTML=`<p class="muted">${esc(HALL.note)}</p>`;return}
-  if(!HALL.rows.length){el.innerHTML='<p class="muted">No saved farms yet. Sign in and sync a child to appear here.</p>';return}
-  el.innerHTML=HALL.rows.map(r=>{
+  const bella=hallBellaHTML();
+  if(HALL.note&&!HALL.rows.length){el.innerHTML=bella+`<p class="muted">${esc(HALL.note)}</p>`;return}
+  if(!HALL.rows.length){el.innerHTML=bella+'<p class="muted">No saved farms yet. Sign in and sync a child to appear here.</p>';return}
+  el.innerHTML=bella+HALL.rows.map(r=>{
     const me=r.username&&r.username===mine;
     const grade=typeof gradeName==='function'?gradeName(r.grade):r.grade||'';
     return `<button type="button" class="hallrow${me?' me':''}" data-act="${me?'hallMe':'hallChat'}" data-id="${esc(r.username)}">
-      <span class="halle">${hallLook(r.look)}</span>
+      <span class="halle">${hallLook(r.look, r.username)}</span>
       <span class="hallwho"><b>${esc(r.name||'Farmer')}${r.online?'<i class="ondot" title="Online"></i>':''}</b><small>${esc(r.username||'')}${grade?' · '+esc(grade):''}${me?' · You':''}</small></span>
       <span class="hallstat"><b>Lv ${r.level||1}</b><small>⭐ ${r.stars||0} · 🪙 ${r.coins||0}</small></span>
     </button>`;
@@ -117,22 +122,26 @@ function hallPaintChat(){
   const root=$('#hall');if(!box||!root)return;
   const on=!!HALL.thread;
   root.classList.toggle('split',on);box.hidden=!on;if(!on)return;
+  const bella=HALL.thread==='bella';
   const row=(HALL.rows||[]).find(r=>r.username===HALL.thread);
-  title.textContent=HALL.thread==='hall'?'Everyone':(row&&row.name)||HALL.thread;
+  title.textContent=bella?'Ask Bella':HALL.thread==='hall'?'Everyone':(row&&row.name)||HALL.thread;
   hallPaintPeer();
   const mine=hallMine(),signed=typeof cloudIsAccount==='function'&&cloudIsAccount();
+  const empty=bella?'Ask Bella for one idea. She looks at your farm.':'No messages yet. Say hello, or send a voice message.';
   log.innerHTML=(HALL.lines||[]).map(m=>{
     const body=m.kind==='voice'||m.voice?hallVoiceHTML(m):`<p>${esc(m.text||'')}</p>`;
-    return `<div class="hallmsg${m.from===mine?' mine':''}"><span class="halle">${hallLook(m.look)}</span><div><b>${esc(m.name||m.from||'')}</b> <small>${esc(hallWhen(m.at))}</small>${body}</div></div>`;
-  }).join('')||`<p class="muted">${signed?'No messages yet. Say hello, or send a voice message.':'Sign in and open a saved child to chat.'}</p>`;
+    return `<div class="hallmsg${m.from===mine?' mine':''}"><span class="halle">${hallLook(m.look, m.from)}</span><div><b>${esc(m.name||m.from||'')}</b> <small>${esc(hallWhen(m.at))}</small>${body}</div></div>`;
+  }).join('')||`<p class="muted">${signed?empty:'Sign in and open a saved child to chat.'}</p>`;
   log.scrollTop=log.scrollHeight;
   (HALL.lines||[]).forEach(m=>{if(m.voice&&!(m.id in HALL.lens))hallVoiceMeasure(m)});
-  const form=$('#hallForm');
+  const form=$('#hallForm'),input=$('#hallText');
   if(form)form.hidden=!signed;
-  if(!HALL.voiceRec)fine.textContent=signed?(HALL.ready?'Be kind. A grown-up can read this chat. Tap the mic to send a voice message.':'Connecting the chat…'):'Sign in and open a saved child to chat.';
+  if(input)input.placeholder=bella?'Ask Bella':'Say something kind';
+  if(!HALL.voiceRec)fine.textContent=signed?(bella?(HALL.ready?'Ask for one idea. A grown-up can read this chat.':'Connecting the chat…'):(HALL.ready?'Be kind. A grown-up can read this chat. Tap the mic to send a voice message.':'Connecting the chat…')):'Sign in and open a saved child to chat.';
 }
 function hallPaintPeer(){
   const sub=$('#hallPeer');if(!sub)return;
+  if(HALL.thread==='bella'){sub.textContent='One idea from your farm';return}
   const row=(HALL.rows||[]).find(r=>r.username===HALL.thread);
   sub.textContent=row?hallStats(row):'';
 }
@@ -156,6 +165,7 @@ async function hallOpenThread(id){
 }
 function hallChat(d){if(d&&d.id)hallOpenThread(d.id)}
 function hallHall(){hallOpenThread('hall')}
+function hallBella(){hallOpenThread('bella')}
 async function hallVoiceFill(msg){
   if(!msg||!(msg.kind==='voice'||msg.voice)||msg.voice||!cloudIsAccount())return msg;
   const as=cloudRead().childId,withId=HALL.thread;
@@ -381,6 +391,6 @@ function hallPlay(d){
   audio.onended=end;audio.onerror=end;
   audio.play().then(()=>hallVoiceMark(m.id)).catch(()=>{end();hallFine('This voice message could not play.')});
 }
-Object.assign(ACT,{linkLamp,hallOpen,hallClose,hallHold,hallChat,hallHall,hallList,hallMe,hallMic,hallPlay});
+Object.assign(ACT,{linkLamp,hallOpen,hallClose,hallHold,hallChat,hallHall,hallBella,hallList,hallMe,hallMic,hallPlay});
 linkWatch();
 hallConnect();

@@ -16,7 +16,7 @@ public class FarmMessage {
     @Column(length = 36)
     private String id;
 
-    /** "hall", or the two public ids joined in alphabetical order. */
+    /** "hall", "bella|" plus one public id, or two public ids joined in alphabetical order. */
     @Column(nullable = false, length = 32)
     private String room;
 

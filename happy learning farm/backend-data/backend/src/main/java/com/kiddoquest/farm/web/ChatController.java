@@ -56,6 +56,9 @@ public class ChatController {
     public ChatLine voice(@AuthenticationPrincipal Jwt jwt, @Valid @RequestBody VoiceSend body) {
         Sent sent = chat.sendVoice(ChildController.owner(jwt), body.as(), body.to(), body.voice(), body.mime());
         socket.broadcast(sent);
+        if ("bella".equals(body.to())) {
+            socket.broadcast(chat.advise(ChildController.owner(jwt), body.as()));
+        }
         return sent.line();
     }
 }

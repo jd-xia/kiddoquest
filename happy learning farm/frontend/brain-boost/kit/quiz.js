@@ -41,7 +41,9 @@
     if(same(v,q.answer)){if(!q.tried.length)S.correct++;S.done=true;S.mood='good';S.say=`Yes! The answer is <b>${esc(q.answer)}</b>.`;S.typed='';draw();return}
     q.tried.push(v);S.hearts--;S.mood='bad';S.typed='';
     if(S.hearts<=0){end(false);return}
-    S.say=`${esc(v)} is not it.${q.hint?' Hint: '+esc(q.hint):''} Try again!`;draw();
+    S.say=`${esc(v)} is not it.${q.hint?' Hint: '+esc(q.hint):''} Try again!`;
+    if(q.hint&&window.parent!==window){try{window.parent.postMessage({type:'bb:miss',name:S.name,hint:String(q.hint).slice(0,160)},location.origin)}catch(e){}}
+    draw();
     const box=$('.lv-qtext');if(box)box.classList.add('shake');
   }
   function next(){if(S.i<S.qs.length-1){S.i++;S.done=false;S.mood='';S.say='';draw()}else end(true)}

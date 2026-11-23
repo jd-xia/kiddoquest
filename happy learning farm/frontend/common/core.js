@@ -198,6 +198,16 @@ function streakGift(p,days){const f=farmOf(p);
   return null}
 let F=null,MAP=null,BAT=null,LASTPOS=null;const KEYS=new Set();
 function farmOf(p){if(!p.farm)p.farm={plots:[],unlocked:6,animals:[],decor:[],shirt:'red',hat:'straw',owned:['shirt:red','hat:straw'],xp:0,barn:{}};return p.farm}
+/* The last hint a child was shown, so Ask Bella can repeat it. A level inside the hub posts it upward. */
+function noteMiss(name, hint){
+  const h=String(hint||'').replace(/<[^>]+>/g,'').replace(/\s+/g,' ').trim().slice(0,160);
+  if(!h)return;
+  const n=String(name||'').replace(/\s+/g,' ').trim().slice(0,40);
+  if(window.parent!==window){try{window.parent.postMessage({type:'bb:miss',name:n,hint:h},location.origin)}catch(e){}return}
+  const p=typeof cur==='function'?cur():null;if(!p)return;
+  p.miss={at:Date.now(),name:n,hint:h};
+  if(typeof save==='function')save();
+}
 const FISH_CATCH=[
   {id:'minnow',name:'Minnow',e:'🐟',worth:2},
   {id:'carp',name:'Carp',e:'🐠',worth:3},

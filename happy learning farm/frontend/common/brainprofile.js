@@ -143,6 +143,7 @@ window.addEventListener('message',e=>{
   if(!P||!f||e.source!==f.contentWindow||e.origin!==location.origin)return;
   const m=e.data||{},p=cur();
   if(m.type==='bb:ready'){P.ready=true;f.contentWindow.postMessage(bbpStartMsg(P.T,P.L,{name:p.name,grade:gradeOf(p),look:p.look}),location.origin)}
+  else if(m.type==='bb:miss'){const hint=String(m.hint||'').replace(/\s+/g,' ').trim().slice(0,160);if(hint){p.miss={at:Date.now(),name:String(m.name||P.L.name||'').slice(0,40),hint};save()}}
   else if(m.type==='bb:finish')bbpDone(m,false);
   else if(m.type==='bb:quit')bbpDone(m,true);
 });

@@ -1059,6 +1059,7 @@ function submit(v){
     bat(batAttack,q.answer,UI.idx===UI.qs.length-1);rLevel();
   }else{
     q.wrong=true;UI.hearts--;bat(batHurt);
+    if(typeof noteMiss==='function'){let name='',step='';try{const D=dun(UI.did),l=D&&D.levels&&D.levels[UI.li];name=(l&&l.name)||(D&&D.name)||'';step=(q.steps&&q.steps[0])||''}catch(e){}noteMiss(name,step)}
     if(UI.hearts<=0){setTimeout(()=>finishLevel(false),650);UI.phase='wait';UI.bubble={kind:'bad',html:'Oh no, out of hearts!'};rLevel();return}
     UI.bubble={kind:'bad',html:`Hoo, ${v} isn't it. Let's go step by step:<ol>${q.steps.map(s=>`<li>${s}</li>`).join('')}</ol>Now you try again!`};
     rLevel();const d=$('#disp');if(d)d.classList.add('shake');
