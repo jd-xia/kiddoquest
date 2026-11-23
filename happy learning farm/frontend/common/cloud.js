@@ -106,18 +106,41 @@ function cloudLoadGsi(){
   if(window.google&&google.accounts&&google.accounts.id)return Promise.resolve();
   return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://accounts.google.com/gsi/client';s.async=true;s.onload=()=>resolve();s.onerror=()=>reject(new Error('gsi'));document.head.appendChild(s)});
 }
+/* Draws the official Google button into a slot on the sign-in gate or the sign-in dialog. */
+function cloudMountSignIn(slotId){
+  const cfg=cloudConfig(),slot=document.getElementById(slotId);
+  if(!slot)return;
+  const noteId=slotId==='gate-gsi'?'gate-note':'auth-note';
+  const say=t=>{const n=document.getElementById(noteId);if(n){n.hidden=!t;if(t)n.textContent=t}};
+  const retry=()=>{const fb=slot.parentElement&&slot.parentElement.querySelector('.gate-fallback');if(fb)fb.hidden=false};
+  if(!cfg.googleClientId){say('Sign-in is not set up on this copy of the farm yet.');retry();return}
+  if(!cfg.authBase){say('This farm does not have a sign-in address yet.');retry();return}
+  say('Loading Google sign-in…');
+  cloudLoadGsi().then(()=>{
+    const el=document.getElementById(slotId);if(!el)return;
+    google.accounts.id.initialize({client_id:cfg.googleClientId,auto_select:false,callback:resp=>{if(resp&&resp.credential)cloudExchange(resp.credential)}});
+    google.accounts.id.disableAutoSelect();
+    const box=el.parentElement,w=box&&box.clientWidth?box.clientWidth:280;
+    google.accounts.id.renderButton(el,{theme:'outline',size:'large',text:'signin_with',shape:'rectangular',width:Math.round(Math.min(320,Math.max(200,w))),logo_alignment:'center'});
+    say('');
+  }).catch(()=>{say('Google sign-in did not load. Check the network and try again.');retry()});
+}
 function cloudLogin(){
   if(DLG)return;const cfg=cloudConfig();
   if(!cfg.googleClientId){dialog(MAYOR,['Sign-in is not set up on this copy of the farm yet.','Ask a grown-up to add the Google client id in cloud-config.js.']);return}
   if(!cfg.authBase){dialog(MAYOR,['This published farm does not have the laptop address yet.','Add the https address in cloud-config.js.']);return}
-  cloudLoadGsi().then(()=>{const el=$('#dlg');if(!el)return;const email=cloudRead().session&&cloudRead().session.email;el.className='show';el.innerHTML=`<div class="dlg"><div style="flex:1"><div class="dlg-name">${cloudPickingAccount?'Switch account':'Sign in'}</div>
-    <p>${cloudPickingAccount?`Choose a different email.${email?` <b>${esc(email)}</b> stays on this account.`:''} An email that is already linked cannot be moved.`:cloudIsAccount()?'Sign in again to keep saving this farm. Nothing you did is lost.':'Sign in with Google to open your farm. Every farm is saved on the farm server.'}</p>
+  const el=$('#dlg');if(!el)return;const email=cloudRead().session&&cloudRead().session.email;
+  const title=cloudPickingAccount?'Switch account':cloudIsAccount()?'Sign in again':'Sign in';
+  const copy=cloudPickingAccount?`Choose a different Google account.${email?` <b>${esc(email)}</b> stays linked to this one.`:''} An email that is already linked cannot be moved.`
+    :cloudIsAccount()?'Sign in again to keep saving this farm. Nothing you did is lost.'
+    :'Use a grown-up\'s Google account. The farm opens on any device.';
+  el.className='show auth';
+  el.innerHTML=`<div class="dlg authbox"><div class="auth-crest" aria-hidden="true"><svg viewBox="0 0 64 64" width="36" height="36"><path fill="#F5C24C" d="M8 30 32 10l24 20v24H8Z"/><path fill="#FFF6CF" d="M26 36h12v18H26Z"/><rect fill="#EAF3FF" x="14" y="32" width="8" height="7" rx="1"/><rect fill="#EAF3FF" x="42" y="32" width="8" height="7" rx="1"/></svg></div><div class="dlg-name">${title}</div>
+    <p class="auth-copy">${copy}</p>
     <div id="gsi"></div>
-    <div class="dlg-btns"><button class="b ghost sm" data-act="cloudClose">Not now</button></div></div></div>`;
-    google.accounts.id.initialize({client_id:cfg.googleClientId,auto_select:false,callback:resp=>{if(resp&&resp.credential)cloudExchange(resp.credential)}});
-    google.accounts.id.disableAutoSelect();
-    google.accounts.id.renderButton(document.getElementById('gsi'),{theme:'filled_blue',size:'large',text:'signin_with',width:280});
-  }).catch(()=>cloudTell('Google sign-in did not load. Check the network and try again.'));
+    <p class="gate-note" id="auth-note">Loading Google sign-in…</p>
+    <div class="dlg-btns"><button class="b ghost sm" data-act="cloudClose">Not now</button></div></div>`;
+  cloudMountSignIn('gsi');
 }
 /* No farm is open: this tab shows only the sign-in and kids screens. */
 function cloudEmpty(){return {v:3,updated:Date.now(),current:null,players:[]}}

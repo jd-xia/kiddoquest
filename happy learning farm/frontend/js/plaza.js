@@ -2,15 +2,31 @@
    Walking into a building opens that building's own page. */
 /* ---------- players ---------- */
 let NEWGRADE=DEFAULT_GRADE,NEWLOOK='girl';
-/* Signing in is required: without it this screen only offers Google sign-in. Every farm on the list is
+/* Signing in is required: without it this screen is the sign-in gate. Every farm on the list is
    loaded from the farm server when it is tapped (cloudSwitch in cloud.js). */
 function rPlayers(){
   const signed=typeof cloudToken==='function'&&!!cloudToken();
   if(!signed){
-    $('#app').innerHTML=`<h1>Happy Learning Farm</h1>
-    ${npcHTML(MAYOR,'Hello! Sign in with Google to open your farm. Your fields, animals, pond and coins are saved on the farm server, so they are waiting for you on any device.')}
-    <div class="signin"><button class="b big" data-act="cloudLogin">Sign in with Google</button>
-    <p class="muted">A grown-up signs in once. Then pick who is playing.</p></div>`;
+    $('#app').innerHTML=`<div class="gate">
+      <div class="gate-sky" aria-hidden="true"><span class="gate-sun"></span><span class="gate-cloud a"></span><span class="gate-cloud b"></span><span class="gate-cloud c"></span><span class="gate-hill far"></span><span class="gate-hill near"></span></div>
+      <section class="gate-card" aria-labelledby="gate-title">
+        <div class="gate-crest" aria-hidden="true"><svg viewBox="0 0 64 64" width="42" height="42"><path fill="#F5C24C" d="M8 30 32 10l24 20v24H8Z"/><path fill="#FFF6CF" d="M26 36h12v18H26Z"/><rect fill="#EAF3FF" x="14" y="32" width="8" height="7" rx="1"/><rect fill="#EAF3FF" x="42" y="32" width="8" height="7" rx="1"/></svg></div>
+        <p class="gate-kicker">Sign in</p>
+        <h1 id="gate-title" class="gate-title">Happy Learning Farm</h1>
+        <p class="gate-lead">A grown-up signs in with Google. Then pick who is playing. The farm is saved on the server, so it is here on any device.</p>
+        <div class="gate-actions">
+          <div id="gate-gsi"></div>
+          <button class="b big gate-fallback" data-act="cloudLogin" hidden>Sign in with Google</button>
+          <p class="gate-note" id="gate-note">Loading Google sign-in…</p>
+        </div>
+        <ul class="gate-perks">
+          <li><span aria-hidden="true">☁️</span><div><b>Same farm, any device</b><small>Fields, animals, the pond and coins come with you.</small></div></li>
+          <li><span aria-hidden="true">👨‍👩‍👧</span><div><b>Then choose a farmer</b><small>One Google account can keep a few children.</small></div></li>
+          <li><span aria-hidden="true">🔒</span><div><b>Grown-up sign-in only</b><small>Kids do not need a password of their own.</small></div></li>
+        </ul>
+      </section>
+    </div>`;
+    if(typeof cloudMountSignIn==='function')cloudMountSignIn('gate-gsi');
     return;
   }
   const accountList=typeof cloudPlayersHtml==='function'?cloudPlayersHtml():'';
