@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>开心学习农场 · Happy Learning Farm</title>
-<meta name="description" content="在一座能走进去的农场里练数学。金币只能在学校里赚。">
+<meta name="description" content="开心学习农场：小学 P1–P6 的数学练习发生在一座可以走进去的农场里。金币只来自数学工坊。">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+SC:wght@400;500;700;900&display=swap" rel="stylesheet">
@@ -98,8 +98,15 @@
     padding:14px 14px 16px;
     box-shadow:0 8px 18px rgba(43,58,46,.08);
   }
-  .feat b{display:block;font-family:'ZCOOL KuaiLe',sans-serif;font-size:18px;margin:0 0 4px}
-  .feat p{margin:0;font-size:13px;line-height:1.55;color:var(--ink-soft)}
+  .section-head{margin:28px 4px 0}
+  .section-head h2{
+    font-family:'ZCOOL KuaiLe',sans-serif;
+    font-size:clamp(24px,4vw,30px);
+    margin:0;color:#22412B;
+  }
+  .section-head p{margin:6px 0 0;font-size:14px;line-height:1.6;color:#2F4A34}
+  .feat b{display:block;font-family:'ZCOOL KuaiLe',sans-serif;font-size:18px;font-weight:400;margin:0 0 6px}
+  .feat p{margin:0;font-size:13.5px;line-height:1.65;color:var(--ink-soft)}
   footer{margin-top:22px;text-align:center;font-size:12px;color:#2F4A34}
   @media (max-width:760px){
     .gate{grid-template-columns:1fr}
@@ -163,28 +170,32 @@
       </svg>
     </div>
     <div class="copy">
-      <p class="eyebrow">P1–P6 · 数学是唯一的收入</p>
+      <p class="eyebrow">小学 P1–P6 · 学习是农场唯一的收入</p>
       <h1>开心学习农场</h1>
       <p class="en">Happy Learning Farm</p>
-      <p class="lead">孩子在一座 3D 农场里走动。金币只能在数学学校里赚：答对才有，答错不扣，还会把做法讲出来。想买种子、养动物、换衣服，就再回学校答一关。</p>
+      <p class="lead">这是一座可以走进去的农场，也是一间按小学进度安排的数学工坊。金币只在工坊里获得：答对才有，答错不扣，并给出做法。孩子用金币经营田地、动物和装扮；想继续扩建，就回到工坊完成下一关。</p>
       <a class="enter" href="happy%20learning%20farm/frontend/index.html">进入农场</a>
-      <p class="note">家长先用 Google 登录，再选今天是谁在玩。</p>
+      <p class="note">家长使用 Google 账号登录，然后选择今天由哪一位孩子进入。</p>
       <div class="loop" aria-label="怎么玩">
-        <span>1. 学校答对</span>
-        <span>2. 赚到金币</span>
-        <span>3. 回农场花钱</span>
+        <span>1. 工坊完成练习</span>
+        <span>2. 获得金币</span>
+        <span>3. 回到农场经营</span>
       </div>
     </div>
   </section>
 
-  <section class="features" aria-label="主要功能">
-    <article class="feat"><b>🌾 自己的农场</b><p>田、动物栏都在南边大门外面，有自己的名字牌。作物按真实时间长大，浇水会快一点。</p></article>
-    <article class="feat"><b>📚 数学学校</b><p>P1 到 P6，口算、应用题和脑力关卡。答完回到农场花钱。家长可以根据自己孩子的情况，定制学习模块。</p></article>
-    <article class="feat"><b>🎣 钓鱼</b><p>选乘法口诀，连续答对才能把鱼钓上来。</p></article>
-    <article class="feat"><b>💬 找 Bella 聊聊</b><p>可以留下反馈。Bella 会把反馈收下来，在下一个版本里更新。她也会看田里的情况，提醒该收菜、该补种，或者下一关去哪。</p></article>
-    <article class="feat"><b>🏡 Club</b><p>最多 10 个小朋友。每人一块地挨在一起，能看见朋友的农场，点一下朋友就能聊天。自己的田只有自己能种。</p></article>
-    <article class="feat"><b>👨‍👩‍👧 家长</b><p>用 Google 登录。可以看每个孩子的进度，设定每天能玩多久，主账号要 PIN。</p></article>
-    <article class="feat"><b>🎨 自己的 icon</b><p>走进创作工坊，把人物、动物和农场上的图案换成自己画的。</p></article>
+  <div class="section-head">
+    <h2>农场介绍</h2>
+    <p>七处地方连在同一张地图上。练习、经营和家长管理各有自己的入口。</p>
+  </div>
+  <section class="features" aria-label="农场介绍">
+    <article class="feat"><b>🌾 经营自己的农场</b><p>南边大门之外是孩子自己的田地和动物栏，门口有名字牌。作物按真实时间生长，浇水可以加快成熟。收获积累经验，农场随之升级。</p></article>
+    <article class="feat"><b>📚 数学工坊</b><p>覆盖小学 P1 至 P6 的口算、应用题和思维关卡。答对获得金币，答错不扣金币，并讲解做法。家长可以按孩子的情况配置学习模块。</p></article>
+    <article class="feat"><b>🎣 钓鱼场</b><p>选择已经学过的乘法口诀。连续答对，才能把鱼钓上来。</p></article>
+    <article class="feat"><b>💬 找 Bella 聊聊</b><p>Bella 是农场市长。孩子可以留下反馈，Bella 会收集这些意见，并在下一个版本中更新。她也会按田里的情况，提醒收获、补种，或下一关该去哪里。</p></article>
+    <article class="feat"><b>🏡 CLUB</b><p>一个俱乐部最多容纳 10 位小朋友。每人一块相邻的地，可以看见朋友的农场，点选朋友即可聊天。每块田只由它的主人经营。</p></article>
+    <article class="feat"><b>👨‍👩‍👧 家长</b><p>使用 Google 账号登录。家长可以查看每位孩子的进度，并设定每天可以进入农场的时间。主账号需要 PIN。</p></article>
+    <article class="feat"><b>🎨 设计自己的图案</b><p>在创作工坊里，把人物、动物和农场上的图案换成孩子自己的画。</p></article>
   </section>
 
   <footer>🌱 小咪与小登的游戏乐园</footer>
