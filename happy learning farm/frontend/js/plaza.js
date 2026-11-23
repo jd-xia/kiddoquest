@@ -8,23 +8,25 @@ function rPlayers(){
   const signed=typeof cloudToken==='function'&&!!cloudToken();
   if(!signed){
     $('#app').innerHTML=`<div class="gate">
-      <div class="gate-sky" aria-hidden="true"><span class="gate-sun"></span><span class="gate-cloud a"></span><span class="gate-cloud b"></span><span class="gate-cloud c"></span><span class="gate-hill far"></span><span class="gate-hill near"></span></div>
-      <section class="gate-card" aria-labelledby="gate-title">
-        <div class="gate-crest" aria-hidden="true"><svg viewBox="0 0 64 64" width="42" height="42"><path fill="#F5C24C" d="M8 30 32 10l24 20v24H8Z"/><path fill="#FFF6CF" d="M26 36h12v18H26Z"/><rect fill="#EAF3FF" x="14" y="32" width="8" height="7" rx="1"/><rect fill="#EAF3FF" x="42" y="32" width="8" height="7" rx="1"/></svg></div>
-        <p class="gate-kicker">Sign in</p>
-        <h1 id="gate-title" class="gate-title">Happy Learning Farm</h1>
-        <p class="gate-lead">A grown-up signs in with Google. Then pick who is playing. The farm is saved on the server, so it is here on any device.</p>
-        <div class="gate-actions">
-          <div id="gate-gsi"></div>
-          <button class="b big gate-fallback" data-act="cloudLogin" hidden>Sign in with Google</button>
-          <p class="gate-note" id="gate-note">Loading Google sign-in…</p>
-        </div>
-        <ul class="gate-perks">
-          <li><span aria-hidden="true">☁️</span><div><b>Same farm, any device</b><small>Fields, animals, the pond and coins come with you.</small></div></li>
-          <li><span aria-hidden="true">👨‍👩‍👧</span><div><b>Then choose a farmer</b><small>One Google account can keep a few children.</small></div></li>
-          <li><span aria-hidden="true">🔒</span><div><b>Grown-up sign-in only</b><small>Kids do not need a password of their own.</small></div></li>
-        </ul>
-      </section>
+      <div class="gate-sky" aria-hidden="true"><span class="gate-sun"></span><span class="gate-cloud a"></span><span class="gate-cloud b"></span><span class="gate-hill far"></span><span class="gate-hill near"></span></div>
+      <div class="gate-layout">
+        <header class="gate-brand">
+          <p class="gate-kicker">For grown-ups</p>
+          <h1 id="gate-title" class="gate-title">Happy<br>Learning<br>Farm</h1>
+          <p class="gate-lead">Sign in once. Fields, animals, the pond and coins stay with this account, on any device.</p>
+        </header>
+        <section class="gate-panel" aria-labelledby="gate-signin">
+          <div class="gate-crest" aria-hidden="true"><svg viewBox="0 0 64 64" width="34" height="34"><path fill="#F5C24C" d="M8 30 32 10l24 20v24H8Z"/><path fill="#FFF6CF" d="M26 36h12v18H26Z"/><rect fill="#EAF3FF" x="14" y="32" width="8" height="7" rx="1"/><rect fill="#EAF3FF" x="42" y="32" width="8" height="7" rx="1"/></svg></div>
+          <h2 id="gate-signin">Sign in</h2>
+          <p class="gate-panel-lead">Use a grown-up's Google account. Then choose who is playing.</p>
+          <div class="gate-actions">
+            <div id="gate-gsi"></div>
+            <button class="b big gate-fallback" data-act="cloudLogin" hidden>Sign in with Google</button>
+            <p class="gate-note" id="gate-note">Loading Google sign-in…</p>
+          </div>
+          <p class="gate-fine"><span>Every device</span><span>A few children</span><span>No kid password</span></p>
+        </section>
+      </div>
     </div>`;
     if(typeof cloudMountSignIn==='function')cloudMountSignIn('gate-gsi');
     return;

@@ -121,7 +121,7 @@ function cloudMountSignIn(slotId){
     google.accounts.id.initialize({client_id:cfg.googleClientId,auto_select:false,callback:resp=>{if(resp&&resp.credential)cloudExchange(resp.credential)}});
     google.accounts.id.disableAutoSelect();
     const box=el.parentElement,w=box&&box.clientWidth?box.clientWidth:280;
-    google.accounts.id.renderButton(el,{theme:'outline',size:'large',text:'signin_with',shape:'rectangular',width:Math.round(Math.min(320,Math.max(200,w))),logo_alignment:'center'});
+    google.accounts.id.renderButton(el,{theme:'outline',size:'large',text:'signin_with',shape:'rectangular',width:Math.round(Math.min(400,Math.max(200,w))),logo_alignment:'center'});
     say('');
   }).catch(()=>{say('Google sign-in did not load. Check the network and try again.');retry()});
 }
