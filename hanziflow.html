@@ -180,6 +180,18 @@
   }
   .hz.active{ background:var(--pink); color:#fff; box-shadow:0 2px 8px rgba(255,143,171,.55);}
   .hz.done{ border-color:#b4f8c8; background:#f0fff5;}
+  /* current + finished: keep it readable (was white text on pale green) */
+  .hz.done.active{ background:var(--pink); color:#fff; border-color:#b4f8c8;}
+  /* empty slot waiting for the next spoken character */
+  .hz.slot{
+    display:inline-block; min-width:1.4em; text-align:center;
+    border:2px dashed #ff8fab; color:#ff8fab; background:#fff5f8;
+    animation:voicePulse 1s ease-in-out infinite;
+  }
+  .slot-mic{
+    width:100%; height:100%; display:flex; align-items:center; justify-content:center;
+    font-size:56px; opacity:.35;
+  }
   .punct{ color:#b7b7c8; cursor:default;}
 
   /* reading screen */
@@ -575,8 +587,8 @@ function runWatch(){
       if (myToken !== playToken) return;
       if (i >= total) {
         renderStrokePanel(total, null);
-        markDone(hanziIndexes[curHanziPos]);
         charHintEl.textContent = '看完啦！可以点「我来写」，或「下一个」';
+        markDone(hanziIndexes[curHanziPos]); // voice mode may replace the hint with its slot
         return;
       }
       renderStrokePanel(i, 'now');
@@ -845,6 +857,11 @@ tabRead.addEventListener('click', () => {
 });
 
 window.addEventListener('resize', () => {
+  if (mode === 'practice' && passageEl.querySelector('.voice-slot')
+      && typeof voiceOn !== 'undefined' && voiceOn && !voiceBusy) {
+    showVoiceSlot();
+    return;
+  }
   if (mode === 'practice' && currentItem()) {
     // keep current char, rebuild canvas to new size
     showCurrent({ speak: false });
@@ -1019,6 +1036,15 @@ function rebuildFromVoice(focusChar){
   const text = voiceChars.map(v => v.char).join('');
   voiceActive = true;
   buildFromText(text, voiceChars.map(v => v.py));
+  // keep the green "done" mark on chars already practiced
+  voiceChars.forEach((v, i) => {
+    const seqI = hanziIndexes[i];
+    if (v.done && sequence[seqI]) {
+      doneSet.add(seqI);
+      sequence[seqI].wordEl.classList.add('done');
+    }
+  });
+  updateProgress();
   document.getElementById('articleInput').value = text;
   const pos = voiceChars.findIndex(v => v.char === focusChar);
   if (pos >= 0 && mode === 'practice') {
@@ -1123,18 +1149,53 @@ function startListening(){
   }
 }
 
+// Empty slot at the end of the passage + blank stage, waiting for the next spoken char
+function showVoiceSlot(){
+  playToken++; // stop any running animation / quiz
+  clearActive();
+  let slot = passageEl.querySelector('.voice-slot');
+  if (!slot) {
+    let p = passageEl.lastElementChild;
+    if (!p) { p = document.createElement('p'); passageEl.appendChild(p); }
+    slot = document.createElement('span');
+    slot.className = 'ruby-word voice-slot';
+    slot.innerHTML = '<span class="py"></span><span class="hz slot">？</span>';
+    p.appendChild(slot);
+  }
+  slot.scrollIntoView({ block: 'nearest' });
+  const size = writerSize();
+  targetEl.style.width = size + 'px';
+  targetEl.style.height = size + 'px';
+  targetEl.innerHTML = '<div class="slot-mic">🎤</div>';
+  writer = null;
+  pinyinBigEl.textContent = '';
+  resetStrokePanel(0);
+  charHintEl.textContent = '👂 请说下一个字，比如「我」或「我们的我」';
+}
+function removeVoiceSlot(){
+  passageEl.querySelectorAll('.voice-slot').forEach(el => el.remove());
+}
+
 function stopVoice(){
   voiceOn = false;
   voiceBusy = false;
   clearTimeout(listenTimer);
   if (recognizer) { try { recognizer.abort(); } catch (e) {} }
   setListening(false);
+  const hadSlot = !!passageEl.querySelector('.voice-slot');
+  removeVoiceSlot();
+  if (hadSlot && mode === 'practice' && currentItem()) showCurrent({ speak: false });
 }
 
 // called when the current character is finished (watch done / quiz done)
 function onCharFinishedForVoice(){
   if (!voiceOn) return;
+  const item = currentItem();
+  if (voiceActive && item) {
+    voiceChars.forEach(v => { if (v.char === item.char) v.done = true; });
+  }
   voiceBusy = false;
+  showVoiceSlot();
   scheduleListen(900);
 }
 
@@ -1153,8 +1214,15 @@ btnVoice.addEventListener('click', () => {
   voiceBusy = false;
   voiceFailCount = 0;
   if ('speechSynthesis' in window) speechSynthesis.cancel();
-  playToken++; // stop any running animation so it can't be heard/finish mid-listen
   if (mode !== 'practice') tabPractice.click();
+  if (!voiceActive) {
+    // start a fresh voice list: empty passage with just the waiting slot
+    voiceChars = [];
+    buildFromText('');
+    voiceActive = true;
+    document.getElementById('passageTip').textContent = '🎤 语音加的字 · 说一个字就加一个';
+  }
+  showVoiceSlot();
   scheduleListen(0);
 });
 
