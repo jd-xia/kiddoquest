@@ -227,6 +227,14 @@
   .preset-row{ display:flex; gap:6px; flex-wrap:wrap; margin:6px 0;}
   .preset-row button{ background:var(--sky); color:#12505a;}
 
+  .voice-chip{ background:#e8fcec !important; color:#1a7a3a !important; }
+  .voice-chip.on{ outline:2px solid #1a7a3a; outline-offset:1px; }
+  .voice-chip.listening{
+    background:#ff8fab !important; color:#fff !important;
+    animation:voicePulse 1s ease-in-out infinite;
+  }
+  @keyframes voicePulse{ 0%,100%{ transform:scale(1);} 50%{ transform:scale(1.08);} }
+
   .hidden{ display:none !important; }
 
   @media (max-height:700px){
@@ -246,6 +254,7 @@
 <div class="mode-tabs">
   <button id="tabPractice" class="on">✏️ 练字</button>
   <button id="tabRead">📖 听故事</button>
+  <button type="button" id="btnVoice" class="chip voice-chip" style="flex:0 0 auto;box-shadow:none;">🎤 说字</button>
   <button type="button" id="btnOpenArticle" class="chip" style="flex:0 0 auto;box-shadow:none;background:#fff8ef;">📝 换文</button>
 </div>
 
@@ -537,6 +546,7 @@ function markDone(seqIndex){
   const item = sequence[seqIndex];
   if (item) item.wordEl.classList.add('done');
   updateProgress();
+  if (typeof onCharFinishedForVoice === 'function') onCharFinishedForVoice();
 }
 
 function runWatch(){
@@ -673,7 +683,7 @@ function jumpToSeq(seqIndex){
   showCurrent({ speak: true });
 }
 
-function buildFromText(rawText){
+function buildFromText(rawText, pyOverride){
   stopReading();
   playToken++;
   doneSet.clear();
@@ -687,10 +697,14 @@ function buildFromText(rawText){
   paragraphs.forEach(p => { for (const ch of p) if (ch.trim()) flatChars.push(ch); });
 
   let pyArray = [];
-  try {
-    pyArray = pinyinPro.pinyin(flatChars.join(''), { type: 'array', toneType: 'symbol' });
-  } catch (e) {
-    pyArray = flatChars.map(() => '');
+  if (Array.isArray(pyOverride) && pyOverride.length === flatChars.length) {
+    pyArray = pyOverride.slice();
+  } else {
+    try {
+      pyArray = pinyinPro.pinyin(flatChars.join(''), { type: 'array', toneType: 'symbol' });
+    } catch (e) {
+      pyArray = flatChars.map(() => '');
+    }
   }
 
   let flatI = 0;
@@ -961,6 +975,195 @@ document.getElementById('stopReadBtn').addEventListener('click', () => {
   stopReading();
   setReadStatus('已停止');
 });
+
+// ---- Voice input: add ONE character at a time ----
+// Say just "我", or "我们的我" (word + 的 + char) to pick the exact character.
+const btnVoice = document.getElementById('btnVoice');
+let voiceChars = [];   // {char, py}
+let voiceActive = false; // passage currently built from voice chars
+let recognizer = null;
+let listening = false;
+
+function plainPy(ch){
+  try { return pinyinPro.pinyin(ch, { toneType: 'none' }); } catch (e) { return ''; }
+}
+function pyInWord(word, idx){
+  try {
+    const arr = pinyinPro.pinyin(word, { type: 'array', toneType: 'symbol' });
+    return arr[idx] || '';
+  } catch (e) { return ''; }
+}
+
+// Returns {char, py, word} or null
+function parseVoiceText(raw){
+  const s = (raw || '').replace(/[^一-鿿]/g, '');
+  if (!s) return null;
+  if (s.length === 1) return { char: s, py: pyInWord(s, 0), word: '' };
+  // "我们的我" / "我们得我" / "我们地我": separator then the target char at the end
+  const tail = s[s.length - 1];
+  for (let k = s.length - 2; k >= 1; k--) {
+    if (!/[的得地]/.test(s[k])) continue;
+    const word = s.slice(0, k);
+    let idx = word.lastIndexOf(tail);
+    if (idx < 0) {
+      // recognizer may pick a homophone for the tail (e.g. 我们的握): match by sound
+      const tp = plainPy(tail);
+      idx = [...word].findIndex(c => plainPy(c) === tp);
+    }
+    if (idx >= 0) return { char: word[idx], py: pyInWord(word, idx), word };
+  }
+  return null;
+}
+
+function rebuildFromVoice(focusChar){
+  const text = voiceChars.map(v => v.char).join('');
+  voiceActive = true;
+  buildFromText(text, voiceChars.map(v => v.py));
+  document.getElementById('articleInput').value = text;
+  const pos = voiceChars.findIndex(v => v.char === focusChar);
+  if (pos >= 0 && mode === 'practice') {
+    curHanziPos = pos;
+    showCurrent({ speak: false });
+  }
+  document.getElementById('passageTip').textContent = '🎤 语音加的字 · 再点「说字」加一个';
+}
+
+function handleVoiceResults(alternatives){
+  let hit = null;
+  for (const t of alternatives) { hit = parseVoiceText(t); if (hit) break; }
+  if (!hit) {
+    charHintEl.textContent = `没听清「${alternatives[0] || ''}」，说「我」或「我们的我」`;
+    return false;
+  }
+  if (!voiceActive) voiceChars = [];
+  if (!voiceChars.some(v => v.char === hit.char)) voiceChars.push({ char: hit.char, py: hit.py });
+  if (mode !== 'practice') tabPractice.click();
+  rebuildFromVoice(hit.char);
+  speakChar(hit.word ? `${hit.word}的${hit.char}` : hit.char);
+  return true;
+}
+
+// Voice mode stays ON until the button is clicked again:
+// listen -> got a char -> practice it -> char finished (markDone) -> listen again.
+let voiceOn = false;
+let voiceBusy = false;     // a recognized char is being practiced
+let listenTimer = null;
+let voiceFailCount = 0;
+
+function updateVoiceBtn(){
+  btnVoice.classList.toggle('listening', voiceOn && listening);
+  btnVoice.classList.toggle('on', voiceOn);
+  if (!voiceOn) btnVoice.textContent = '🎤 说字';
+  else if (listening) btnVoice.textContent = '👂 在听…';
+  else btnVoice.textContent = '🎤 语音开';
+}
+function setListening(on){
+  listening = on;
+  updateVoiceBtn();
+}
+
+function scheduleListen(ms){
+  clearTimeout(listenTimer);
+  if (!voiceOn) return;
+  listenTimer = setTimeout(function tryListen(){
+    if (!voiceOn || voiceBusy || listening) return;
+    if (mode !== 'practice') return;
+    // don't let the mic hear our own TTS
+    if ('speechSynthesis' in window && speechSynthesis.speaking) {
+      listenTimer = setTimeout(tryListen, 300);
+      return;
+    }
+    startListening();
+  }, ms == null ? 400 : ms);
+}
+
+function startListening(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) return;
+  let gotResult = false;
+  recognizer = new SR();
+  recognizer.lang = 'zh-CN';
+  recognizer.interimResults = false;
+  recognizer.continuous = false;
+  recognizer.maxAlternatives = 5;
+  recognizer.onresult = (e) => {
+    const res = e.results[0];
+    const alts = [];
+    for (let i = 0; i < res.length; i++) alts.push(res[i].transcript);
+    gotResult = true;
+    voiceFailCount = 0;
+    if (handleVoiceResults(alts)) voiceBusy = true; // wait until this char is done
+  };
+  recognizer.onerror = (e) => {
+    if (e.error === 'not-allowed' || e.error === 'service-not-allowed' || e.error === 'audio-capture') {
+      charHintEl.textContent = '请允许使用麦克风';
+      stopVoice();
+      return;
+    }
+    if (e.error !== 'no-speech' && e.error !== 'aborted') voiceFailCount++;
+  };
+  recognizer.onend = () => {
+    setListening(false);
+    if (!voiceOn || voiceBusy) return;
+    if (voiceFailCount >= 5) {
+      charHintEl.textContent = '语音一直出错，先关掉了，可以再点「说字」';
+      stopVoice();
+      return;
+    }
+    // nothing usable heard: keep listening
+    scheduleListen(gotResult ? 600 : 250);
+  };
+  try {
+    recognizer.start();
+    setListening(true);
+    charHintEl.textContent = '👂 请说一个字，比如「我」或「我们的我」';
+  } catch (e) {
+    setListening(false);
+    scheduleListen(800);
+  }
+}
+
+function stopVoice(){
+  voiceOn = false;
+  voiceBusy = false;
+  clearTimeout(listenTimer);
+  if (recognizer) { try { recognizer.abort(); } catch (e) {} }
+  setListening(false);
+}
+
+// called when the current character is finished (watch done / quiz done)
+function onCharFinishedForVoice(){
+  if (!voiceOn) return;
+  voiceBusy = false;
+  scheduleListen(900);
+}
+
+btnVoice.addEventListener('click', () => {
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    charHintEl.textContent = '这个浏览器不支持语音输入，请用 Chrome 或 Edge';
+    return;
+  }
+  if (voiceOn) {
+    stopVoice();
+    charHintEl.textContent = '语音已关闭';
+    return;
+  }
+  voiceOn = true;
+  voiceBusy = false;
+  voiceFailCount = 0;
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  playToken++; // stop any running animation so it can't be heard/finish mid-listen
+  if (mode !== 'practice') tabPractice.click();
+  scheduleListen(0);
+});
+
+tabRead.addEventListener('click', () => { if (voiceOn) stopVoice(); });
+
+// switching to a typed/preset article leaves voice mode
+document.getElementById('genBtn').addEventListener('click', () => { voiceActive = false; });
+document.querySelectorAll('[data-preset]').forEach(btn =>
+  btn.addEventListener('click', () => { voiceActive = false; }));
 
 // init with short kid-friendly text (wait a frame so writer area has real size)
 document.getElementById('articleInput').value = PRESETS.short;
